@@ -31,7 +31,7 @@ func TestMirrorMatchesPin(t *testing.T) {
 	}
 	got := strings.TrimSpace(string(out))
 	if got != dooryversion.UpstreamCommit {
-		t.Fatalf("mirror HEAD %s does not match pin %s; run `make upstream-mirror`", got, dooryversion.UpstreamCommit)
+		t.Fatalf("mirror HEAD %s does not match pin %s; run `pnpm upstream-mirror`", got, dooryversion.UpstreamCommit)
 	}
 	// The mirror must be pristine: any local modification invalidates every probe.
 	status, err := exec.Command("git", "-C", filepath.Join(root, ".upstream", "current"), "status", "--porcelain").Output()

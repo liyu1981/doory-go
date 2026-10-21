@@ -11,5 +11,6 @@ __pycache__/
 .venv/
 
 # Build output.
+node_modules/
 doory
 /dist/

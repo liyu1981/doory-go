@@ -1,0 +1,33 @@
+{
+  "name": "doory-go",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Faithful Go rewrite of the doory backend (PiG parity methodology). pnpm scripts are the build-target manager: the same gate ladder the PiG Makefile carries.",
+  "packageManager": "pnpm@12.4.2",
+  "scripts": {
+    "help": "node scripts/help.mjs",
+    "upstream-mirror": "set -e; C=$(sed -n 's/.*UpstreamCommit = \"\\([0-9a-f]*\\)\".*/\\1/p' internal/dooryversion/dooryversion.go); test -d .upstream/current || git clone https://github.com/shaongitbd/doory .upstream/current; git -C .upstream/current fetch --quiet origin; git -C .upstream/current checkout --quiet --detach \"$C\"; test -z \"$(git -C .upstream/current status --porcelain)\" || { echo 'mirror not pristine'; exit 1; }",
+    "generate": "echo 'TODO(M0): ledgergen introspection against the pinned oracle' && exit 1",
+    "check": "${GO:-go} build ./... && ${GO:-go} vet ./... && ${GO:-go} test ./... && pnpm run port-map-drift && pnpm run divergence-consistency",
+    "verify": "pnpm run check && echo 'TODO(M1): full parity' && exit 1",
+    "parity": "echo 'TODO(M1): parity runner' && exit 1",
+    "parity-fast": "echo 'TODO(M1): parity runner' && exit 1",
+    "coverage": "echo 'TODO(M1): coverage tool' && exit 1",
+    "port-map-drift": "echo 'TODO(M0): port-map drift gate' && exit 1",
+    "lint-scenarios": "echo 'TODO(M0): scenario linter' && exit 1",
+    "divergence-consistency": "echo 'TODO(M0): divergence ledger' && exit 1"
+  },
+  "targets-help": {
+    "help": "List the available targets",
+    "upstream-mirror": "Refresh .upstream/current to the pinned commit (pristine, detached)",
+    "generate": "Regenerate compiler-derived inventories (never hand-edit outputs)",
+    "check": "Build, vet, lint, unit tests, drift gates, divergence guards, parity-fast",
+    "verify": "check + full parity + contracts",
+    "parity": "Parallel oracle/Go scenario pairs",
+    "parity-fast": "One strict oracle/Go pair per hermetic scenario",
+    "coverage": "Regenerate the coverage report embedded in AGENTS.md",
+    "port-map-drift": "Reject unmapped Go sources and rows whose upstream file vanished",
+    "lint-scenarios": "Validate scenario TOMLs (normalize reasons, comparator rules)",
+    "divergence-consistency": "Match DIVERGENCES records to call-site markers"
+  }
+}

@@ -7,7 +7,8 @@ binary release.
 
 The port follows the PiG ↔ Pi parity methodology (see `PLAN.md`):
 pinned oracle, probe-first paired scenarios, compiler-derived ledgers,
-divergence ledger with a shrink-only ratchet, and a Makefile gate ladder.
+divergence ledger with a shrink-only ratchet, and a pnpm gate ladder (`package.json`
+scripts are the build-target manager; there is no Makefile).
 
 ## Layout
 
@@ -25,10 +26,11 @@ divergence ledger with a shrink-only ratchet, and a Makefile gate ladder.
 ## Commands
 
 ```bash
-make upstream-mirror   # refresh .upstream/current to the pinned commit
-make generate          # regenerate inventories/ledgers (never hand-edit)
-make check             # build, vet, lint, unit, drift gates, divergence guards, parity-fast
-make verify            # check + full parity + contracts
-make parity            # parallel oracle/Go scenario pairs
-make coverage          # regenerate the coverage report embedded in AGENTS.md
+pnpm run help          # list all build targets
+pnpm upstream-mirror   # refresh .upstream/current to the pinned commit
+pnpm generate          # regenerate inventories/ledgers (never hand-edit)
+pnpm check             # build, vet, lint, unit, drift gates, divergence guards, parity-fast
+pnpm verify            # check + full parity + contracts
+pnpm parity            # parallel oracle/Go scenario pairs
+pnpm coverage          # regenerate the coverage report embedded in AGENTS.md
 ```

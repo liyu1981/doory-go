@@ -11,7 +11,7 @@ sufficient.
 ## 0. The oracle (pinned)
 
 - Mirror: `.upstream/current/` — doory @ `2eb2557c1eed3aa256a78f1874abfb5a1315849c`
-  ("High-contrast mode (#120)", 2026-10-20). Refresh with `make upstream-mirror`.
+  ("High-contrast mode (#120)", 2026-10-20). Refresh with `pnpm upstream-mirror`.
 - What we are porting (inventory as of the pin):
   - **16 Django apps**, `backend/apps/{core,accounts,apitokens,designs,assets,gallery,
     elements,fonts,brand,sharing,exports,collab,presets,mcp,ai}` + project `backend/doory/`.
@@ -85,10 +85,11 @@ sufficient.
 8. **Test files get dispositions.** Every upstream test file (there are many; ~35k LOC)
    is ported, partially ported, or explicitly pending in a machine-checked ledger;
    "pending" needs an owner and a missing-case reference.
-9. **Gate ladder.** `make generate` (never hand-edit inventories) → `make check` (build,
+9. **Gate ladder** (targets live in `package.json`, run with pnpm — no Makefile).
+   `pnpm generate` (never hand-edit inventories) → `pnpm check` (build,
    vet, lint, unit, race, drift gates, divergence guards, lint-scenarios, port-map drift,
-   coverage drift, parity-fast) → `make verify` (full parity + contracts) →
-   `make parity` (parallel pairs) → `make coverage` (honest report embedded in
+   coverage drift, parity-fast) → `pnpm verify` (full parity + contracts) →
+   `pnpm parity` (parallel pairs) → `pnpm coverage` (honest report embedded in
    `AGENTS.md` between markers; stale = fail).
 10. **Green is necessary, not sufficient.** A parity run that finds zero bugs over many
     loops is a stated smell: re-probe the oracle, add adversarial cases.
@@ -100,7 +101,7 @@ doory-go/
 ├── .upstream/current/            # frozen mirror of the pin (already cloned)
 ├── AGENTS.md                     # working agreement + embedded coverage report block
 ├── PLAN.md                       # this file
-├── Makefile                      # gate ladder
+├── package.json                  # gate ladder: pnpm scripts (pnpm run help lists targets)
 ├── go.mod
 ├── cmd/doory/                    # single binary: serve / migrate / seed / admin / reencrypt …
 ├── internal/dooryversion/        # sole pin: UpstreamRepo/UpstreamCommit/UpstreamReleaseLine
@@ -137,7 +138,7 @@ Version pin (`internal/dooryversion/dooryversion.go`) is the only place the comm
 | `ledger/test-mapping-v*.json` | pytest test-file inventory | per-file disposition: ported / partial / pending(owner, missing-case) |
 | `ledger/commands-v*.json` | management-command inventory | each command has a Go subcommand + cli scenario |
 
-`make port-map-drift` rejects Go source without a PORT_MAP row and rows whose upstream file
+`pnpm port-map-drift` rejects Go source without a PORT_MAP row and rows whose upstream file
 vanished; explicit `// Ports backend/...` comments require a reviewed row.
 
 ## 4. Parity harness (the heart of the port)
@@ -248,7 +249,7 @@ Admin site: see D2 — a gated sub-phase inside #14.
 ## 8. Milestones & exit criteria
 
 - **M0 — scaffold green.** Mirror+pin test, PORT_MAP skeleton (every backend file listed,
-  all ⬜), families declared, Makefile gate ladder runs `make check` on an empty port
+  all ⬜), families declared, the pnpm gate ladder runs `pnpm check` on an empty port
   set, divguard baseline exists and only shrinks.
 - **M1 — kernel parity.** Family 1 scenarios green at structural level; schema-driver
   digests match for all 17 migrations (Go schema complete even though handlers are ⬜).
@@ -260,7 +261,7 @@ Admin site: see D2 — a gated sub-phase inside #14.
   `DATABASE_URL`+`DJANGO_SECRET_KEY` (env contract), embedded frontend serves the
   editor, WS collab works between two browsers, MCP works from an assistant client,
   export renders PNG/PDF, docker-compose replacement image runs the full stack,
-  `make parity` green, coverage report embedded in AGENTS.md with no weak-only routes
+  `pnpm parity` green, coverage report embedded in AGENTS.md with no weak-only routes
   counted as verified.
 
 ## 9. Acceptance ladder (what "faithful" means, in strength order)
