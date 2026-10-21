@@ -53,7 +53,7 @@ behavioral verification).
 | `backend/apps/accounts/tests/` |  | ⬜ |
 | `backend/apps/accounts/tokens.py` |  | ⬜ |
 | `backend/apps/accounts/urls.py` |  | ⬜ |
-| `backend/apps/accounts/views.py` |  | ⬜ |
+| `backend/apps/accounts/views.py` | doory/views.go (CsrfView only) | 🟡 |
 
 ## `backend/apps/accounts/templates/accounts/email/`
 
@@ -69,7 +69,7 @@ behavioral verification).
 |---|---|---|
 | `backend/apps/ai/admin.py` |  | ⬜ |
 | `backend/apps/ai/apps.py` |  | ⬜ |
-| `backend/apps/ai/catalog.py` |  | ⬜ |
+| `backend/apps/ai/catalog.py` | doory/views.go (ai_config: user_providers_mode, public_options for the no-models/no-providers path, default_option, has_server_options w/o env providers) | 🟡 |
 | `backend/apps/ai/checks.py` |  | ⬜ |
 | `backend/apps/ai/env.py` |  | ⬜ |
 | `backend/apps/ai/errors.py` |  | ⬜ |
@@ -207,10 +207,10 @@ behavioral verification).
 |---|---|---|
 | `backend/apps/core/apps.py` |  | ⬜ |
 | `backend/apps/core/csrf.py` |  | ⬜ |
-| `backend/apps/core/exceptions.py` |  | ⬜ |
+| `backend/apps/core/exceptions.py` | doory/envelope.go (uniform error envelope + 401-for-anon; ValidationError field maps, ApiError, Throttled retry_after pending) | 🟡 |
 | `backend/apps/core/images.py` |  | ⬜ |
 | `backend/apps/core/management/` |  | ⬜ |
-| `backend/apps/core/middleware.py` |  | ⬜ |
+| `backend/apps/core/middleware.py` | doory/middleware.go (PermissionsPolicy + PrivateApiCache; MediaSecurityHeaders with assets family) | 🟡 |
 | `backend/apps/core/models.py` |  | ⬜ |
 | `backend/apps/core/pagination.py` |  | ⬜ |
 | `backend/apps/core/parsers.py` |  | ⬜ |
@@ -218,17 +218,17 @@ behavioral verification).
 | `backend/apps/core/storage.py` |  | ⬜ |
 | `backend/apps/core/svg.py` |  | ⬜ |
 | `backend/apps/core/tests/` |  | ⬜ |
-| `backend/apps/core/urls.py` |  | ⬜ |
-| `backend/apps/core/views.py` |  | ⬜ |
+| `backend/apps/core/urls.py` | doory/app.go (health + config routes; schema/docs with contract driver) | 🟡 |
+| `backend/apps/core/views.py` | doory/views.go (health, config, handler404/handler500 envelope paths; sitemap with gallery family) | 🟡 |
 
 ## `backend/apps/core/mlmodels/`
 
 | upstream | go | status |
 |---|---|---|
-| `backend/apps/core/mlmodels/availability.py` |  | ⬜ |
-| `backend/apps/core/mlmodels/install.py` |  | ⬜ |
-| `backend/apps/core/mlmodels/manifest.py` |  | ⬜ |
-| `backend/apps/core/mlmodels/sources.py` |  | ⬜ |
+| `backend/apps/core/mlmodels/availability.py` | doory/mlmodels.go | ✅ |
+| `backend/apps/core/mlmodels/install.py` | doory/mlmodels.go | ✅ |
+| `backend/apps/core/mlmodels/manifest.py` | doory/mlmodels.go | ✅ |
+| `backend/apps/core/mlmodels/sources.py` | doory/mlmodels.go (manifest embedded from backend/data; download/sync deferred) | 🟡 |
 
 ## `backend/apps/designs/`
 
@@ -485,14 +485,14 @@ behavioral verification).
 |---|---|---|
 | `backend/doory/asgi.py` |  | ⬜ |
 | `backend/doory/mcp_asgi.py` |  | ⬜ |
-| `backend/doory/urls.py` |  | ⬜ |
+| `backend/doory/urls.py` | doory/app.go (4 of 214 routes registered; kernel family) | 🟡 |
 | `backend/doory/wsgi.py` |  | ⬜ |
 
 ## `backend/doory/settings/`
 
 | upstream | go | status |
 |---|---|---|
-| `backend/doory/settings/base.py` |  | ⬜ |
+| `backend/doory/settings/base.py` | doory/settings.go (kernel/config env subset; grows per family) | 🟡 |
 | `backend/doory/settings/dev.py` |  | ⬜ |
 | `backend/doory/settings/prod.py` |  | ⬜ |
 | `backend/doory/settings/test.py` |  | ⬜ |

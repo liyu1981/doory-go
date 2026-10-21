@@ -2,10 +2,13 @@
 // before scenarios) and every scenario TOML under test/parity/scenarios/:
 //
 // families:   unique names, non-empty description/includes, includes resolve
-//             in the mirror and match at least one PORT_MAP row;
+//
+//	in the mirror and match at least one PORT_MAP row;
+//
 // scenarios:  required name/description/covers, known driver, covers paths
-//             matching PORT_MAP rows, known dialects, normalize_replace rules
-//             carrying a reason (when that field lands).
+//
+//	matching PORT_MAP rows, known dialects, normalize_replace rules
+//	carrying a reason (when that field lands).
 //
 // Scope declared up front is what prevents silent skipping; this gate keeps
 // the declaration honest against both the mirror and the map.

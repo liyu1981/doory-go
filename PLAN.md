@@ -339,12 +339,47 @@ Done in the first build session:
 7. ✅ `docs/parity/DIVERGENCES.md` D1–D9 + `DIVERGENCE-IDS.txt` +
    `pnpm divergence-consistency` gate.
 
-Next steps:
+Next steps (M1 largely done — see the M1 log below):
 
 8. ⬜ Spikes S0–S4; fold results into PORT_MAP rows and DIVERGENCES entries.
-9. ⬜ M1: schema-driver (per-dialect schema digest vs Django migrations),
-   DRF semantics table (S4), first paired kernel scenarios
-   (`health`/`config`/404/405/csrf from probe 0001 as the first comparators).
-10. ⬜ Fixture seed export (Django factories → typed JSON) and the http-driver.
-11. ⬜ Postgres lane: local docker `postgres:16-alpine` for dialect-declared
-    scenarios.
+9. ⬜ Remaining M1 items: DRF semantics table extracted to a doc (the Allow/
+   envelope rules currently live in code comments + scenario evidence),
+   http dialect lane on Postgres (schema-driver already covers both
+   dialects), allowed-origin preflight probe, Accept: text/html probe.
+10. ⬜ Fixture seed export (Django factories → typed JSON) and the full
+    http-driver request features (multipart, auth cookies).
+
+M1 progress log (first build session after M0):
+
+- ✅ Schema-driver both dialects: `automation/ci/schemagen` extracts DDL
+  verbatim from the oracle (sqlite_master; pg_dump for PG, bookkeeping
+  tables stripped, `\\restrict` directives stripped); `doory migrate`
+  applies it; `pnpm schema-parity` digests and compares — **35 tables,
+  oracle == Go on SQLite AND Postgres** (local docker postgres:16-alpine,
+  `scripts/pg-oracle.sh`). Migration runs on a pinned connection (pg_dump
+  scripts reset search_path; sqlite pragmas are per-conn — DSN params +
+  pgx OptionAfterConnect).
+- ✅ Go kernel (`doory/` package): settings env contract (base.py reads 1:1,
+  EMAIL_BACKEND correctly console — a settings-file constant, probed on
+  prod), middleware stack in Django's exact order (buffered responses mirror
+  assemble-then-send), router with the source-verified Allow rule
+  (@api_view set-order + View.setup head-alias), error envelope in BOTH
+  JSON dialects (DRF compact / Django JsonResponse spaced), csrf cookie
+  semantics (32-char secret, renew-same-value), config endpoint including
+  mlmodels manifest port, CORS preflight short-circuit, APPEND_SLASH.
+- ✅ Parity runner (`test/parity/runner`, `pnpm parity-fast`): boots the
+  oracle (prod settings — dev's DEBUG pages are not honest targets) and the
+  Go binary on free ports, replays paired requests with per-side cookie
+  jars, compares with the recorded-rule comparator.
+- ✅ First scenario `01-kernel-http` **8/8 steps green at BYTE level**
+  (health, config, csrf fresh+renew,404/405/401 envelopes, preflight).
+  The loop found and fixed real bugs: slice-nil JSON (`models: null` vs
+  `[]`), a 4-vs-5-char prefix check that disabled the cache layer, DSN
+  slash trimming; and two oracle facts: `@api_view` Allow order is
+  PYTHONHASHSEED-nondeterministic (comparator rule: token set) and wsgiref
+  emits Content-Length: 0 on 204 where Go strips it (D11).
+- ✅ Divergences D10 (process identity headers) and D11 (204
+  Content-Length) recorded with reasons; 11 records, gate green.
+- ✅ Kernel unit tests (`doory/kernel_test.go`): Allow rule, both envelope
+  dialects, Vary merging, csrf secret shape, env coercions,
+  EmailDelivers — all probe-anchored.

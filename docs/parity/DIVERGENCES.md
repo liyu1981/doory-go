@@ -119,3 +119,33 @@ Rules (PiG §6):
 - remove-when: an HTML-bytes scenario turns green (renderer produces identical
   bytes), after which this entry retires.
 - evidence: PLAN.md §6 (D9), family accounts.
+
+## D10 — process identity headers excluded from comparison
+
+
+- SCRUTINIZED: approved
+- status: active
+- summary: The `Server` (and proxy `Date`) response headers identify the
+  serving stack (wsgiref/gunicorn vs Go net/http), not application behavior.
+  Behind the documented nginx/caddy deployments neither value reaches a
+  client. The http comparator denies them with a recorded reason; everything
+  else about headers is compared exactly (names case-folded — HTTP header
+  names are case-insensitive and Django/nginx mix cases).
+- remove-when: n/a (stack identity is not app behavior). If upstream ever
+  asserts Server in a scenario, revisit.
+- evidence: probe 0001 headers, PLAN.md §4 comparator rules.
+
+
+## D11 — Content-Length on bodyless (204) responses
+
+- SCRUTINIZED: approved
+- status: active
+- summary: wsgiref/gunicorn emit `Content-Length: 0` on 204 responses (the
+  csrf endpoint); Go's net/http deletes Content-Length from bodyless
+  statuses (204/304) and there is no supported way to override it through
+  ResponseWriter. The http comparator drops content-length on 204 pairs with
+  this recorded reason; everything else about the response compares exactly.
+- remove-when: Go changes its framing policy, or the http stack is switched
+  to a raw writer that can emit the header (unlikely to be worth it).
+- evidence: probe 0001 step 03 (oracle 204 carries Content-Length: 0),
+  parity run 01-kernel-http step 03/08.

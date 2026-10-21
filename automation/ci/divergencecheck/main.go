@@ -16,7 +16,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -29,7 +28,7 @@ var (
 )
 
 type record struct {
-	id, title string
+	id, title                       string
 	scrutinized, status, removeWhen string
 }
 
@@ -96,13 +95,19 @@ func main() {
 			ids = append(ids, line)
 		}
 	}
-	if !sort.StringsAreSorted(ids) {
-		problems = append(problems, "DIVERGENCE-IDS.txt is not sorted")
-	}
-	sortedCopy := append([]string(nil), ids...)
-	sort.Strings(sortedCopy)
-	if strings.Join(ids, ",") != strings.Join(sortedCopy, ",") {
-		problems = append(problems, "DIVERGENCE-IDS.txt has duplicates")
+	// Ids are global and numeric: D1 < D2 < ... < D10 (lexicographic order
+	// would put D10 between D1 and D2).
+	last := -1
+	for _, id := range ids {
+		n, ok := parseD(id)
+		if !ok {
+			problems = append(problems, "DIVERGENCE-IDS.txt: malformed id "+id)
+			continue
+		}
+		if n <= last {
+			problems = append(problems, "DIVERGENCE-IDS.txt: ids not in strictly increasing numeric order at "+id)
+		}
+		last = n
 	}
 	if len(ids) != len(records) {
 		problems = append(problems, fmt.Sprintf("id count mismatch: %d ids vs %d records", len(ids), len(records)))
@@ -165,6 +170,18 @@ func main() {
 func toInt(s string) int {
 	n, _ := strconv.Atoi(s)
 	return n
+}
+
+// parseD parses a "D<N>" id into N.
+func parseD(id string) (int, bool) {
+	if !strings.HasPrefix(id, "D") {
+		return 0, false
+	}
+	n, err := strconv.Atoi(id[1:])
+	if err != nil || n <= 0 {
+		return 0, false
+	}
+	return n, true
 }
 
 func fatal(err error) {

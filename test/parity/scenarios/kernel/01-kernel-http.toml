@@ -1,0 +1,77 @@
+# Behavior family: kernel (family 1, PLAN.md §5).
+#
+# Upstream oracle: pinned Django booted with doory.settings.dev — the
+# deployable settings family (test.py hardcodes harness-only values that
+# would not be honest parity targets; e.g. EMAIL_BACKEND=locmem would fake
+# features.email_verification=false). SQLite workdir DB, media/exports
+# inside the scenario workdir, mirror untouched. The Go side reads the same
+# env contract as base.py; [env] applies to BOTH sides.
+#
+# Evidence lineage: probe 0001 (test settings) established the response
+# shapes; this scenario re-probes the live oracle on every run.
+#
+# Comparator (runner/compare.go, each rule recorded with a reason):
+# exact status + header set + body bytes; deny date+server (D10); header
+# names case-folded; Vary as token set; set-cookie by attributes + value
+# shape (csrf secrets are per-request randomness); structural JSON noted
+# when bytes differ — classification only, never a pass.
+#
+# Known-unasserted pending probes (PLAN S4): Accept: text/html (406 path),
+# allowed-origin preflight, bare OPTIONS metadata JSON, non-API 404 HTML,
+# append-slash redirect, throttled 429 shapes, session-authenticated
+# requests (accounts family), HEAD on api_view routes.
+
+name = "01-kernel-http"
+description = "Kernel HTTP surface matches the oracle byte-for-byte: health, config, csrf cookie flow, error envelopes, auth 401, CORS preflight short-circuit."
+driver = "http"
+tags = ["fast"]
+dialects = ["sqlite"]
+covers = [
+  "backend/doory/urls.py",
+  "backend/doory/settings/base.py",
+  "backend/apps/core/views.py",
+  "backend/apps/core/middleware.py",
+  "backend/apps/core/exceptions.py",
+  "backend/apps/accounts/views.py",
+  "backend/apps/designs/views.py", # its ViewSet method set drives the asserted Allow header
+]
+
+[env]
+GOOGLE_CLIENT_ID = "parity-client.test"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/health/"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/config/"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/csrf/"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/nope/"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/health/"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/designs/"
+
+[[steps]]
+method = "OPTIONS"
+path = "/api/v1/designs/"
+headers = { Origin = "http://example.com", "Access-Control-Request-Method" = "GET" }
+
+# Second csrf fetch WITH the cookie from step 03: Django renews the expiry
+# with the SAME secret (get_token CSRF_COOKIE_NEEDS_UPDATE); cookie_stable
+# asserts that per side.
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/csrf/"
+cookie_stable = true
