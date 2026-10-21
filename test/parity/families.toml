@@ -1,0 +1,93 @@
+# Behavior family scope for the doory backend port.
+#
+# Each family declares the upstream PORT_MAP paths under its responsibility.
+# `pnpm lint-scenarios` and the familygaps report use this to find untested
+# entries in family scope.
+#
+# Pattern semantics:
+#   - exact path:       matches that PORT_MAP entry only
+#   - trailing slash:   matches every PORT_MAP entry whose upstream path
+#                       starts with this prefix
+#
+# A PORT_MAP entry may belong to multiple families (e.g. management commands
+# live inside app families AND in ops). Coverage from any scenario counts and
+# is visible per family.
+#
+# Declare scope FIRST, before producing scenarios: the act of declaring scope
+# up front prevents silent skipping. Paths are relative to the mirror root
+# (.upstream/current/), matching PORT_MAP upstream column.
+
+[families.kernel]
+description = "WSGI/ASGI kernel: settings + env contract, middleware stack, pagination, DRF error shapes, content negotiation, health/config/schema/docs endpoints, static+media serving."
+includes = [
+  "backend/doory/",
+  "backend/manage.py",
+  "backend/conftest.py",
+  "backend/healthcheck.py",
+  "backend/tests/",
+  "backend/apps/core/",
+]
+
+[families.accounts]
+description = "Users, register/login/logout/me, password change/reset, email verification, Google sign-in, per-account lockout, CSRF endpoint, auth emails."
+includes = ["backend/apps/accounts/"]
+
+[families.apitokens]
+description = "Personal access tokens and their scopes (MCP auth material)."
+includes = ["backend/apps/apitokens/"]
+
+[families.designs]
+description = "Designs, folders, trash/purge, version history (list/detail/restore), document validators, revision semantics, size presets."
+includes = [
+  "backend/apps/designs/",
+  "backend/apps/presets/",
+]
+
+[families.elements]
+description = "Element library: shapes, icons, emoji, illustrations, element packs (seed/sync/import)."
+includes = ["backend/apps/elements/"]
+
+[families.gallery]
+description = "Templates, template categories, template-use flow, sitemap.xml."
+includes = ["backend/apps/gallery/"]
+
+[families.brand]
+description = "Brand kits: colours, fonts, logos."
+includes = ["backend/apps/brand/"]
+
+[families.fonts]
+description = "Font catalogue and user fonts: upload, parse metadata (woff2/ttf), delete."
+includes = ["backend/apps/fonts/"]
+
+[families.assets]
+description = "Uploads, per-user storage quota, stock photo/audio providers (search/import/preview), remote fetch network policy, media security headers, S3/local storage."
+includes = ["backend/apps/assets/"]
+
+[families.sharing]
+description = "Share links (roles, passwords), comments, public shared/<token>/ views."
+includes = ["backend/apps/sharing/"]
+
+[families.exports]
+description = "Server-side PDF and image export via headless Chromium + render.html, delivery tokens, purge_exports."
+includes = ["backend/apps/exports/"]
+
+[families.ai]
+description = "AI image providers: operator/user providers, models, per-task proxy, style pipelines, Fernet+HKDF secrets, quotas, outbound network policy, contract.yaml."
+includes = ["backend/apps/ai/"]
+
+[families.collab]
+description = "Realtime co-editing: WebSocket consumer handshake/auth/limits, room registry, Y engine isolation, YState/YUpdate store + compaction, presence/notify, channel layer, collab_maintenance."
+includes = ["backend/apps/collab/"]
+
+[families.mcp]
+description = "MCP server: bearer auth, tools, resources, prompts, resolver over HTTP."
+includes = ["backend/apps/mcp/"]
+
+[families.ops]
+description = "Ops surface: management commands, seeded data fixtures, container entrypoint, healthcheck, env example file."
+includes = [
+  "backend/data/",
+  "backend/.env.example",
+  "backend/Dockerfile",
+  "backend/docker-entrypoint.sh",
+]

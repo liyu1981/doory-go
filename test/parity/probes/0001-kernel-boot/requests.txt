@@ -1,0 +1,9 @@
+GET /api/v1/health/ 
+GET /api/v1/config/ 
+GET /api/v1/auth/csrf/ 
+GET /api/v1/nope/ 
+POST /api/v1/health/ 
+GET /api/v1/designs/ 
+OPTIONS /api/v1/designs/ -H Origin: http://example.com -H Access-Control-Request-Method: GET
+GET /api/v1/schema/ 
+GET /sitemap.xml 

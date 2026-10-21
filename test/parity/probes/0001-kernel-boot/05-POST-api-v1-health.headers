@@ -1,0 +1,14 @@
+HTTP/1.1 405 Method Not Allowed
+Date: Wed, 21 Oct 2026 12:38:27 GMT
+Server: WSGIServer/0.2 CPython/3.12.10
+Content-Type: application/json
+Allow: GET, OPTIONS
+Cache-Control: no-store
+Permissions-Policy: accelerometer=(), bluetooth=(), browsing-topics=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), serial=(), usb=()
+X-Frame-Options: DENY
+Content-Length: 80
+Vary: origin
+X-Content-Type-Options: nosniff
+Referrer-Policy: strict-origin-when-cross-origin
+Cross-Origin-Opener-Policy: same-origin
+

@@ -1,0 +1,10 @@
+HTTP/1.1 200 OK
+Date: Wed, 21 Oct 2026 12:38:27 GMT
+Server: WSGIServer/0.2 CPython/3.12.10
+content-length: 0
+Content-Type: text/html; charset=utf-8
+Vary: origin
+X-Content-Type-Options: nosniff
+Referrer-Policy: strict-origin-when-cross-origin
+Cross-Origin-Opener-Policy: same-origin
+

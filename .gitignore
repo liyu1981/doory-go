@@ -14,3 +14,8 @@ __pycache__/
 node_modules/
 doory
 /dist/
+
+# Oracle scratch: venv, probe DBs, media (must stay outside the mirror).
+
+.oracle/
+*.sqlite3

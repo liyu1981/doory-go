@@ -7,27 +7,33 @@
   "scripts": {
     "help": "node scripts/help.mjs",
     "upstream-mirror": "set -e; C=$(sed -n 's/.*UpstreamCommit = \"\\([0-9a-f]*\\)\".*/\\1/p' internal/dooryversion/dooryversion.go); test -d .upstream/current || git clone https://github.com/shaongitbd/doory .upstream/current; git -C .upstream/current fetch --quiet origin; git -C .upstream/current checkout --quiet --detach \"$C\"; test -z \"$(git -C .upstream/current status --porcelain)\" || { echo 'mirror not pristine'; exit 1; }",
-    "generate": "echo 'TODO(M0): ledgergen introspection against the pinned oracle' && exit 1",
-    "check": "${GO:-go} build ./... && ${GO:-go} vet ./... && ${GO:-go} test ./... && pnpm run port-map-drift && pnpm run divergence-consistency",
+    "generate": "bash scripts/generate.sh",
+    "oracle:setup": "set -e; mkdir -p .oracle; uv venv .oracle/venv --python python3.12 -q; uv pip install -q --python .oracle/venv/bin/python -r .upstream/current/backend/requirements-dev.txt; echo 'oracle: setup complete (.oracle/venv)'",
+    "oracle:serve": "bash tools/oracle/serve.sh",
+    "oracle:probe": "bash tools/oracle/probe.sh",
+    "check": "${GO:-go} build ./... && ${GO:-go} vet ./... && ${GO:-go} test ./... && pnpm run port-map-drift && pnpm run divergence-consistency && pnpm run lint-scenarios",
     "verify": "pnpm run check && echo 'TODO(M1): full parity' && exit 1",
     "parity": "echo 'TODO(M1): parity runner' && exit 1",
     "parity-fast": "echo 'TODO(M1): parity runner' && exit 1",
     "coverage": "echo 'TODO(M1): coverage tool' && exit 1",
-    "port-map-drift": "echo 'TODO(M0): port-map drift gate' && exit 1",
-    "lint-scenarios": "echo 'TODO(M0): scenario linter' && exit 1",
-    "divergence-consistency": "echo 'TODO(M0): divergence ledger' && exit 1"
+    "port-map-drift": "go run ./automation/ci/portmapdrift",
+    "lint-scenarios": "go run ./test/parity/cmd/lintscenarios",
+    "divergence-consistency": "go run ./automation/ci/divergencecheck"
   },
   "targets-help": {
     "help": "List the available targets",
     "upstream-mirror": "Refresh .upstream/current to the pinned commit (pristine, detached)",
-    "generate": "Regenerate compiler-derived inventories (never hand-edit outputs)",
-    "check": "Build, vet, lint, unit tests, drift gates, divergence guards, parity-fast",
+    "generate": "Regenerate compiler-derived inventories (ledger JSONs + PORT_MAP skeleton)",
+    "oracle:setup": "Create .oracle/venv with the pinned backend deps (uv)",
+    "oracle:serve": "Boot the pinned Django oracle on 127.0.0.1:8012 (SQLite, test settings)",
+    "oracle:probe": "Probe the live oracle; save raw transcripts under test/parity/probes/",
+    "check": "Build, vet, lint, unit tests, drift gates, divergence guards, lint-scenarios",
     "verify": "check + full parity + contracts",
     "parity": "Parallel oracle/Go scenario pairs",
     "parity-fast": "One strict oracle/Go pair per hermetic scenario",
     "coverage": "Regenerate the coverage report embedded in AGENTS.md",
     "port-map-drift": "Reject unmapped Go sources and rows whose upstream file vanished",
-    "lint-scenarios": "Validate scenario TOMLs (normalize reasons, comparator rules)",
-    "divergence-consistency": "Match DIVERGENCES records to call-site markers"
+    "lint-scenarios": "Validate families.toml + scenario TOMLs against mirror and PORT_MAP",
+    "divergence-consistency": "Match DIVERGENCES records to call-site markers and the ID list"
   }
 }
