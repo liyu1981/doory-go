@@ -1,0 +1,15 @@
+# The upstream mirror is recreated by `make upstream-mirror` and verified
+# against internal/dooryversion by test/upstream-parity.
+.upstream/
+
+# Media/db scratch from local oracle runs.
+backend/db.sqlite3
+backend/media/
+backend/staticfiles/
+*.pyc
+__pycache__/
+.venv/
+
+# Build output.
+doory
+/dist/
