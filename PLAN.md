@@ -50,6 +50,11 @@ sufficient.
   compare final document JSON and client-observable frames instead); byte-identical
   exported PDFs (compare structure via `pypdf`-equivalent inspection); Django admin HTML
   pixel parity (see D2).
+- **Testing scope (owner decision):** parity proves **backend behavior only** — the
+  HTTP/WS/MCP API contracts, DB state, and side effects must match the oracle. The
+  embedded frontend gets no behavioral validation during the port; it is smoke-tested
+  after integration and validated **case by case** as issues surface. Scenarios never
+  drive the React app.
 
 ## 1. Methodology (PiG rules, restated for an HTTP/DB oracle)
 
@@ -134,7 +139,7 @@ Version pin (`internal/dooryversion/dooryversion.go`) is the only place the comm
 | `ledger/routes-v*.json` | Django URL resolver walk (`manage.py` probe script) | every route (incl. router-generated + WS + MCP) mapped to a Go handler + scenario coverage |
 | `ledger/interfaces-v*.json` | model/field/validator/meta introspection, serializer field introspection, DRF settings, throttle rates | every model field & serializer field mapped; schema digest parity |
 | `ledger/env-contract-v*.json` | `docs/self-hosting/configuration.md` ∩ `doory/settings/*.py` env reads | every env row honored by Go with same default, or divergence |
-| `ledger/migrations-v*.json` | Django migrations → schema digest per app | Go schema produces the same table/column/index/constraint digest |
+| `ledger/migrations-v*.json` | Django migrations → schema digest per app, per dialect (SQLite + Postgres) | Go schema produces the same table/column/index/constraint digest on both dialects |
 | `ledger/test-mapping-v*.json` | pytest test-file inventory | per-file disposition: ported / partial / pending(owner, missing-case) |
 | `ledger/commands-v*.json` | management-command inventory | each command has a Go subcommand + cli scenario |
 
@@ -146,13 +151,16 @@ vanished; explicit `// Ports backend/...` comments require a reviewed row.
 The oracle is a server + database, not a CLI, so the harness has these drivers:
 
 - **http-driver**: seeds both sides from one canonical fixture export (built by Django
-  factories, dumped once to JSON with typed fields, replayed into sqlite/Postgres for
-  both sides), replays identical request sequences (cookies, CSRF, multipart, headers),
+  factories, dumped once to JSON with typed fields, replayed into SQLite in-memory or
+  Postgres for both sides), replays identical request sequences (cookies, CSRF,
+  multipart, headers),
   records transcripts. Comparators use typed aliases: `id`→uuid-shape, `timestamp`→
   ISO-8601-shape, `token`→shape-only, `path`→basename, `etag`→shape. Cookie jars compared
   by name/attrs, not value, unless the scenario asserts interop (see D5).
 - **schema-driver**: canonical schema digest (tables, columns, types, defaults, indexes,
-  constraints, FKs) from Django migrations vs Go migration output.
+  constraints, FKs) from Django migrations vs Go migration output, **computed once per
+  dialect** (SQLite and Postgres) so type mapping (uuid/json/timestamptz/bool/blob) stays
+  honest.
 - **ws-driver**: drives `/ws/designs/<uuid>/` with a scripted Y-protocol client on both
   sides; asserts frame transcripts (sync step1/2, update, awareness/presence frames,
   error/close codes, rate-limit refusals) and final **document JSON** equality after
@@ -166,8 +174,24 @@ The oracle is a server + database, not a CLI, so the harness has these drivers:
 
 Hermeticity rules (mirror PiG): per-scenario temp dirs for MEDIA/EXPORT roots, scrubbed
 ambient env, no real provider keys, httptest fixtures for Unsplash/Pexels/Pixabay/
-Freesound/Google/smtp, unique DB names, parallel scheduler groups (scenarios that share a
-Postgres cluster get a group token), cleanup kills only its own resources.
+Freesound/Google/smtp, parallel scheduler groups, cleanup kills only its own resources.
+
+**Dialect matrix (implements D4).** Every behavioral scenario runs on **SQLite** by
+default — in-memory (`file::memory:?cache=shared` or a per-scenario dsn) unless the
+scenario needs cross-connection or on-disk persistence (collab multi-connection,
+media-adjacent state), in which case a per-scenario temp-file DB is used. Scenarios whose
+behavior must also hold on Postgres declare `dialects = ["sqlite", "postgres"]`; the
+Postgres lane runs against a **local docker** `postgres:16-alpine` instance started by
+the runner (`docker run` per `pnpm parity` invocation, unique DB name per scenario,
+truncated between runs). The pinned Django oracle runs the **same scenario on the same
+dialect** (`DATABASE_URL` accepts both; the Phase-0 inventory confirmed the upstream
+model layer is dialect-portable — no ArrayField/GinIndex/HStore/RawSQL). The Go port is
+written dialect-neutral through `database/sql`; behavior that exists on only one dialect
+must be a scenario-declared exception with a Divergence ID, never a silent skip. Known
+SQLite hazards, each owed at least one paired scenario: JSON1 query semantics, datetime
+string canonicalization (Django stores ISO text on SQLite vs `timestamptz` on PG),
+boolean/int encoding, UUID text format, and WAL + `busy_timeout` behavior under the
+single-writer collab append/compaction path.
 
 Scenario TOML records, in comments: the upstream probe (command + raw output path), and
 any bug found in the loop. Quality tiers are enforced by `coverage` tooling; weak
@@ -211,9 +235,18 @@ Admin site: see D2 — a gated sub-phase inside #14.
 - **D3 — CRDT engine.** pycrdt(yrs) native in Python → a Go yrs binding, yrs-WASM, or a
   minimal Y-protocol implementation (spike S0 decides). Observable contract: client
   protocol frames + final document JSON + stored-snapshot round-trip, never blob bytes.
-- **D4 — database.** Django dev defaults to SQLite, prod to Postgres. Go: both via
-  `database/sql` (pgx + modernc sqlite), but parity scenarios run **both dialects**;
-  any SQL-dialect behavioral difference is a divergence, not a fix-forward.
+- **D4 — swappable database (headline divergence, owner-requested; permanent).**
+  Upstream deploys Postgres in prod (docker-compose `postgres:16`) and defaults to
+  SQLite for dev. This port **defaults to SQLite** — zero-config single binary:
+  `DATABASE_URL` unset → embedded SQLite file (WAL, busy_timeout, JSON1) in the data
+  dir — and works against Postgres via `DATABASE_URL=postgres://…` (pgx) with no code
+  change. The parity harness runs every scenario on SQLite and the dialect-declared
+  subset additionally on local docker Postgres (§4 dialect matrix); schema/type mapping
+  is ledgered per dialect (`ledger/migrations-v*.json` carries both digests). The
+  collab write path carries a single-writer stress scenario on both dialects.
+  Remove-when: n/a (additive, intentional). Re-verify on every upstream leap that
+  upstream has not adopted a Postgres-only feature; if it does, record the delta here
+  and scenario-prove the Go behavior on both dialects anyway.
 - **D5 — session/token interop.** Django session rows/password hashes are not guaranteed
   import-compatible at swap time. Decision after spike: either read Django's
   `django_session` + PBKDF2 hashes (zero-logout upgrade) or document a one-time logout
@@ -252,13 +285,16 @@ Admin site: see D2 — a gated sub-phase inside #14.
   all ⬜), families declared, the pnpm gate ladder runs `pnpm check` on an empty port
   set, divguard baseline exists and only shrinks.
 - **M1 — kernel parity.** Family 1 scenarios green at structural level; schema-driver
-  digests match for all 17 migrations (Go schema complete even though handlers are ⬜).
+  digests match for all 17 migrations **on both dialects** (SQLite always in-memory or
+  temp-file; Postgres from the local docker test instance) — Go schema complete even
+  though handlers are ⬜.
 - **M2..M13 — per-family done-criteria:** (a) every PORT_MAP row in family reviewed;
   (b) every route in family covered by ≥1 behavioral scenario at structural+;
   (c) every upstream test file in family has disposition; (d) unit evidence with
   compiling mutations; (e) no unnumbered divergence markers.
-- **M14 — release candidate.** Single binary: `doory serve` boots with only
-  `DATABASE_URL`+`DJANGO_SECRET_KEY` (env contract), embedded frontend serves the
+- **M14 — release candidate.** Single binary: `doory serve` boots with **no database
+  config at all** (embedded SQLite default, D4) and also against a Postgres
+  `DATABASE_URL` from the same binary; embedded frontend serves the
   editor, WS collab works between two browsers, MCP works from an assistant client,
   export renders PNG/PDF, docker-compose replacement image runs the full stack,
   `pnpm parity` green, coverage report embedded in AGENTS.md with no weak-only routes
@@ -268,8 +304,8 @@ Admin site: see D2 — a gated sub-phase inside #14.
 
 1. **Wire parity** — status, headers allowlist, JSON body (typed-aliased) per route,
    including every error path the oracle can produce.
-2. **State parity** — schema digest + row semantics for the writes a scenario makes;
-   revision/compaction counters.
+2. **State parity** — schema digest + row semantics for the writes a scenario makes,
+   on every dialect the scenario declares; revision/compaction counters.
 3. **Side-effect parity** — outbound emails (extracted links/tokens), files written
    (media/export tree digests), provider calls (recorded request wire from fake
    providers), audit-throttling behavior.
@@ -287,6 +323,8 @@ Admin site: see D2 — a gated sub-phase inside #14.
    container) → generate `ledger/routes-v*.json` and `ledger/interfaces-v*.json`.
 4. Generate the full file denominator → `docs/parity/PORT_MAP.md` skeleton.
 5. Author `families.toml` with the 14 families above (scope declared before scenarios).
-6. Stand up the oracle harness: container with pinned backend + sqlite + fixture seed
-   export; first probe = `/api/v1/health/` + `/api/v1/config/` transcripts.
+6. Stand up the oracle harness: pinned backend on SQLite (its own dev default) in a
+   container + fixture seed export, and a Postgres lane from local docker
+   (`postgres:16-alpine`) for dialect-declared scenarios; first probe =
+   `/api/v1/health/` + `/api/v1/config/` transcripts on both dialects.
 7. Run spikes S0–S4; fold results into PORT_MAP rows and DIVERGENCES entries.

@@ -10,6 +10,14 @@ pinned oracle, probe-first paired scenarios, compiler-derived ledgers,
 divergence ledger with a shrink-only ratchet, and a pnpm gate ladder (`package.json`
 scripts are the build-target manager; there is no Makefile).
 
+Headline divergences (planned, ledgered in `docs/parity/DIVERGENCES.md`):
+
+- **Swappable database (D4):** SQLite by default (zero-config embedded, in-memory for
+  tests) with optional Postgres via `DATABASE_URL` — upstream ships Postgres-only prod.
+  Parity scenarios run the dialect matrix (SQLite always, Postgres from local docker).
+- **Testing scope:** parity proves backend behavior only (API/WS/MCP contracts, DB
+  state, side effects); the embedded frontend is smoke-tested later, case by case.
+
 ## Layout
 
 - `PLAN.md` — the rewrite plan (methodology, families, phases, divergences)
