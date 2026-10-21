@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -44,6 +45,8 @@ func Execute(repo string, sc *Scenario) ([]string, error) {
 		preOracle := jarCSRFToken(oracle, step)
 		preGo := jarCSRFToken(goSide, step)
 
+		problemsBefore := len(problems)
+
 		o, err := send(oracle, step)
 		if err != nil {
 			return nil, fmt.Errorf("oracle step %d: %w (log: %s)", i+1, err, oracle.log.Name())
@@ -68,7 +71,7 @@ func Execute(repo string, sc *Scenario) ([]string, error) {
 		}
 
 		status := "ok"
-		if len(problems) > 0 {
+		if len(problems) > problemsBefore {
 			status = "diff"
 		}
 		fmt.Printf("  step %02d %-6s %-32s oracle=%d go=%d %s\n",
@@ -94,11 +97,12 @@ func send(side *Side, step Step) (*capture, error) {
 	// Identical request headers on both sides (single client, deterministic
 	// set): Accept like curl's default, no Accept-Encoding games.
 	req.Header.Set("Accept", "*/*")
+	jar := side.jar(step.Jar)
 	for name, value := range step.Headers {
-		req.Header.Set(name, value)
+		req.Header.Set(name, resolveCookieTemplate(value, jar, req.URL))
 	}
 	client := &http.Client{
-		Jar:     side.Jar,
+		Jar:     jar,
 		Timeout: 15 * time.Second,
 		// Never follow redirects: the 301 itself is the compared artifact.
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -121,13 +125,38 @@ func send(side *Side, step Step) (*capture, error) {
 	return &capture{Status: resp.StatusCode, Header: h, Body: respBody, Cookies: resp.Cookies()}, nil
 }
 
+// resolveCookieTemplate substitutes {{cookie:NAME}} with the named cookie
+// value from the side's jar (the SPA echoes the cookie it was given; the
+// template keeps scenario steps side-agnostic).
+func resolveCookieTemplate(value string, jar http.CookieJar, u *url.URL) string {
+	const marker = "{{cookie:"
+	for {
+		start := strings.Index(value, marker)
+		if start < 0 {
+			return value
+		}
+		end := strings.Index(value[start:], "}}")
+		if end < 0 {
+			return value
+		}
+		name := value[start+len(marker) : start+end]
+		resolved := ""
+		for _, c := range jar.Cookies(u) {
+			if c.Name == name {
+				resolved = c.Value
+			}
+		}
+		value = value[:start] + resolved + value[start+end+2:]
+	}
+}
+
 // jarCSRFToken reads a side's current csrftoken secret for the step's path.
 func jarCSRFToken(side *Side, step Step) string {
 	u, err := url.Parse(side.Base + step.Path)
 	if err != nil {
 		return ""
 	}
-	for _, c := range side.Jar.Cookies(u) {
+	for _, c := range side.jar(step.Jar).Cookies(u) {
 		if c.Name == "csrftoken" {
 			return c.Value
 		}

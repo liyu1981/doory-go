@@ -1,0 +1,5 @@
+oracle_base=http://127.0.0.1:8015
+upstream_commit=2eb2557c1eed3aa256a78f1874abfb5a1315849c
+probed_at=2026-10-21T22:15:39Z
+settings=doory.settings.prod (SECURE_SSL_REDIRECT=false, SECURE_COOKIES=false; EMAIL console)
+note=raw evidence; never edit these files, only add new probe dirs

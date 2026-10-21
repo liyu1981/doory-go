@@ -383,3 +383,43 @@ M1 progress log (first build session after M0):
 - ✅ Kernel unit tests (`doory/kernel_test.go`): Allow rule, both envelope
   dialects, Vary merging, csrf secret shape, env coercions,
   EmailDelivers — all probe-anchored.
+
+M2 progress log (accounts family, auth slice):
+
+- ✅ Probe campaign: `tools/oracle/probe-accounts.sh` + microprobes →
+  `test/parity/probes/0002-accounts/` (35 transcripts + password-hash
+  rows). Every auth shape is probe-proven before porting: the four CSRF
+  failure messages by cause (cookie-not-set / token-missing /
+  incorrect-length / incorrect), validator messages+codes in settings
+  order, session lifecycle (login REUSES the session for the same user,
+  password change CYCLES the key and kills other sessions, logout clears
+  without HttpOnly, dead-session responses clear the cookie), lockout
+  10-failures→429 with DRF's wait sentence + Retry-After, pbkdf2 1.5M
+  format, email/display_name normalization.
+- ✅ Port (`doory/`): user.go (row/envelope/name property/uuid formats),
+  password.go (pbkdf2_sha256 matching probed hashes + the four Django
+  validators incl. embedded common-passwords list and quick_ratio
+  similarity), session.go (django_session-backed Go-native payloads — D5
+  open — with exact login/cycle/flush rules), csrf_verify.go (four causes,
+  masked-token unmask), lockout.go (10/900s guard), views_auth.go
+  (register/login/logout/me GET+PATCH/password-change with declaration-
+  ordered validation envelopes), router dispatch modes (CSRF-always vs
+  when-authed with Django's exact consult order), Retry-After on 429.
+- ✅ Runner: multi-jar (named browser profiles) + `{{cookie:NAME}}`
+  templates + per-step status; comparator body shape rules (id uuid,
+  created_at micro-Z, retry_after/wait-sentence) each with a recorded
+  reason; sessionid cookie shape rule.
+- ✅ Scenarios `02-accounts-auth` (23 steps) + `03-accounts-lockout`
+  (12 steps) GREEN at byte level; the loop found real bugs: uncleaned
+  display_name write-back, missing Retry-After header, missing
+  dead-session cookie clear, an off-by-one DSN-style slip in ordering
+  (PATCH-after-logout in the scenario itself).
+- ✅ M2 done-criteria artifacts: PORT_MAP rows reviewed for the family
+  slice (lockout + core/csrf.py ✅, views/serializers/models 🟡 with
+  pending lists), `ledger/test-mapping-v*.json` (all 11 accounts test
+  files dispositioned), `doory/accounts_test.go` mutation-provable unit
+  evidence incl. cross-verification of a REAL probed Django hash.
+- ⬜ Family remains 🟡: password/reset+confirm + email/verify+resend
+  (need email-capture runner support; D9), google (fake-provider probe),
+  me DELETE (confirm_identity + cascade), avatar upload (Pillow), DRF
+  rate throttles (kernel family).

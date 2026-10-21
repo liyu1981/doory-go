@@ -35,6 +35,10 @@ type Step struct {
 	// CSRF_COOKIE_NEEDS_UPDATE). Checked per side, never across sides:
 	// values are per-request randomness (shape rules cover the format).
 	CookieStable bool `toml:"cookie_stable"`
+	// Jar names a cookie jar for this step (default "main"): separate jars
+	// model separate browsers/sessions — e.g. two simultaneous logins for
+	// the session-death assertion.
+	Jar string `toml:"jar"`
 }
 
 // Load parses a scenario file.

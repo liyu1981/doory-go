@@ -1,0 +1,63 @@
+{
+  "_comment": "Per-upstream-test-file dispositions for the port (M2 opened the ledger with the accounts family). Dispositions: ported (Go test covers the file's cases), partial (behavioral evidence exists but named cases remain), pending (no Go evidence yet; missing lists what remains). Ports bind to the pin in internal/dooryversion.",
+  "upstream_commit": "2eb2557c1eed3aa256a78f1874abfb5a1315849c",
+  "families": {
+    "accounts": {
+      "backend/apps/accounts/tests/conftest.py": {
+        "disposition": "partial",
+        "evidence": ["parity:accounts/02-accounts-auth (fixture behavior inlined into scenario steps)"],
+        "missing": ["factory helpers replaced by scenario data; no Go port planned (pytest scaffolding)"]
+      },
+      "backend/apps/accounts/tests/test_csrf.py": {
+        "disposition": "partial",
+        "evidence": ["parity:accounts/02-accounts-auth steps 2, 8 (cookie-missing + token-missing causes)", "unit:doory/csrf_verify_test.go (all four causes + masked unmask)"],
+        "missing": ["mixed-origin cases", "64-char masked-token round trip against the oracle"]
+      },
+      "backend/apps/accounts/tests/test_login.py": {
+        "disposition": "partial",
+        "evidence": ["parity:accounts/02-accounts-auth steps 8-11 (csrf, invalid_credentials, success, session reuse)", "parity:accounts/03-accounts-lockout (guard threshold)"],
+        "missing": ["inactive-account path", "throttled auth-scope 429 (kernel throttle port pending)"]
+      },
+      "backend/apps/accounts/tests/test_register.py": {
+        "disposition": "partial",
+        "evidence": ["parity:accounts/02-accounts-auth steps 2-7 (validators, normalization, email_taken, auto-login)"],
+        "missing": ["IntegrityError race branch", "display_name control-character stripping cases"]
+      },
+      "backend/apps/accounts/tests/test_me.py": {
+        "disposition": "partial",
+        "evidence": ["parity:accounts/02-accounts-auth steps 11-13, 19 (GET shapes, PATCH cleaning, anon null)"],
+        "missing": ["avatar upload/remove", "DELETE confirm_identity + last-superuser guard"]
+      },
+      "backend/apps/accounts/tests/test_password.py": {
+        "disposition": "partial",
+        "evidence": ["parity:accounts/02-accounts-auth steps 17-20 (wrong old, change, session cycle, other-session death)"],
+        "missing": ["password/reset + confirm flow (needs email-capture runner support)", "token expiry branch"]
+      },
+      "backend/apps/accounts/tests/test_backend.py": {
+        "disposition": "partial",
+        "evidence": ["parity:accounts/03-accounts-lockout (guard refusal + reset semantics via failed logins)"],
+        "missing": ["GuardedModelBackend direct cases (django authenticate() internals are framework behavior)"]
+      },
+      "backend/apps/accounts/tests/test_models.py": {
+        "disposition": "pending",
+        "evidence": ["unit:doory (createUser round trip via parity scenarios)"],
+        "missing": ["normalization/save cases", "check_password rebind of apitokens", "manager helpers"]
+      },
+      "backend/apps/accounts/tests/test_email_verification.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": ["verify/resend endpoints (family slice pending: needs email-capture runner support, D9)"]
+      },
+      "backend/apps/accounts/tests/test_google.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": ["google sign-in (family slice pending: fake-provider probe first)"]
+      },
+      "backend/apps/accounts/tests/test_admin.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": ["admin surface (divergence D2, spike S3)"]
+      }
+    }
+  }
+}

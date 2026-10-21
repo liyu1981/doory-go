@@ -1,0 +1,35 @@
+GET /api/v1/auth/csrf/ 
+POST /api/v1/auth/register/ -H Content-Type: application/json --data {"email":"bob@example.com","password":"Tr0ub4dor&3xkcd9"}
+POST /api/v1/auth/register/ -H Content-Type: application/json -H X-CSRFToken: qcsGraJvxu8g33PFfcBPlCS62A3d2RAC --data {"email":"Alice@Example.com","password":"Tr0ub4dor&3xkcd9","display_name":"  Alice   X  "}
+POST /api/v1/auth/register/ -H Content-Type: application/json -H X-CSRFToken: ZmPfs4Q7r9efwQabhVuWOQEzqGONE4jf --data {"email":"alice@example.com","password":"Tr0ub4dor&3xkcd9"}
+POST /api/v1/auth/register/ -H Content-Type: application/json -H X-CSRFToken: ZmPfs4Q7r9efwQabhVuWOQEzqGONE4jf --data {"email":"carol@example.com","password":"short"}
+POST /api/v1/auth/register/ -H Content-Type: application/json -H X-CSRFToken: ZmPfs4Q7r9efwQabhVuWOQEzqGONE4jf --data {"email":"dave@example.com","password":"12345678"}
+POST /api/v1/auth/register/ -H Content-Type: application/json -H X-CSRFToken: ZmPfs4Q7r9efwQabhVuWOQEzqGONE4jf --data {"email":"erin@example.com","password":"password"}
+POST /api/v1/auth/register/ -H Content-Type: application/json -H X-CSRFToken: ZmPfs4Q7r9efwQabhVuWOQEzqGONE4jf --data {"email":"frank@example.com","password":"frank-frank-1"}
+POST /api/v1/auth/register/ -H Content-Type: application/json -H X-CSRFToken: bWskKS6I74Cux04u1V1LTyPHURPHf1Sb --data {"email":"not-an-email","password":"Tr0ub4dor&3xkcd9"}
+POST /api/v1/auth/login/ -H Content-Type: application/json --data {"email":"alice@example.com","password":"wrongpass123"}
+POST /api/v1/auth/login/ -H Content-Type: application/json -H X-CSRFToken: bWskKS6I74Cux04u1V1LTyPHURPHf1Sb --data {"email":"alice@example.com","password":"wrongpass123"}
+POST /api/v1/auth/login/ -H Content-Type: application/json -H X-CSRFToken: bWskKS6I74Cux04u1V1LTyPHURPHf1Sb --data {"email":"ALICE@example.com","password":"Tr0ub4dor&3xkcd9"}
+GET /api/v1/auth/me/ 
+GET /api/v1/auth/me/ 
+POST /api/v1/auth/logout/ -H X-CSRFToken: 
+GET /api/v1/auth/me/ 
+POST /api/v1/auth/logout/ -H X-CSRFToken: bWskKS6I74Cux04u1V1LTyPHURPHf1Sb
+POST /api/v1/auth/login/ -H Content-Type: application/json -H X-CSRFToken: bWskKS6I74Cux04u1V1LTyPHURPHf1Sb --data {"email":"alice@example.com","password":"Tr0ub4dor&3xkcd9"}
+POST /api/v1/auth/login/ -H Content-Type: application/json -H X-CSRFToken: bWskKS6I74Cux04u1V1LTyPHURPHf1Sb --data {"email":"alice@example.com","password":"Tr0ub4dor&3xkcd9"}
+POST /api/v1/auth/password/change/ -H Content-Type: application/json -H X-CSRFToken:  --data {"old_password":"wrong","new_password":"N3w&Secure-pass9x"}
+POST /api/v1/auth/password/change/ -H Content-Type: application/json -H X-CSRFToken:  --data {"old_password":"Tr0ub4dor&3xkcd9","new_password":"N3w&Secure-pass9x"}
+GET /api/v1/auth/me/ 
+GET /api/v1/auth/me/ 
+GET /api/v1/auth/csrf/ 
+POST /api/v1/auth/login/ -H Content-Type: application/json -H X-CSRFToken: bWskKS6I74Cux04u1V1LTyPHURPHf1Sb --data {"email":"lockme@example.com","password":"guess-attempt"}
+POST /api/v1/auth/login/ -H Content-Type: application/json -H X-CSRFToken: bWskKS6I74Cux04u1V1LTyPHURPHf1Sb --data {"email":"lockme@example.com","password":"guess-attempt"}
+POST /api/v1/auth/login/ -H Content-Type: application/json -H X-CSRFToken: bWskKS6I74Cux04u1V1LTyPHURPHf1Sb --data {"email":"lockme@example.com","password":"guess-attempt"}
+POST /api/v1/auth/login/ -H Content-Type: application/json -H X-CSRFToken: bWskKS6I74Cux04u1V1LTyPHURPHf1Sb --data {"email":"lockme@example.com","password":"guess-attempt"}
+POST /api/v1/auth/login/ -H Content-Type: application/json -H X-CSRFToken: bWskKS6I74Cux04u1V1LTyPHURPHf1Sb --data {"email":"lockme@example.com","password":"guess-attempt"}
+POST /api/v1/auth/login/ -H Content-Type: application/json -H X-CSRFToken: bWskKS6I74Cux04u1V1LTyPHURPHf1Sb --data {"email":"lockme@example.com","password":"guess-attempt"}
+POST /api/v1/auth/login/ -H Content-Type: application/json -H X-CSRFToken: bWskKS6I74Cux04u1V1LTyPHURPHf1Sb --data {"email":"lockme@example.com","password":"guess-attempt"}
+POST /api/v1/auth/login/ -H Content-Type: application/json -H X-CSRFToken: bWskKS6I74Cux04u1V1LTyPHURPHf1Sb --data {"email":"lockme@example.com","password":"guess-attempt"}
+POST /api/v1/auth/login/ -H Content-Type: application/json -H X-CSRFToken: bWskKS6I74Cux04u1V1LTyPHURPHf1Sb --data {"email":"lockme@example.com","password":"guess-attempt"}
+POST /api/v1/auth/login/ -H Content-Type: application/json -H X-CSRFToken: bWskKS6I74Cux04u1V1LTyPHURPHf1Sb --data {"email":"lockme@example.com","password":"guess-attempt"}
+POST /api/v1/auth/login/ -H Content-Type: application/json -H X-CSRFToken: bWskKS6I74Cux04u1V1LTyPHURPHf1Sb --data {"email":"lockme@example.com","password":"guess-attempt"}

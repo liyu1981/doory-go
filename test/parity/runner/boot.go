@@ -17,13 +17,30 @@ import (
 	"time"
 )
 
-// Side is one running server of the pair.
+// Side is one running server of the pair. Each named jar models one
+// browser profile (separate sessions).
 type Side struct {
 	Name string
 	Base string
-	Jar  http.CookieJar
+	Jars map[string]http.CookieJar
 	cmd  *exec.Cmd
 	log  *os.File
+}
+
+// jar returns (creating on demand) the named cookie jar.
+func (s *Side) jar(name string) http.CookieJar {
+	if name == "" {
+		name = "main"
+	}
+	if s.Jars == nil {
+		s.Jars = map[string]http.CookieJar{}
+	}
+	if j, ok := s.Jars[name]; ok {
+		return j
+	}
+	j := newJar()
+	s.Jars[name] = j
+	return j
 }
 
 // bootPair builds the Go binary, migrates its workdir DB, starts both
@@ -61,7 +78,7 @@ func (r *Run) bootPair(sc *Scenario) (*Side, *Side, error) {
 		}
 	}
 
-	oracle := &Side{Name: "oracle", Base: fmt.Sprintf("http://127.0.0.1:%d", oraclePort), Jar: newJar()}
+	oracle := &Side{Name: "oracle", Base: fmt.Sprintf("http://127.0.0.1:%d", oraclePort)}
 	oracleLog := filepath.Join(r.WorkDir, "oracle.log")
 	oracle.log, _ = os.Create(oracleLog)
 	oracleCmd := exec.Command("bash", "tools/oracle/serve.sh")
@@ -92,12 +109,15 @@ func (r *Run) bootPair(sc *Scenario) (*Side, *Side, error) {
 	}
 	oracle.cmd = oracleCmd
 
-	goSide := &Side{Name: "go", Base: fmt.Sprintf("http://127.0.0.1:%d", goPort), Jar: newJar()}
+	goSide := &Side{Name: "go", Base: fmt.Sprintf("http://127.0.0.1:%d", goPort)}
 	goLog := filepath.Join(r.WorkDir, "go.log")
 	goSide.log, _ = os.Create(goLog)
 	serve := exec.Command(binPath, "serve", fmt.Sprintf("127.0.0.1:%d", goPort))
 	serve.Dir = r.Repo
-	serve.Env = append(os.Environ(), "DATABASE_URL="+goDB, fmt.Sprintf("DOORY_ADDR=127.0.0.1:%d", goPort))
+	serve.Env = append(os.Environ(), "DATABASE_URL="+goDB,
+		fmt.Sprintf("DOORY_ADDR=127.0.0.1:%d", goPort),
+		// Same plain-HTTP local-testing opt-out as the oracle (prod.py docs).
+		"SECURE_COOKIES=false")
 	serve.Env = append(serve.Env, scenarioEnv(sc)...)
 	serve.Stdout = goSide.log
 	serve.Stderr = goSide.log

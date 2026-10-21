@@ -1,0 +1,182 @@
+# Behavior family: accounts (family 2, PLAN.md §5) — auth slice.
+#
+# Oracle: pinned Django, prod settings (plain-HTTP local opt-outs), fresh
+# workdir DB per run; Go reads the same env contract. [env] applies to both.
+#
+# Evidence lineage: probes/0002-accounts + microprobes (raw transcripts)
+# established every shape asserted here: csrf failure messages by cause,
+# validator messages/codes, session lifecycle (login reuse, change-cycles-
+# key), envelope bytes. The scenario re-probes live on every run.
+#
+# Comparator rules (runner/compare.go): byte-exact bodies after recorded
+# shape rules (id uuid, created_at micro-Z, retry_after — reasons in code);
+# csrf/session cookie values by shape with per-side stability; status and
+# header set exact (date/server denied per D10; Allow/Vary token sets;
+# 204 content-length per D11).
+#
+# Constraint (documented, kernel-family pending work): DRF rate throttles
+# (auth scope 20/min, anon 240/min) are oracle-side active but not yet
+# ported — this scenario stays under them (12 auth-scoped requests) so the
+# pair measures accounts behavior, not throttle presence. The throttle port
+# lands with the kernel family's remaining settings slice.
+#
+# Pending in family (PORT_MAP 🟡): password/reset+confirm, email/verify+
+# resend (D9), google, me DELETE, avatar upload.
+
+name = "02-accounts-auth"
+description = "Register/login/logout/me/password-change match the oracle byte-for-byte: csrf enforcement by cause, password validators, session lifecycle, session death after password change."
+driver = "http"
+tags = ["fast"]
+dialects = ["sqlite"]
+covers = [
+  "backend/apps/accounts/views.py",
+  "backend/apps/accounts/serializers.py",
+  "backend/apps/accounts/models.py",
+  "backend/apps/core/csrf.py",
+]
+
+[env]
+GOOGLE_CLIENT_ID = "parity-client.test"
+SECURE_COOKIES = "false"
+
+# -- csrf fetch (main jar) --
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/csrf/"
+
+# -- csrf enforcement causes --
+# cookie present, no header -> "CSRF token missing."
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/register/"
+headers = { Content-Type = "application/json" }
+body = '{"email":"nope1@example.com","password":"Tr0ub4dor&3xkcd9"}'
+
+# -- password validators (settings order: similarity, min8, common, numeric) --
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/register/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"nope2@example.com","password":"short"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/register/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"nope3@example.com","password":"12345678"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/register/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"not-an-email","password":"Tr0ub4dor&3xkcd9"}'
+
+# -- happy path: email lowercased, display_name collapsed, auto-login --
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/register/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"Mira@Example.com","password":"Tr0ub4dor&3xkcd9","display_name":"  Mira   Vale  "}'
+
+# -- uniqueness, case-insensitive --
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/register/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"MIRA@example.com","password":"Tr0ub4dor&3xkcd9"}'
+
+# -- login: csrf, bad credentials, good credentials --
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/login/"
+headers = { Content-Type = "application/json" }
+body = '{"email":"mira@example.com","password":"Tr0ub4dor&3xkcd9"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/login/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"mira@example.com","password":"wrongpass123"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/login/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"MIRA@example.com","password":"Tr0ub4dor&3xkcd9"}'
+
+# -- me: authenticated, then anonymous (separate browser) --
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/me/"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/me/"
+jar = "anon"
+
+# -- profile PATCH while signed in (display_name cleaned) --
+[[steps]]
+method = "PATCH"
+path = "/api/v1/auth/me/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"display_name":"  Renamed   X  "}'
+
+# -- second simultaneous session (own browser/jar) --
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/csrf/"
+jar = "second"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/login/"
+jar = "second"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"mira@example.com","password":"Tr0ub4dor&3xkcd9"}'
+
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/me/"
+jar = "second"
+
+# -- password change: wrong old, then correct (session key cycles) --
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/password/change/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"old_password":"nope","new_password":"N3w&Secure-pass9x"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/password/change/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"old_password":"Tr0ub4dor&3xkcd9","new_password":"N3w&Secure-pass9x"}'
+
+# this session survives the change (cycled key; cookie_stable NOT set
+# because the key rotates by design — asserted by the 200 below)
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/me/"
+
+# the OTHER session dies (stale auth hash) -> {"user":null}
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/me/"
+jar = "second"
+
+# -- logout clears the session; stale cookie sees null --
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/logout/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/me/"
+
+# -- anonymous logout with VALID csrf -> 401 not_authenticated --
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/logout/"
+jar = "anon"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }

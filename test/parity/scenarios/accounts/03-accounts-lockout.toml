@@ -1,0 +1,98 @@
+# Behavior family: accounts (family 2) — per-account lockout.
+#
+# apps/accounts/lockout.py: 10 failed password checks for one account
+# inside 900s -> HTTP 429 with the DRF wait sentence and retry_after
+# (probes/0002-accounts run B, steps 25-35). Fresh oracle per scenario run
+# means fresh locmem-cache state and fresh throttle counters on both sides.
+#
+# retry_after and the wait sentence are time-remaining values computed at
+# each side's handling instant: the recorded shape rules in runner/compare.go
+# normalize them to <int> after asserting the digits are there.
+#
+# auth-scope throttle use: 11 logins + 1 csrf < 20/min (see scenario 02's
+# header note about the unported DRF rate throttles).
+
+name = "03-accounts-lockout"
+description = "Ten failed logins for one account lock it out with the oracle's exact 429 envelope on attempt eleven."
+driver = "http"
+tags = ["fast"]
+dialects = ["sqlite"]
+covers = [
+  "backend/apps/accounts/lockout.py",
+  "backend/apps/accounts/views.py",
+]
+
+[env]
+GOOGLE_CLIENT_ID = "parity-client.test"
+SECURE_COOKIES = "false"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/csrf/"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/login/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"lockme@example.com","password":"guess-attempt"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/login/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"lockme@example.com","password":"guess-attempt"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/login/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"lockme@example.com","password":"guess-attempt"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/login/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"lockme@example.com","password":"guess-attempt"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/login/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"lockme@example.com","password":"guess-attempt"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/login/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"lockme@example.com","password":"guess-attempt"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/login/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"lockme@example.com","password":"guess-attempt"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/login/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"lockme@example.com","password":"guess-attempt"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/login/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"lockme@example.com","password":"guess-attempt"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/login/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"lockme@example.com","password":"guess-attempt"}'
+
+# attempt 11: locked -> 429 throttled envelope with retry_after
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/login/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"lockme@example.com","password":"guess-attempt"}'

@@ -26,9 +26,22 @@
 //     and be within skew), values compared by shape rule
 //     (reason: csrf secrets are per-request randomness;
 //     stability across steps is asserted by cookie_stable)
-//   - body          byte-exact; when bytes differ the report also notes
-//     structural JSON equality so formatting-only drift is
-//     classified, never hidden
+//   - body          byte-exact AFTER the shape rules below; when bytes
+//     still differ the report also notes structural JSON equality so
+//     formatting-only drift is classified, never hidden
+//   - body shape rules (each keeps its own regex as the shape assertion —
+//     a side whose value violates the shape FAILS because the rule simply
+//     will not match its bytes):
+//     "id":<uuid>            per-row random uuid; each side mints its own
+//     (reason: randomness, format still asserted)
+//     "created_at":<iso-micro-z> row creation instant differs per side
+//     (reason: two processes, two clocks/instants;
+//     RFC3339-with-6-digits-Z shape asserted)
+//     "retry_after":<int> and "Expected available in <int> seconds."
+//     time-remaining until the lockout window
+//     expires, computed at each side's handling
+//     instant (reason: wall-clock skew between the
+//     paired processes)
 package runner
 
 import (
@@ -54,7 +67,34 @@ type capture struct {
 var (
 	volatileHeaders = map[string]bool{"date": true, "server": true} // D10 + wall clock
 	csrfShape       = regexp.MustCompile(`^[A-Za-z0-9]{32}$`)
+	sessionKeyShape = regexp.MustCompile(`^[a-z0-9]{32}$`)
+
+	// Body shape rules (documented above; each regex IS the shape assert).
+	bodyShapeRules = []struct {
+		re     *regexp.Regexp
+		rule   string
+		reason string
+	}{
+		{regexp.MustCompile(`"id":"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"`),
+			`"id":"<uuid>"`, "per-row random uuid; each side mints its own (format asserted by the match)"},
+		{regexp.MustCompile(`"created_at":"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z"`),
+			`"created_at":"<iso-micro-z>"`, "row creation instant differs per side (RFC3339 micro-Z shape asserted)"},
+		{regexp.MustCompile(`"retry_after":\d+`),
+			`"retry_after":<int>`, "lockout window time-remaining computed at each side's handling instant"},
+		{regexp.MustCompile(`Expected available in \d+ seconds\.`),
+			`Expected available in <int> seconds.`, "same time-remaining as retry_after (DRF wait sentence)"},
+	}
 )
+
+// normalizeBody applies the recorded shape rules (reasons above). A value
+// that violates a shape stays literal and therefore fails the byte compare.
+func normalizeBody(b []byte) []byte {
+	out := string(b)
+	for _, rule := range bodyShapeRules {
+		out = rule.re.ReplaceAllString(out, rule.rule)
+	}
+	return []byte(out)
+}
 
 // compare returns human-readable differences between the two captures.
 func compare(stepIdx int, step Step, oracle, goSide *capture) []string {
@@ -130,8 +170,8 @@ func compare(stepIdx int, step Step, oracle, goSide *capture) []string {
 		}
 	}
 
-	// Body: byte-exact first.
-	if string(oracle.Body) != string(goSide.Body) {
+	// Body: byte-exact after the recorded shape rules.
+	if string(normalizeBody(oracle.Body)) != string(normalizeBody(goSide.Body)) {
 		kind := "binary/bytes"
 		if oj, gj := jsonOK(oracle.Body), jsonOK(goSide.Body); oj && gj {
 			kind = "structurally-equal JSON (formatting-only drift)" + structuralNote(oracle.Body, goSide.Body)
@@ -194,16 +234,26 @@ func compareCookies(oVals, gVals []string) []string {
 				problems = append(problems, fmt.Sprintf("%s expires skew >10s: oracle=%v go=%v", name, oc.Expires, gc.Expires))
 			}
 		}
-		// Value: shape rule (recorded reason: per-request secrets).
-		if name == "csrftoken" {
+		// Value: shape rules (recorded reasons: per-request secrets).
+		switch name {
+		case "sessionid":
+			if oc.Value != "" && !sessionKeyShape.MatchString(oc.Value) {
+				problems = append(problems, fmt.Sprintf("sessionid value shape: oracle %q not [a-z0-9]{32}", oc.Value))
+			}
+			if gc.Value != "" && !sessionKeyShape.MatchString(gc.Value) {
+				problems = append(problems, fmt.Sprintf("sessionid value shape: go %q not [a-z0-9]{32}", gc.Value))
+			}
+		case "csrftoken":
 			if !csrfShape.MatchString(oc.Value) {
 				problems = append(problems, fmt.Sprintf("csrftoken value shape: oracle %q not 32 alnum", oc.Value))
 			}
 			if !csrfShape.MatchString(gc.Value) {
 				problems = append(problems, fmt.Sprintf("csrftoken value shape: go %q not 32 alnum", gc.Value))
 			}
-		} else if oc.Value != gc.Value {
-			problems = append(problems, fmt.Sprintf("%s value: oracle=%q go=%q (no shape rule for this cookie)", name, oc.Value, gc.Value))
+		default:
+			if oc.Value != gc.Value {
+				problems = append(problems, fmt.Sprintf("%s value: oracle=%q go=%q (no shape rule for this cookie)", name, oc.Value, gc.Value))
+			}
 		}
 	}
 	return problems

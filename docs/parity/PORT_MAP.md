@@ -45,15 +45,15 @@ behavioral verification).
 | `backend/apps/accounts/backends.py` |  | ⬜ |
 | `backend/apps/accounts/emails.py` |  | ⬜ |
 | `backend/apps/accounts/google.py` |  | ⬜ |
-| `backend/apps/accounts/lockout.py` |  | ⬜ |
+| `backend/apps/accounts/lockout.py` | doory/lockout.go | ✅ |
 | `backend/apps/accounts/migrations/` |  | ⬜ |
-| `backend/apps/accounts/models.py` |  | ⬜ |
-| `backend/apps/accounts/serializers.py` |  | ⬜ |
+| `backend/apps/accounts/models.py` | doory/user.go (User row, create/get, name property, envelope); pending: check_password rebind, google_sub flows | 🟡 |
+| `backend/apps/accounts/serializers.py` | doory/views_auth.go (Register/Login/Profile/PasswordChange validation in declaration order) + doory/user.go (UserEnvelope shape); pending: reset/verify/google/delete serializers | 🟡 |
 | `backend/apps/accounts/services.py` |  | ⬜ |
 | `backend/apps/accounts/tests/` |  | ⬜ |
 | `backend/apps/accounts/tokens.py` |  | ⬜ |
 | `backend/apps/accounts/urls.py` |  | ⬜ |
-| `backend/apps/accounts/views.py` | doory/views.go (CsrfView only) | 🟡 |
+| `backend/apps/accounts/views.py` | doory/views_auth.go (register, login, logout, me GET/PATCH, password/change) + doory/views.go (CsrfView) + doory/router.go (CsrfProtectedMixin/session dispatch); pending: password/reset+confirm, email/verify+resend, google, me DELETE | 🟡 |
 
 ## `backend/apps/accounts/templates/accounts/email/`
 
@@ -206,7 +206,7 @@ behavioral verification).
 | upstream | go | status |
 |---|---|---|
 | `backend/apps/core/apps.py` |  | ⬜ |
-| `backend/apps/core/csrf.py` |  | ⬜ |
+| `backend/apps/core/csrf.py` | doory/csrf_verify.go (enforce_csrf causes + masked-token unmask) + doory/router.go (mixin ordering) | ✅ |
 | `backend/apps/core/exceptions.py` | doory/envelope.go (uniform error envelope + 401-for-anon; ValidationError field maps, ApiError, Throttled retry_after pending) | 🟡 |
 | `backend/apps/core/images.py` |  | ⬜ |
 | `backend/apps/core/management/` |  | ⬜ |
