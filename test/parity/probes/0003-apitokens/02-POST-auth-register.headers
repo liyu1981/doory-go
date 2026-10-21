@@ -1,0 +1,16 @@
+HTTP/1.1 201 Created
+Date: Wed, 21 Oct 2026 23:01:06 GMT
+Server: WSGIServer/0.2 CPython/3.12.10
+Content-Type: application/json
+Allow: POST, OPTIONS
+Cache-Control: no-store
+Permissions-Policy: accelerometer=(), bluetooth=(), browsing-topics=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), serial=(), usb=()
+X-Frame-Options: DENY
+Vary: Cookie, origin
+Content-Length: 240
+X-Content-Type-Options: nosniff
+Referrer-Policy: strict-origin-when-cross-origin
+Cross-Origin-Opener-Policy: same-origin
+Set-Cookie: csrftoken=4kOl0Vibd7sJoM1Fm3vBBw4hpwzL15xj; expires=Wed, 20 Oct 2027 23:01:06 GMT; Max-Age=31449600; Path=/; SameSite=Lax
+Set-Cookie: sessionid=efvbkshywau10379bt864ihn9in9m1kd; expires=Fri, 20 Nov 2026 23:01:06 GMT; HttpOnly; Max-Age=2592000; Path=/; SameSite=Lax
+

@@ -1,0 +1,10 @@
+GET /auth/csrf/ 
+POST /auth/register/ -H Content-Type: application/json -H X-CSRFToken: YDIALB8AWKyjPmxJJI9u61DRrt7PRcR5 --data {"email":"tok@example.com","password":"Tr0ub4dor&3xkcd9"}
+GET /auth/tokens/ 
+GET /auth/tokens/ 
+GET /auth/tokens/scopes/ 
+POST /auth/tokens/ -H Content-Type: application/json -H X-CSRFToken: 4kOl0Vibd7sJoM1Fm3vBBw4hpwzL15xj --data {"name":"probe token"}
+POST /auth/tokens/ -H Content-Type: application/json -H X-CSRFToken: 4kOl0Vibd7sJoM1Fm3vBBw4hpwzL15xj --data {"name":"probe token","scopes":["nope:bad"],"password":"Tr0ub4dor&3xkcd9"}
+POST /auth/tokens/ -H Content-Type: application/json -H X-CSRFToken: 4kOl0Vibd7sJoM1Fm3vBBw4hpwzL15xj --data {"name":"probe token","scopes":["designs:read","assets:write"],"expires_in_days":7,"password":"Tr0ub4dor&3xkcd9"}
+GET /auth/tokens/ 
+DELETE /auth/tokens/00000000-0000-0000-0000-000000000000/ -H X-CSRFToken: 4kOl0Vibd7sJoM1Fm3vBBw4hpwzL15xj

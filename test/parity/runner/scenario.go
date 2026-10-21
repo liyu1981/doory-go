@@ -39,6 +39,10 @@ type Step struct {
 	// model separate browsers/sessions — e.g. two simultaneous logins for
 	// the session-death assertion.
 	Jar string `toml:"jar"`
+	// Capture pulls named groups out of THIS side's response body into
+	// per-side variables for later {{capture:name}} substitutions (each
+	// side consumes its OWN values — e.g. delete the id it created).
+	Capture map[string]string `toml:"capture"`
 }
 
 // Load parses a scenario file.

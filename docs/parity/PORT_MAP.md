@@ -53,7 +53,7 @@ behavioral verification).
 | `backend/apps/accounts/tests/` |  | ⬜ |
 | `backend/apps/accounts/tokens.py` |  | ⬜ |
 | `backend/apps/accounts/urls.py` |  | ⬜ |
-| `backend/apps/accounts/views.py` | doory/views_auth.go (register, login, logout, me GET/PATCH, password/change) + doory/views.go (CsrfView) + doory/router.go (CsrfProtectedMixin/session dispatch); pending: password/reset+confirm, email/verify+resend, google, me DELETE | 🟡 |
+| `backend/apps/accounts/views.py` | doory/views_auth.go (register, login, logout, me GET/PATCH, password/change, confirm_identity) + doory/views.go (CsrfView) + doory/router.go (CsrfProtectedMixin/session dispatch); pending: password/reset+confirm, email/verify+resend, google, me DELETE | 🟡 |
 
 ## `backend/apps/accounts/templates/accounts/email/`
 
@@ -114,13 +114,13 @@ behavioral verification).
 | `backend/apps/apitokens/admin.py` |  | ⬜ |
 | `backend/apps/apitokens/apps.py` |  | ⬜ |
 | `backend/apps/apitokens/migrations/` |  | ⬜ |
-| `backend/apps/apitokens/models.py` |  | ⬜ |
-| `backend/apps/apitokens/scopes.py` |  | ⬜ |
-| `backend/apps/apitokens/serializers.py` |  | ⬜ |
-| `backend/apps/apitokens/services.py` |  | ⬜ |
-| `backend/apps/apitokens/tests/` |  | ⬜ |
-| `backend/apps/apitokens/urls.py` |  | ⬜ |
-| `backend/apps/apitokens/views.py` |  | ⬜ |
+| `backend/apps/apitokens/models.py` | doory/apitokens.go (ApiToken row, live filter, meta ordering) | 🟡 |
+| `backend/apps/apitokens/scopes.py` | doory/apitokens.go (declaration-order table + defaults) | ✅ |
+| `backend/apps/apitokens/serializers.py` | doory/apitokens.go (create validation in declaration order + nested choice shape; envelope field order) | 🟡 |
+| `backend/apps/apitokens/services.py` | doory/apitokens.go (issue/live/revoke, salted_hmac sha256 digests — cross-proven in apitokens_test.go); pending: authenticate()+last_used (mcp family), fallback-key rotation | 🟡 |
+| `backend/apps/apitokens/tests/` | (dispositions: ledger/test-mapping-v*.json) | 🟡 |
+| `backend/apps/apitokens/urls.py` | doory/app.go (3 routes incl. {uuid} template) | ✅ |
+| `backend/apps/apitokens/views.py` | doory/apitokens.go (list/create/scopes/delete) + doory/app.go routes | 🟡 |
 
 ## `backend/apps/assets/`
 

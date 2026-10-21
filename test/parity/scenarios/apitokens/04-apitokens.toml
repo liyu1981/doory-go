@@ -1,0 +1,119 @@
+# Behavior family: apitokens (family 3, PLAN.md §5).
+#
+# Oracle: pinned Django prod settings, fresh workdir DB; probe lineage:
+# probes/0003-apitokens (10 transcripts + DB rows used by the
+# cross-implementation digest unit tests in doory/apitokens_test.go).
+#
+# Notable asserted shapes:
+#   - list renders `[]` (never null) when the user has no live tokens
+#   - scopes array in SCOPES DECLARATION order (not alphabetical)
+#   - nested ListField choice errors: {"scopes":{"0":[...]}} with nested
+#     field_codes
+#   - identity-confirm before minting (password field error)
+#   - DELETE-missing -> compact DRF "Not found."; non-uuid path segment ->
+#     handler404's SPACED dialect (resolver never matched)
+#   - per-side capture: each side deletes the id IT created
+#
+# DRF throttle note (kernel-family pending port): token routes use the
+# default UserRateThrottle (1200/min) — far above this scenario's volume;
+# only register uses the auth scope (1 request).
+#
+# Family pending (PORT_MAP 🟡): authenticate() + last_used tracking (lands
+# with the mcp family), fallback-key rotation branch, confirm_email path
+# (google slice), limit_reached 409 (needs20 live tokens — backlog step).
+
+name = "04-apitokens"
+description = "Personal access tokens match the oracle: live list shapes, scopes order, nested choice errors, identity confirm, issue/revoke lifecycle, both 404 dialects."
+driver = "http"
+tags = ["fast"]
+dialects = ["sqlite"]
+covers = [
+  "backend/apps/apitokens/views.py",
+  "backend/apps/apitokens/serializers.py",
+  "backend/apps/apitokens/services.py",
+  "backend/apps/apitokens/models.py",
+  "backend/apps/apitokens/scopes.py",
+  "backend/apps/accounts/views.py", # confirm_identity
+]
+
+[env]
+GOOGLE_CLIENT_ID = "parity-client.test"
+SECURE_COOKIES = "false"
+DJANGO_SECRET_KEY = "parity-oracle-secret-key-0123456789"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/csrf/"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/register/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"tokeny@example.com","password":"Tr0ub4dor&3xkcd9"}'
+
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/tokens/"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/tokens/"
+jar = "anon"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/tokens/scopes/"
+
+# identity confirm: signed in but no password supplied
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/tokens/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"probe token"}'
+
+# nested choice error (ListField child shape)
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/tokens/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"probe token","scopes":["nope:bad"],"password":"Tr0ub4dor&3xkcd9"}'
+
+# issue: sorted scopes, shown-once plaintext, per-side id capture
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/tokens/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"probe token","scopes":["designs:read","assets:write"],"expires_in_days":7,"password":"Tr0ub4dor&3xkcd9"}'
+capture = { token_id = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
+
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/tokens/"
+
+# DRF NotFound (compact) for an unknown but well-formed uuid
+[[steps]]
+method = "DELETE"
+path = "/api/v1/auth/tokens/00000000-0000-0000-0000-000000000000/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+
+# resolver-level 404 (SPACED handler404 dialect) for a non-uuid segment
+[[steps]]
+method = "DELETE"
+path = "/api/v1/auth/tokens/not-a-uuid/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+
+# revoke the id THIS side created, then the list is empty again
+[[steps]]
+method = "DELETE"
+path = "/api/v1/auth/tokens/{{capture:token_id}}/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/tokens/"
+
+# revoked tokens are not live: the second revoke404s
+[[steps]]
+method = "DELETE"
+path = "/api/v1/auth/tokens/{{capture:token_id}}/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }

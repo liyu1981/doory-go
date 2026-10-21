@@ -423,3 +423,37 @@ M2 progress log (accounts family, auth slice):
   (need email-capture runner support; D9), google (fake-provider probe),
   me DELETE (confirm_identity + cascade), avatar upload (Pillow), DRF
   rate throttles (kernel family).
+
+M3 progress log (apitokens family):
+
+- ✅ Probe: `test/parity/probes/0003-apitokens/` (10 transcripts + DB
+  rows): `[]`-never-null list, scopes in DECLARATION order, the nested
+  ListField choice shape ({"scopes":{"0":[...]}} with nested codes),
+  identity-confirm failures, sorted scopes + shown-once plaintext, both
+  404 dialects (compact DRF "Not found." for unknown uuid vs SPACED
+  handler404 for non-uuid path segments), plus hash rows for the digest
+  proofs.
+- ✅ Port `doory/apitokens.go` + routes: issue/live/revoke with salted
+  HMAC-SHA256 password digests (+SECRET_KEY_FALLBACKS acceptance),
+  DRF create validation in declaration order (required/choice/min/max,
+  nested raw shapes), clean_text (Cc + _INVISIBLE set), confirm_identity
+  (password path + lockout interplay),409 limit envelope, scopes table.
+  Router gained {uuid} path templates with Django's converter semantics
+  (non-matching segments fall to handler404's dialect).
+- ✅ Runner: per-side response **capture** ({capture:name} substitution —
+  each side consumes its own issued id; the future D9 email-link
+  mechanism too). New body shape rules: prefix, issued token, expires_at
+  (each format-asserting, reason recorded).
+- ✅ Scenario `04-apitokens` (14 steps) green; loop-caught bug: Raw/RawCodes
+  split for nested field_codes.
+- ✅ Cross-implementation unit proof: Go reproduces the ORACLE's
+  secret_hash (sha256 plaintext) and password_digest (salted HMAC key
+  derivation sha256(key_salt+secret)) byte-for-byte from probed rows
+  (apitokens_test.go) — mutation-provable.
+- ✅ M2-style artifacts: PORT_MAP rows reviewed (scopes/urls ✅,
+  models/serializers/services/views 🟡 with pending lists),
+  test-mapping disposition for apitokens/tests/test_tokens.py (partial,
+  evidence+missing).
+- ⬜ Family pending: authenticate() + last_used tracking (mcp family),
+  fallback-key rotation branch, confirm_email path (google), 409 limit
+  scenario (needs 20 live tokens).

@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -38,6 +39,7 @@ func Execute(repo string, sc *Scenario) ([]string, error) {
 	defer r.shutdown(oracle, goSide)
 
 	var problems []string
+	captures := map[string]map[string]string{"oracle": {}, "go": {}}
 	for i, step := range sc.Steps {
 		// Snapshot each side's csrf secret BEFORE the request: the client
 		// jar stores the response cookie during Do, and cookie_stable must
@@ -47,14 +49,16 @@ func Execute(repo string, sc *Scenario) ([]string, error) {
 
 		problemsBefore := len(problems)
 
-		o, err := send(oracle, step)
+		o, err := send(oracle, step, captures["oracle"])
 		if err != nil {
 			return nil, fmt.Errorf("oracle step %d: %w (log: %s)", i+1, err, oracle.log.Name())
 		}
-		g, err := send(goSide, step)
+		g, err := send(goSide, step, captures["go"])
 		if err != nil {
 			return nil, fmt.Errorf("go step %d: %w (log: %s)", i+1, err, goSide.log.Name())
 		}
+		applyCaptures(step, captures["oracle"], o.Body)
+		applyCaptures(step, captures["go"], g.Body)
 
 		problems = append(problems, compare(i, step, o, g)...)
 
@@ -80,17 +84,45 @@ func Execute(repo string, sc *Scenario) ([]string, error) {
 	return problems, nil
 }
 
+// applyCaptures extracts named groups from this side's response body.
+func applyCaptures(step Step, vars map[string]string, body []byte) {
+	for name, pattern := range step.Capture {
+		re := regexp.MustCompile(pattern)
+		if m := re.FindSubmatch(body); len(m) > 1 {
+			vars[name] = string(m[1])
+		}
+	}
+}
+
+// resolveCaptures substitutes {{capture:name}} from this side's vars.
+func resolveCaptures(s string, vars map[string]string) string {
+	const marker = "{{capture:"
+	for {
+		start := strings.Index(s, marker)
+		if start < 0 {
+			return s
+		}
+		end := strings.Index(s[start:], "}}")
+		if end < 0 {
+			return s
+		}
+		name := s[start+len(marker) : start+end]
+		s = s[:start] + vars[name] + s[start+end+2:]
+	}
+}
+
 // send performs one request against one side and captures the response.
-func send(side *Side, step Step) (*capture, error) {
+func send(side *Side, step Step, vars map[string]string) (*capture, error) {
 	method := step.Method
 	if method == "" {
 		method = http.MethodGet
 	}
+	reqPath := resolveCaptures(step.Path, vars)
 	var body io.Reader
 	if step.Body != "" {
-		body = bytes.NewReader([]byte(step.Body))
+		body = bytes.NewReader([]byte(resolveCaptures(step.Body, vars)))
 	}
-	req, err := http.NewRequest(method, side.Base+step.Path, body)
+	req, err := http.NewRequest(method, side.Base+reqPath, body)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +131,7 @@ func send(side *Side, step Step) (*capture, error) {
 	req.Header.Set("Accept", "*/*")
 	jar := side.jar(step.Jar)
 	for name, value := range step.Headers {
-		req.Header.Set(name, resolveCookieTemplate(value, jar, req.URL))
+		req.Header.Set(name, resolveCookieTemplate(resolveCaptures(value, vars), jar, req.URL))
 	}
 	client := &http.Client{
 		Jar:     jar,
