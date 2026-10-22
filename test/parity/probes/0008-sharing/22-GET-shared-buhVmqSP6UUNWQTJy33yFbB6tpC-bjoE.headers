@@ -1,0 +1,15 @@
+HTTP/1.1 401 Unauthorized
+Date: Thu, 22 Oct 2026 03:19:22 GMT
+Server: WSGIServer/0.2 CPython/3.12.10
+Content-Type: application/json
+Allow: GET, PATCH, HEAD, OPTIONS
+Expires: Thu, 22 Oct 2026 03:19:22 GMT
+Cache-Control: max-age=0, no-cache, no-store, must-revalidate, private
+Vary: Cookie, X-Share-Password, origin
+Permissions-Policy: accelerometer=(), bluetooth=(), browsing-topics=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), serial=(), usb=()
+X-Frame-Options: DENY
+Content-Length: 92
+X-Content-Type-Options: nosniff
+Referrer-Policy: strict-origin-when-cross-origin
+Cross-Origin-Opener-Policy: same-origin
+

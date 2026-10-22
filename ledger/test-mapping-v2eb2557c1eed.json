@@ -711,6 +711,81 @@
           "EXIF/AVIF re-encode paths"
         ]
       }
+    },
+    "sharing": {
+      "backend/apps/sharing/tests/conftest.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "pytest scaffolding — no Go port planned"
+        ]
+      },
+      "backend/apps/sharing/tests/test_owner_links.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:sharing/12-sharing (link CRUD, role/expiry validation, unknown design404)"
+        ],
+        "missing": [
+          "active-link limit boundary (20), reactivation count, expiry windows"
+        ]
+      },
+      "backend/apps/sharing/tests/test_comments.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:sharing/12-sharing (owner comment create/pairing/resolved, shared move+delete)"
+        ],
+        "missing": [
+          "comment limit, reply-nesting, second-user author scoping"
+        ]
+      },
+      "backend/apps/sharing/tests/test_shared_view.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:sharing/12-sharing (payload bytes, never-cache+Vary, password gate incl. lock at 10, comments-disabled)"
+        ],
+        "missing": [
+          "inactive/expired link boundaries, per-IP window across tokens"
+        ]
+      },
+      "backend/apps/sharing/tests/test_shared_edit.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:sharing/12-sharing (edit save + shared conflict message)"
+        ],
+        "missing": [
+          "trashed-during-save, CAS race branch"
+        ]
+      },
+      "backend/apps/sharing/tests/test_shared_fonts.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "scenario with owner fonts + document font names (usage walk ported, unexercised with rows)"
+        ]
+      },
+      "backend/apps/sharing/tests/test_services.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity via 12-sharing flows (resolve/limits/password/save)"
+        ],
+        "missing": [
+          "named service edge cases as unit evidence"
+        ]
+      },
+      "backend/apps/sharing/tests/test_models.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "model unit cases (token entropy, expiry checks)"
+        ]
+      },
+      "backend/apps/sharing/tests/test_admin.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "admin surface (D2)"
+        ]
+      }
     }
   }
 }

@@ -1,0 +1,1 @@
+{"error":{"code":"validation_error","message":"Invalid input.","fields":{"role":["\"nope\" is not a valid choice."]},"field_codes":{"role":["invalid_choice"]}}}

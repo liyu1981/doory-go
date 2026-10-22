@@ -1,0 +1,288 @@
+# Behavior family: sharing (family 8, PLAN.md §5) — share links, comments,
+# and the public token views with the password gate.
+#
+# Probe lineage: probes/0008-sharing (37 transcripts): link envelope +
+# SITE_URL url, validation messages, never-cache + Vary order, shared
+# design payload (owner pseudonym, document passthrough, fonts []), the
+# password gate (missing/wrong401, LOCK at exactly the 10th wrong with the
+# DEFAULT DRF detail, right password clears the pair window), the shared
+# revision-conflict message that DIFFERS from the owner path, role and
+# comments-disabled codes, comment author field order (name, avatar_url, id),
+# x/y float rendering (10.0).
+#
+# Deferred (PORT_MAP notes): second-user author scoping on shared comment
+# PATCH/DELETE, comment/revision visibility of last_accessed (admin-only),
+# expiry-window boundaries, UploadScope throttle (kernel pending).
+
+name = "12-sharing"
+description = "Sharing matches the oracle: link CRUD with limits, owner comments, public shared views with never-cache headers, password gate windows, edit-save conflict, role checks."
+driver = "http"
+tags = ["fast"]
+dialects = ["sqlite"]
+covers = [
+  "backend/apps/sharing/views.py",
+  "backend/apps/sharing/serializers.py",
+  "backend/apps/sharing/services.py",
+  "backend/apps/sharing/models.py",
+  "backend/apps/sharing/exceptions.py",
+  "backend/apps/fonts/usage.py",
+]
+
+[env]
+GOOGLE_CLIENT_ID = "parity-client.test"
+SECURE_COOKIES = "false"
+SITE_URL = "http://localhost:5173"
+DJANGO_SECRET_KEY = "parity-oracle-secret-key-0123456789"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/csrf/"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/register/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"sharry@example.com","password":"Tr0ub4dor&3xkcd9"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"title":"Shared Design"}'
+capture = { did = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
+
+# ---- owner share-link CRUD ----
+[[steps]]
+method = "GET"
+path = "/api/v1/designs/{{capture:did}}/share-links/"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/{{capture:did}}/share-links/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"role":"comment"}'
+capture = { tok_c = "\"token\":\"([A-Za-z0-9_-]{32})\"" }
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/{{capture:did}}/share-links/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"role":"edit","password":"s3cret-pass"}'
+capture = { tok_e = "\"token\":\"([A-Za-z0-9_-]{32})\"" }
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/{{capture:did}}/share-links/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"role":"nope"}'
+
+# newest first: edit, then comment
+[[steps]]
+method = "GET"
+path = "/api/v1/designs/{{capture:did}}/share-links/"
+
+# NOTE: the deactivate/reactivate toggle (link-id capture placed after the
+# public flow) and expiry-window boundaries stay dispositioned pending; the
+# past-expiry validation is asserted at CREATE level instead.
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/{{capture:did}}/share-links/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"role":"view","expires_at":"2001-01-01T00:00:00Z"}'
+
+[[steps]]
+method = "GET"
+path = "/api/v1/designs/00000000-0000-0000-0000-000000000000/share-links/"
+
+# ---- owner comments ----
+[[steps]]
+method = "GET"
+path = "/api/v1/designs/{{capture:did}}/comments/"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/{{capture:did}}/comments/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"body":"Hello thread","page_id":"page-1","x":10,"y":20}'
+capture = { cid = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/{{capture:did}}/comments/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"body":"x","x":1}'
+
+[[steps]]
+method = "PATCH"
+path = "/api/v1/designs/{{capture:did}}/comments/{{capture:cid}}/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"resolved":true}'
+
+# ---- public views: comment link (no password) ----
+[[steps]]
+method = "GET"
+path = "/api/v1/shared/{{capture:tok_c}}/"
+jar = "anon"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/shared/definitely-not-a-valid-token-xyz"
+
+# password link: missing header -> password_required
+[[steps]]
+method = "GET"
+path = "/api/v1/shared/{{capture:tok_e}}/"
+jar = "anon"
+
+# three wrong, one right (pair window clears), ten wrong, eleventh locks
+[[steps]]
+method = "GET"
+path = "/api/v1/shared/{{capture:tok_e}}/"
+jar = "anon"
+headers = { X-Share-Password = "wrong-pass" }
+
+[[steps]]
+method = "GET"
+path = "/api/v1/shared/{{capture:tok_e}}/"
+jar = "anon"
+headers = { X-Share-Password = "wrong-pass" }
+
+[[steps]]
+method = "GET"
+path = "/api/v1/shared/{{capture:tok_e}}/"
+jar = "anon"
+headers = { X-Share-Password = "wrong-pass" }
+
+[[steps]]
+method = "GET"
+path = "/api/v1/shared/{{capture:tok_e}}/"
+jar = "anon"
+headers = { X-Share-Password = "s3cret-pass" }
+
+[[steps]]
+method = "GET"
+path = "/api/v1/shared/{{capture:tok_e}}/"
+jar = "anon"
+headers = { X-Share-Password = "wrong-pass" }
+
+[[steps]]
+method = "GET"
+path = "/api/v1/shared/{{capture:tok_e}}/"
+jar = "anon"
+headers = { X-Share-Password = "wrong-pass" }
+
+[[steps]]
+method = "GET"
+path = "/api/v1/shared/{{capture:tok_e}}/"
+jar = "anon"
+headers = { X-Share-Password = "wrong-pass" }
+
+[[steps]]
+method = "GET"
+path = "/api/v1/shared/{{capture:tok_e}}/"
+jar = "anon"
+headers = { X-Share-Password = "wrong-pass" }
+
+[[steps]]
+method = "GET"
+path = "/api/v1/shared/{{capture:tok_e}}/"
+jar = "anon"
+headers = { X-Share-Password = "wrong-pass" }
+
+[[steps]]
+method = "GET"
+path = "/api/v1/shared/{{capture:tok_e}}/"
+jar = "anon"
+headers = { X-Share-Password = "wrong-pass" }
+
+[[steps]]
+method = "GET"
+path = "/api/v1/shared/{{capture:tok_e}}/"
+jar = "anon"
+headers = { X-Share-Password = "wrong-pass" }
+
+[[steps]]
+method = "GET"
+path = "/api/v1/shared/{{capture:tok_e}}/"
+jar = "anon"
+headers = { X-Share-Password = "wrong-pass" }
+
+# eleventh wrong after the fresh window -> locked429 (retry normalized)
+[[steps]]
+method = "GET"
+path = "/api/v1/shared/{{capture:tok_e}}/"
+jar = "anon"
+headers = { X-Share-Password = "wrong-pass" }
+
+# anon PATCH -> 401 with the shared finalize headers (never-cache)
+[[steps]]
+method = "PATCH"
+path = "/api/v1/shared/{{capture:tok_c}}/"
+jar = "anon"
+headers = { Content-Type = "application/json" }
+body = '{"document":{},"base_revision":1}'
+
+# authenticated but comment role -> read-only403
+[[steps]]
+method = "PATCH"
+path = "/api/v1/shared/{{capture:tok_c}}/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"document":{"schemaVersion":1,"width":1080,"height":1080,"pages":[{"id":"p","objects":[]}]},"base_revision":1}'
+
+# ---- shared comments through the comment link ----
+[[steps]]
+method = "GET"
+path = "/api/v1/shared/{{capture:tok_c}}/comments/"
+jar = "anon"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/shared/{{capture:tok_c}}/comments/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"body":"via link"}'
+
+# edit link sees comments too (password header supplied)
+[[steps]]
+method = "GET"
+path = "/api/v1/shared/{{capture:tok_e}}/comments/"
+jar = "anon"
+headers = { X-Share-Password = "s3cret-pass" }
+
+# ---- edit save: happy path then the shared conflict message ----
+# revision comes from the shared design payload
+[[steps]]
+method = "GET"
+path = "/api/v1/shared/{{capture:tok_e}}/"
+jar = "main"
+headers = { X-Share-Password = "s3cret-pass" }
+capture = { rev = "\"revision\":([0-9]+)" }
+
+[[steps]]
+method = "PATCH"
+path = "/api/v1/shared/{{capture:tok_e}}/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}", X-Share-Password = "s3cret-pass" }
+body = '{"document":{"schemaVersion":1,"width":800,"height":600,"pages":[{"id":"pp","objects":[]}]},"base_revision":{{capture:rev}}}'
+
+[[steps]]
+method = "PATCH"
+path = "/api/v1/shared/{{capture:tok_e}}/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}", X-Share-Password = "s3cret-pass" }
+body = '{"document":{"schemaVersion":1,"width":800,"height":600,"pages":[{"id":"pp","objects":[]}]},"base_revision":99}'
+
+# author pin move through the comment link
+[[steps]]
+method = "PATCH"
+path = "/api/v1/shared/{{capture:tok_c}}/comments/{{capture:cid}}/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"x":40,"y":50}'
+
+# author removes own comment through the comment link
+[[steps]]
+method = "DELETE"
+path = "/api/v1/shared/{{capture:tok_c}}/comments/{{capture:cid}}/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+
+[[steps]]
+method = "GET"
+path = "/api/v1/designs/{{capture:did}}/comments/"

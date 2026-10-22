@@ -343,7 +343,7 @@ behavioral verification).
 | `backend/apps/fonts/tests/` | (dispositions: ledger/test-mapping-v*.json) | 🟡 |
 | `backend/apps/fonts/uploads.py` | doory/fonts_upload.go (add_user_font: inspect, merge, quotas, clashes, storage paths) | ✅ |
 | `backend/apps/fonts/urls.py` |  | ⬜ |
-| `backend/apps/fonts/usage.py` |  | ⬜ |
+| `backend/apps/fonts/usage.py` | doory/sharing_public.go (fontsUsedIn: document walk + owner family match) | ✅ |
 | `backend/apps/fonts/views.py` | doory/fonts.go (public list + mine list/upload + delete, cache finalize) | 🟡 |
 
 ## `backend/apps/gallery/`
@@ -416,17 +416,17 @@ behavioral verification).
 
 | upstream | go | status |
 |---|---|---|
-| `backend/apps/sharing/admin.py` |  | ⬜ |
+| `backend/apps/sharing/admin.py` | (admin surface — divergence D2) | ⬜ |
 | `backend/apps/sharing/apps.py` |  | ⬜ |
-| `backend/apps/sharing/exceptions.py` |  | ⬜ |
+| `backend/apps/sharing/exceptions.py` | doory/sharing.go + doory/sharing_public.go (bad_request codes, password_required, share_role_insufficient, comments_disabled, payload_too_large) | ✅ |
 | `backend/apps/sharing/migrations/` |  | ⬜ |
-| `backend/apps/sharing/models.py` |  | ⬜ |
-| `backend/apps/sharing/serializers.py` |  | ⬜ |
-| `backend/apps/sharing/services.py` |  | ⬜ |
-| `backend/apps/sharing/tests/` |  | ⬜ |
-| `backend/apps/sharing/throttling.py` |  | ⬜ |
+| `backend/apps/sharing/models.py` | doory/sharing.go + doory/sharing_public.go (ShareLink/Comment rows; token gen, has_password) | 🟡 |
+| `backend/apps/sharing/serializers.py` | doory/sharing.go + doory/sharing_public.go (link/comment/shared envelopes incl. pyFloat coordinates; pending: some nested-update edge messages) | 🟡 |
+| `backend/apps/sharing/services.py` | doory/sharing.go (active links, limits) + doory/sharing_public.go (resolve, password windows, save w/ CAS) | 🟡 |
+| `backend/apps/sharing/tests/` | (dispositions: ledger/test-mapping-v*.json) | 🟡 |
+| `backend/apps/sharing/throttling.py` | (UploadScope throttle — kernel rate limits pending; client_ip ported in doory/sharing_public.go) | 🟡 |
 | `backend/apps/sharing/urls.py` |  | ⬜ |
-| `backend/apps/sharing/views.py` |  | ⬜ |
+| `backend/apps/sharing/views.py` | doory/sharing.go (owner links+comments) + doory/sharing_public.go (shared design/save/comments, gate) + doory/app.go routes | 🟡 |
 
 ## `backend/data/`
 

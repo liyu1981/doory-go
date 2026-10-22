@@ -65,7 +65,9 @@ type capture struct {
 }
 
 var (
-	volatileHeaders = map[string]bool{"date": true, "server": true} // D10 + wall clock
+	// date/server: stack identity + wall clock (D10). expires: Django's
+	// never-cache stamps the current time — same wall-clock class.
+	volatileHeaders = map[string]bool{"date": true, "server": true, "expires": true}
 	csrfShape       = regexp.MustCompile(`^[A-Za-z0-9]{32}$`)
 	sessionKeyShape = regexp.MustCompile(`^[a-z0-9]{32}$`)
 
@@ -77,6 +79,8 @@ var (
 	}{
 		{regexp.MustCompile(`"id":"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"`),
 			`"id":"<uuid>"`, "per-row random uuid; each side mints its own (format asserted by the match)"},
+		{regexp.MustCompile(`"design_id":"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"`),
+			`"design_id":"<uuid>"`, "per-side design row id in the shared payload (dashed-uuid format asserted)"},
 		{regexp.MustCompile(`"created_at":"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z"`),
 			`"created_at":"<iso-micro-z>"`, "row creation instant differs per side (RFC3339 micro-Z shape asserted)"},
 		{regexp.MustCompile(`"updated_at":"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z"`),
@@ -91,6 +95,10 @@ var (
 			`"url":"<media-asset>"`, "per-side random owner/asset ids in the stored path; format asserted"},
 		{regexp.MustCompile(`"thumb_url":"/media/assets/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/thumbs/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.webp"`),
 			`"thumb_url":"<media-thumb>"`, "per-side random ids in the thumbnail path; thumbs/<uuid>.webp asserted"},
+		{regexp.MustCompile(`"token":"[A-Za-z0-9_-]{32}"`),
+			`"token":"<share-token>"`, "random per link; token_urlsafe(24)=32 urlsafe chars asserted"},
+		{regexp.MustCompile(`"url":"[^"]*/s/[A-Za-z0-9_-]{32}"`),
+			`"url":"<share-url>"`, "SITE_URL + /s/<token>; per-side random token asserted by shape"},
 		{regexp.MustCompile(`"url":"/media/fonts/user/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[a-z0-9]+"`),
 			`"url":"<media-user-font>"`, "per-side random owner/variant ids in the stored path; media/fonts/user/<32hex>/<32hex>.<format> asserted"},
 		{regexp.MustCompile(`https?://[A-Za-z0-9.\[\]:-]+`),

@@ -1,0 +1,37 @@
+GET /auth/csrf/ 
+GET /designs/e39a91b0-be4e-4f52-923e-78b06a1e446d/share-links/ 
+POST /designs/e39a91b0-be4e-4f52-923e-78b06a1e446d/share-links/ -H Content-Type: application/json -H X-CSRFToken: 0XMoUqnRQfcU5cnSDu4sLgwnGYikuZIo --data {"role":"view"}
+POST /designs/e39a91b0-be4e-4f52-923e-78b06a1e446d/share-links/ -H Content-Type: application/json -H X-CSRFToken: 0XMoUqnRQfcU5cnSDu4sLgwnGYikuZIo --data {"role":"comment"}
+POST /designs/e39a91b0-be4e-4f52-923e-78b06a1e446d/share-links/ -H Content-Type: application/json -H X-CSRFToken: 0XMoUqnRQfcU5cnSDu4sLgwnGYikuZIo --data {"role":"edit","password":"s3cret-pass"}
+POST /designs/e39a91b0-be4e-4f52-923e-78b06a1e446d/share-links/ -H Content-Type: application/json -H X-CSRFToken: 0XMoUqnRQfcU5cnSDu4sLgwnGYikuZIo --data {"role":"nope"}
+GET /designs/e39a91b0-be4e-4f52-923e-78b06a1e446d/share-links/998ace2a-bab1-44cb-96c0-3dcbe6679e24/ 
+PATCH /designs/e39a91b0-be4e-4f52-923e-78b06a1e446d/share-links/998ace2a-bab1-44cb-96c0-3dcbe6679e24/ -H Content-Type: application/json -H X-CSRFToken: 0XMoUqnRQfcU5cnSDu4sLgwnGYikuZIo --data {"is_active":false}
+PATCH /designs/e39a91b0-be4e-4f52-923e-78b06a1e446d/share-links/998ace2a-bab1-44cb-96c0-3dcbe6679e24/ -H Content-Type: application/json -H X-CSRFToken: 0XMoUqnRQfcU5cnSDu4sLgwnGYikuZIo --data {"is_active":true}
+PATCH /designs/e39a91b0-be4e-4f52-923e-78b06a1e446d/share-links/998ace2a-bab1-44cb-96c0-3dcbe6679e24/ -H Content-Type: application/json -H X-CSRFToken: 0XMoUqnRQfcU5cnSDu4sLgwnGYikuZIo --data {"expires_at":"2001-01-01T00:00:00Z"}
+GET /designs/00000000-0000-0000-0000-000000000000/share-links/ 
+GET /designs/e39a91b0-be4e-4f52-923e-78b06a1e446d/comments/ 
+POST /designs/e39a91b0-be4e-4f52-923e-78b06a1e446d/comments/ -H Content-Type: application/json -H X-CSRFToken: 0XMoUqnRQfcU5cnSDu4sLgwnGYikuZIo --data {"body":"Hello thread","page_id":"page-1","x":10,"y":20}
+POST /designs/e39a91b0-be4e-4f52-923e-78b06a1e446d/comments/ -H Content-Type: application/json -H X-CSRFToken: 0XMoUqnRQfcU5cnSDu4sLgwnGYikuZIo --data {"body":"x","x":1}
+PATCH /designs/e39a91b0-be4e-4f52-923e-78b06a1e446d/comments/4e331784-5f1e-4b93-aa27-c9bf759a0f90/ -H Content-Type: application/json -H X-CSRFToken: 0XMoUqnRQfcU5cnSDu4sLgwnGYikuZIo --data {"resolved":true}
+GET /shared/PKuHIg5PDzZVbUaltgkiO7I31myjrdtw/ 
+GET /shared/definitely-not-a-valid-token/ 
+GET /shared/buhVmqSP6UUNWQTJy33yFbB6tpC-bjoE/ 
+GET /shared/buhVmqSP6UUNWQTJy33yFbB6tpC-bjoE/ -H X-Share-Password: wrong-pass
+GET /shared/buhVmqSP6UUNWQTJy33yFbB6tpC-bjoE/ -H X-Share-Password: wrong-pass
+GET /shared/buhVmqSP6UUNWQTJy33yFbB6tpC-bjoE/ -H X-Share-Password: wrong-pass
+GET /shared/buhVmqSP6UUNWQTJy33yFbB6tpC-bjoE/ -H X-Share-Password: wrong-pass
+GET /shared/buhVmqSP6UUNWQTJy33yFbB6tpC-bjoE/ -H X-Share-Password: wrong-pass
+GET /shared/buhVmqSP6UUNWQTJy33yFbB6tpC-bjoE/ -H X-Share-Password: wrong-pass
+GET /shared/buhVmqSP6UUNWQTJy33yFbB6tpC-bjoE/ -H X-Share-Password: wrong-pass
+GET /shared/buhVmqSP6UUNWQTJy33yFbB6tpC-bjoE/ -H X-Share-Password: wrong-pass
+GET /shared/buhVmqSP6UUNWQTJy33yFbB6tpC-bjoE/ -H X-Share-Password: wrong-pass
+GET /shared/buhVmqSP6UUNWQTJy33yFbB6tpC-bjoE/ -H X-Share-Password: wrong-pass
+GET /shared/buhVmqSP6UUNWQTJy33yFbB6tpC-bjoE/ -H X-Share-Password: wrong-pass
+GET /shared/buhVmqSP6UUNWQTJy33yFbB6tpC-bjoE/ -H X-Share-Password: wrong-pass
+GET /shared/buhVmqSP6UUNWQTJy33yFbB6tpC-bjoE/ -H X-Share-Password:s3cret-pass
+PATCH /shared/PKuHIg5PDzZVbUaltgkiO7I31myjrdtw/ -H Content-Type: application/json --data {"document":{},"base_revision":1}
+PATCH /shared/PKuHIg5PDzZVbUaltgkiO7I31myjrdtw/ -H Content-Type: application/json -H X-CSRFToken: 0XMoUqnRQfcU5cnSDu4sLgwnGYikuZIo --data {"document":{"schemaVersion":1,"width":1080,"height":1080,"pages":[{"id":"p","objects":[]}]},"base_revision":99}
+GET /shared/PKuHIg5PDzZVbUaltgkiO7I31myjrdtw/comments/ 
+POST /shared/czjpyLRJwcUEvhONPt9HwRCobx7IbTak/comments/ -H Content-Type: application/json -H X-CSRFToken: 0XMoUqnRQfcU5cnSDu4sLgwnGYikuZIo --data {"body":"via link"}
+GET /shared/PKuHIg5PDzZVbUaltgkiO7I31myjrdtw/comments/ 
+POST /shared/czjpyLRJwcUEvhONPt9HwRCobx7IbTak/comments/ -H Content-Type: application/json --data {"body":"anon nope"}

@@ -613,3 +613,41 @@ M7 progress log (assets family — core upload slice + no-config stock):
 - ⬜ Family pending: remote/SSRF fetch slice (S-item with fake-provider
   fixtures), audio pipeline, SVG sanitize, EXIF/AVIF parity, quota
   boundary, stock credits/limits, file-lifecycle signals.
+
+M8 progress log (sharing family — links, comments, public token views):
+
+- ✅ Probe: `test/parity/probes/0008-sharing/` (37 transcripts): link
+  envelope (SITE_URL url + 32-char urlsafe token), never-cache string +
+  `Vary: Cookie, X-Share-Password, origin` order, shared design payload
+  bytes (owner pseudonym, document passthrough, fonts []), password gate
+  (missing/wrong401, LOCK at exactly the 10th wrong with the DEFAULT DRF
+  detail, right password clears only the pair window), the shared
+  conflict message that DIFFERS from the owner path, comments_disabled as
+  its own code (NotFound subclass), comment author order (name,
+  avatar_url, id), x/y float rendering (10.0), append-slash 301 on
+  slash-less shared paths.
+- ✅ Ports: `sharing.go` (owner link CRUD with active-limit + reactivation
+  count, expiry validation, owner comments with anchor/reply rules and
+  reply-following moves) + `sharing_public.go` (resolve + never-cache
+  finalize headers on EVERY response incl. dispatch401 — Route flag
+  SharedHeaders; three-window password gate with probe-exact lock
+  semantics; edit-save with CAS + shared conflict message; fonts-usage
+  document walk).
+- ✅ Runner/router: trailing-slash DISCIPLINE (segments keep their empty
+  tail — Django's `<converter>/` patterns only match slashed paths, so
+  slash-less requests get the APPEND_SLASH 301); append-slash moved to
+  middleware position #5 (short-circuits #6..#12 like CommonMiddleware:
+  no Cache-Control/Permissions-Policy/XFO on the redirect — probe18);
+  design_id uuid shape rule; never-cache `Expires` (wall-clock, denied
+  like Date/D10).
+- ✅ Loop-caught (all real): ambiguous join columns in share-link SQL
+  (arg order too — design/token bound before `now`), trailing-slash
+  matching, json.RawMessage needed for INPUT (rawCompacted only renders),
+  uncaptured link1 in my own scenario, per-side design_id in payloads.
+- ✅ Scenario `12-sharing` (41 steps) green; suite 11/11 (244 steps).
+- ✅ Artifacts: PORT_MAP sharing rows reviewed (exceptions ✅; views/
+  serializers/services/models partial with pending lists; fonts/usage
+  ✅), all 9 sharing test files dispositioned.
+- ⬜ Family pending: deactivate/reactivate flow (link-id capture after the
+  public section), expiry-window boundaries, second-user author scoping,
+  comment limit, shared-fonts fixture scenario.
