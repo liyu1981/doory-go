@@ -1,0 +1,10 @@
+{
+  "name": "yjs-go-interop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Interop test server for yjs-go",
+  "dependencies": {
+    "ws": "^8.0.0",
+    "yjs": "^13.0.0"
+  }
+}

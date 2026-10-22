@@ -773,3 +773,40 @@ M10 progress log (ai family):
   address decision table, AI quota HTTP form (needs successful calls),
   device options (installed-model registry), throttles, admin (D2),
   reencrypt command (ops).
+
+M11 scoping + spike S0 progress (collab family):
+
+- **Sources read**: protocol.py (Yjs wire + bounded update scanner),
+  consumers.py (handshake/login/refusals/frames), engine.py (open/merge/
+  budgets), room.py (945 - RoomRegistry, outboxes, flush), store.py
+  (admit/release/persistence), access.py (owner/link grants, origin),
+  limits.py (TokenBucket), middleware.py, availability, notify, signals,
+  schema.py (document<->Y mapping + anomalies/repair), models (YState,
+  YUpdate, RoomConnection, CollabInstance), views (stats). WS route:
+  `ws/designs/<uuid>/` behind RealtimeOriginValidator + session auth;
+  REST: GET /api/v1/collab/stats/. Close codes 44xx are part of the
+  contract (4401/4403/4404/4408/4413/4429/4400/1011/1013).
+- **Engine decision (spike S0)**: upstream runs pycrdt (pyo3/yrs, Rust).
+  The Go engine is the vendored `third_party/yjs-go` v0.1.6 with the
+  patches in `third_party/yjs-go/PATCHES.md` (11 changes, all fixture-
+  driven: parentSub-with-origin wire rule, map-set replacement form,
+  nested type materialization + parentID, pending buffer, sorted struct
+  store, snapshot delete set, multi-value array items, map slot walk).
+  CONFORMANCE PROVEN BOTH DIRECTIONS against pycrdt 0.14.10 fixtures:
+  `test/parity/probes/0011-collab-crdt/` (generator.py, verify.py,
+  40 fixture files, go_updates/verdict.json = "documents equal") via
+  `internal/crdt` (conformance_test.go: snapshots+SV byte-equal, 12-edit
+  stream incl. merge paths, concurrent convergence both orders, witness).
+- **Loop-caught during S0** (all real): parentSub read/written with
+  origins present (fixture rejects), map replacement missing originLeft,
+  nested ref-7 items never materialized (pages invisible), parentID
+  dropped at decode, no pending buffer (edits-before-base client groups),
+  unsorted struct store (wrong state vectors), snapshot missing its
+  delete set (resurrections), multi-value ContentAny read as one value,
+  map slot head stale after remote replace.
+- ⬜ M11 remaining: protocol.py port (framing + scan_update +
+  UpdateBudget), room/store/engine port on yjs-go, consumers + WS driver
+  in the parity runner (dial, text/binary frames, close codes), access/
+  limits/middleware, stats endpoint, then paired scenarios; known engine
+  gap to cover: array index ops over decoded multi-value batches
+  (PATCHES.md known gaps).
