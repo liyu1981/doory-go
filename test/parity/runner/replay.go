@@ -67,7 +67,14 @@ func Execute(repo string, sc *Scenario) ([]string, error) {
 			fmt.Printf("      capture oracle=%v go=%v\n", captures["oracle"], captures["go"])
 		}
 
-		problems = append(problems, compare(i, step, o, g)...)
+		if step.HeadersOnly {
+			if len(o.Body) != len(g.Body) || string(o.Body) != string(g.Body) {
+				fmt.Printf("      step %02d: body skipped (D12: non-API error pages differ by design)\n", i+1)
+			}
+			problems = append(problems, compareHeadersOnly(i, step, o, g)...)
+		} else {
+			problems = append(problems, compare(i, step, o, g)...)
+		}
 
 		if step.CookieStable {
 			for _, chk := range []struct {

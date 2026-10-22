@@ -1,0 +1,184 @@
+# Behavior family: assets (family 7, PLAN.md §5) — upload lifecycle +
+# the no-configuration stock surface + media security headers.
+#
+# Probe lineage: probes/0007-assets (18 transcripts): auth required on
+# every asset/stock route, create201 envelope (dashed media paths, ORIGINAL
+# bytes stored for clean PNGs -> size == upload), name/tag cleaning, the
+# invalid_file message, usage shape, media-path nosniff (CSP via the pair).
+#
+# No-config stock: derived from the probed source paths (_not_configured
+# payloads, Freesound-specific messages, preview -> NotFound) — the pair
+# re-verifies live; no provider network is ever touched.
+#
+# Deferred (PORT_MAP notes): SVG/audio uploads (loud notPorted), AVIF decode,
+# EXIF re-encode parity, WebP thumbnail file bytes (M14 — name/URL parity
+# now), remote/SSRF fetch + live provider happy paths (fake-provider
+# fixtures), quota threshold boundary.
+#
+# D12: the /media/ 404 step compares headers only (Django template page vs
+# Go default body); CSP/nosniff still compare byte-for-byte.
+
+name = "11-assets-stock"
+description = "Assets match the oracle: multipart upload with content sniffing, cleaning, quota/usage, CRUD; stock endpoints serve the no-configuration shapes; media responses carry the sandbox headers."
+driver = "http"
+tags = ["fast"]
+dialects = ["sqlite"]
+covers = [
+  "backend/apps/assets/views.py",
+  "backend/apps/assets/services.py",
+  "backend/apps/assets/serializers.py",
+  "backend/apps/assets/uploads.py",
+  "backend/apps/assets/models.py",
+  "backend/apps/assets/stock.py",
+  "backend/apps/assets/audio_stock.py",
+  "backend/apps/assets/middleware.py",
+  "backend/apps/core/images.py",
+]
+
+[env]
+GOOGLE_CLIENT_ID = "parity-client.test"
+SECURE_COOKIES = "false"
+DJANGO_SECRET_KEY = "parity-oracle-secret-key-0123456789"
+
+# everything needs a session (probe0007 steps01-04)
+[[steps]]
+method = "GET"
+path = "/api/v1/stock/providers/"
+jar = "anon"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/assets/"
+jar = "anon"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/csrf/"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/register/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"assetty@example.com","password":"Tr0ub4dor&3xkcd9"}'
+
+# ---- stock: no-configuration shapes (authed) ----
+[[steps]]
+method = "GET"
+path = "/api/v1/stock/providers/"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/stock/photos/?q=cat"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/stock/photos/?provider=unsplash"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/stock/photos/?page=0"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/stock/photos/?per_page=99"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/stock/photos/import/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"provider":"unsplash","id":"abc123"}'
+
+[[steps]]
+method = "GET"
+path = "/api/v1/stock/audio/"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/stock/audio/info/"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/stock/audio/?type=bogus"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/stock/audio/import/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"id":"123456"}'
+
+[[steps]]
+method = "GET"
+path = "/api/v1/stock/audio/123456/preview/"
+
+# ---- assets: usage, empty list, upload ----
+[[steps]]
+method = "GET"
+path = "/api/v1/assets/usage/"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/assets/"
+
+# clean PNG -> original bytes stored (size == upload), dashed media paths
+[[steps]]
+method = "POST"
+path = "/api/v1/assets/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+multipart = [
+  { name = "file", file = "test/parity/testdata/assets/fixture.png" },
+  { name = "name", value = "  My   Shot.png  " },
+  { name = "tags", value = "Photo" },
+  { name = "tags", value = "photo " },
+  { name = "tags", value = "  " },
+]
+capture = { asset1 = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
+
+[[steps]]
+method = "GET"
+path = "/api/v1/assets/?q=shot&ordering=name"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/assets/?kind=bogus"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/assets/?ordering=bogus"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/assets/{{capture:asset1}}/"
+
+# invalid raster content -> the probe-proven invalid_file message
+[[steps]]
+method = "POST"
+path = "/api/v1/assets/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+multipart = [
+  { name = "file", file = "test/parity/testdata/fonts/junk.bin" },
+]
+
+[[steps]]
+method = "PATCH"
+path = "/api/v1/assets/{{capture:asset1}}/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"  Renamed   Shot  ","tags":["Photo","photo ","  "]}'
+
+[[steps]]
+method = "GET"
+path = "/api/v1/assets/usage/"
+
+[[steps]]
+method = "DELETE"
+path = "/api/v1/assets/{{capture:asset1}}/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+
+[[steps]]
+method = "GET"
+path = "/api/v1/assets/{{capture:asset1}}/"
+
+# media-path security headers on a miss (D12: headers only, body skipped)
+[[steps]]
+method = "GET"
+path = "/media/nope.png"
+headers_only = true

@@ -1,0 +1,18 @@
+GET /stock/providers/ 
+GET /stock/photos/?q=cat 
+GET /stock/audio/ 
+GET /stock/audio/info/ 
+GET /assets/?kind=audio 
+GET /assets/?ordering=bogus 
+GET /assets/usage/ 
+GET /auth/csrf/ 
+GET /assets/usage/ 
+POST /assets/ -H X-CSRFToken: 0aqmNS8nfgb5759Yth5cUz6M3X9Sj1qO -F file=@/home/yli/doory-go/test/parity/testdata/assets/fixture.png
+GET /assets/?q=fixture&ordering=name 
+POST /assets/ -H X-CSRFToken: 0aqmNS8nfgb5759Yth5cUz6M3X9Sj1qO -F file=@/tmp/notimage.bin
+POST /assets/ -H X-CSRFToken: 0aqmNS8nfgb5759Yth5cUz6M3X9Sj1qO -F file=@/tmp/notimage.bin -F name=
+PATCH /assets/6925ecc2-7fa8-4c53-9279-8116468cfa47/ -H Content-Type: application/json -H X-CSRFToken: 0aqmNS8nfgb5759Yth5cUz6M3X9Sj1qO --data {"name":"  Renamed   Shot  ","tags":["Photo","photo ","  "]}
+GET /assets/6925ecc2-7fa8-4c53-9279-8116468cfa47/ 
+GET /assets/usage/ 
+DELETE /assets/6925ecc2-7fa8-4c53-9279-8116468cfa47/ -H X-CSRFToken: 0aqmNS8nfgb5759Yth5cUz6M3X9Sj1qO
+GET /media/nope.png 

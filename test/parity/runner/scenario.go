@@ -30,6 +30,10 @@ type Step struct {
 	Path    string            `toml:"path"`
 	Headers map[string]string `toml:"headers"`
 	Body    string            `toml:"body"`
+	// HeadersOnly skips the BODY comparison (status + all headers still
+	// compare): non-/api/ error responses are Django template pages vs Go
+	// defaults — divergence D12, reason recorded there.
+	HeadersOnly bool `toml:"headers_only"`
 	// CookieStable asserts the side keeps its own cookie value across this
 	// step (Django renews csrf expiry with the same secret; see get_token's
 	// CSRF_COOKIE_NEEDS_UPDATE). Checked per side, never across sides:

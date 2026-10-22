@@ -586,6 +586,131 @@
           "quota-threshold boundaries (50 families / 150MB), concurrent race branch, empty-file FileField path"
         ]
       }
+    },
+    "assets": {
+      "backend/apps/assets/tests/conftest.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "pytest scaffolding — no Go port planned"
+        ]
+      },
+      "backend/apps/assets/tests/factories.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "factories — no Go port planned"
+        ]
+      },
+      "backend/apps/assets/tests/test_stock.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:assets/11-assets-stock no-config payloads + param validation"
+        ],
+        "missing": [
+          "live provider paths, cursor paging, busy/unavailable (remote slice)"
+        ]
+      },
+      "backend/apps/assets/tests/test_middleware.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:assets/11-assets-stock media step (nosniff+CSP compared; body via D12)"
+        ],
+        "missing": [
+          "svg Content-Disposition attachment branch (content-type gated)"
+        ]
+      },
+      "backend/apps/assets/tests/audio_helpers.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "test helpers — no Go port planned"
+        ]
+      },
+      "backend/apps/assets/tests/audiolib_helpers.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "test helpers — no Go port planned"
+        ]
+      },
+      "backend/apps/assets/tests/helpers.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "test helpers — no Go port planned"
+        ]
+      },
+      "backend/apps/assets/tests/test_api.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:assets/11-assets-stock (full asset CRUD + usage + filters)"
+        ],
+        "missing": [
+          "svg/audio upload branches",
+          "quota boundary",
+          "thumbnail/url content"
+        ]
+      },
+      "backend/apps/assets/tests/test_audio_manifest.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "audio manifest content (ops)"
+        ]
+      },
+      "backend/apps/assets/tests/test_audio_sniffing.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "audio sniff/parse port — uploads answer loud notPorted today"
+        ]
+      },
+      "backend/apps/assets/tests/test_audio_upload.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "audio upload pipeline (audio.py port)"
+        ]
+      },
+      "backend/apps/assets/tests/test_freesound.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "Freesound client (remote slice)"
+        ]
+      },
+      "backend/apps/assets/tests/test_remote.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "remote fetch/SSRF pinned-address policy (next slice; needs fake-provider fixtures)"
+        ]
+      },
+      "backend/apps/assets/tests/test_stock_providers.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "provider registry + configured paths (remote/SSRF slice)"
+        ]
+      },
+      "backend/apps/assets/tests/test_sync_audio.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "sync_audio command (ops family)"
+        ]
+      },
+      "backend/apps/assets/tests/test_uploads.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:assets/11-assets-stock (name/tags cleaning, invalid raster)"
+        ],
+        "missing": [
+          "SVG sanitize + audio sniff branches",
+          "EXIF/AVIF re-encode paths"
+        ]
+      }
     }
   }
 }

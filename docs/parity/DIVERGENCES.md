@@ -149,3 +149,21 @@ Rules (PiG §6):
   to a raw writer that can emit the header (unlikely to be worth it).
 - evidence: probe 0001 step 03 (oracle 204 carries Content-Length: 0),
   parity run 01-kernel-http step 03/08.
+
+
+## D12 — non-API error pages (Django templates vs Go defaults)
+
+- SCRUTINIZED: approved
+- status: active
+- summary: Django serves template-driven HTML error pages for non-/api/
+  paths (404 on unknown URLs, /media/ misses outside the API); the Go port
+  serves its own plain pages. The http comparator therefore skips the BODY
+  of non-/api/ error responses (step flag `headers_only`) together with
+  content-type/content-length (they describe that body), while status and
+  every OTHER header — including MediaSecurityHeaders' nosniff + CSP and the
+  whole security stack — keeps comparing byte-for-byte.
+- remove-when: the single-binary release (M14) defines the SPA's real
+  non-API routes (index fallback), at which point upstream/nginx parity for
+  those paths becomes meaningful and this allowance can shrink to specific
+  paths.
+- evidence: probes/0007-assets step18 (media 404 headers), PLAN.md §4.

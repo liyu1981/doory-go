@@ -574,3 +574,42 @@ M6 progress log (fonts family — the S2 spike):
 - ⬜ Family pending: sync_fonts content + catalogue data (ops), usage
   stats, admin (D2), subprocess-isolation substitution note (D6-style
   in-process bounded parse).
+
+M7 progress log (assets family — core upload slice + no-config stock):
+
+- ✅ Probe: `test/parity/probes/0007-assets/` (18 transcripts): auth on
+  EVERY asset/stock route (stock is not public — probe-caught), create201
+  envelope (dashed media paths, ORIGINAL bytes stored for clean PNGs so
+  size == upload), name/tag cleaning chain, invalid_file message, usage
+  shape, media-path header set.
+- ✅ Spike: the raster pipeline is far smaller than feared —
+  `_normalise` stores original bytes when nothing needs stripping, so
+  Go only needs DECODE for dims/mime/extent (image/png+gif+jpeg+webp via
+  x/image decode). Encoder-byte parity (JPEG/PNG re-encode with EXIF,
+  AVIF, WebP thumbnails) deferred with explicit pending notes — no pure-Go
+  WebP ENCODER exists (thumbnail = name/URL parity until M14).
+- ✅ Ports: `assets.go` (list filters/ordering/usage, multipart upload with
+  content-decide sniffing, quota, clean_name/clean_tags shared with
+  brand/fonts, patch/delete), `stock.go` (the five stock endpoints in the
+  no-configuration world: _not_configured payloads, param validation incl.
+  audio vocabularies read from freesound.py, Freesound-specific messages,
+  preview -> NotFound), `middleware.go` gained mediaSecurityHeaders at
+  chain position #10 (nosniff overwrite + sandbox CSP + svg attachment).
+- ✅ Loud-pending discipline: SVG and audio CONTENT pipes answer explicit
+  notPorted errors (no silent divergence); AVIF/EXIF paths pending with
+  notes; live provider search/import await the remote/SSRF slice with
+  fake-provider fixtures.
+- ✅ Divergence D12 (non-API error pages: Django templates vs Go defaults)
+  with the `headers_only` step flag: body + content-type/content-length
+  skip, everything else (incl. the media CSP) compares byte-for-byte.
+- ✅ Loop-caught: audio search `results: []` never null, guessed
+  Freesound vocabularies corrected from source (music/effects/ambience,
+  5 lengths, 5 sorts), MAX_PAGE=100/per_page=30 bounds, media-header chain
+  placement.
+- ✅ Scenario `11-assets-stock` (28 steps) green; suite 10/10 (203 steps).
+- ✅ Artifacts: PORT_MAP assets/core-images rows reviewed (serializers/
+  uploads/middleware/ordering done; stock/middleware partial with the
+  remote+media pending lists), all 16 assets test files dispositioned.
+- ⬜ Family pending: remote/SSRF fetch slice (S-item with fake-provider
+  fixtures), audio pipeline, SVG sanitize, EXIF/AVIF parity, quota
+  boundary, stock credits/limits, file-lifecycle signals.

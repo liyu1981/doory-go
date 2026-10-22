@@ -126,32 +126,32 @@ behavioral verification).
 
 | upstream | go | status |
 |---|---|---|
-| `backend/apps/assets/admin.py` |  | ⬜ |
+| `backend/apps/assets/admin.py` | (admin surface — divergence D2) | ⬜ |
 | `backend/apps/assets/apps.py` |  | ⬜ |
-| `backend/apps/assets/audio.py` |  | ⬜ |
-| `backend/apps/assets/audio_stock.py` |  | ⬜ |
-| `backend/apps/assets/credits.py` |  | ⬜ |
-| `backend/apps/assets/exceptions.py` |  | ⬜ |
-| `backend/apps/assets/freesound.py` |  | ⬜ |
-| `backend/apps/assets/management/` |  | ⬜ |
-| `backend/apps/assets/middleware.py` |  | ⬜ |
+| `backend/apps/assets/audio.py` | (audio sniff/parse — pending; uploads answer loud notPorted) | ⬜ |
+| `backend/apps/assets/audio_stock.py` | doory/stock.go (search/info/import/preview no-config shapes incl. Freesound messages); live paths pending | 🟡 |
+| `backend/apps/assets/credits.py` | (stock credit ledger — pending with provider slice) | ⬜ |
+| `backend/apps/assets/exceptions.py` | doory/stock.go + doory/assets.go (stock/quota/file error codes+messages used in M7 paths) | 🟡 |
+| `backend/apps/assets/freesound.py` | (Freesound client — pending with remote slice) | ⬜ |
+| `backend/apps/assets/management/` | (sync_audio command — ops family) | ⬜ |
+| `backend/apps/assets/middleware.py` | doory/middleware.go (mediaSecurityHeaders: nosniff overwrite + CSP + svg attachment, chain #10) | ✅ |
 | `backend/apps/assets/migrations/` |  | ⬜ |
-| `backend/apps/assets/models.py` |  | ⬜ |
+| `backend/apps/assets/models.py` | doory/assets.go (row CRUD, upload_to path semantics) | 🟡 |
 | `backend/apps/assets/ordering.py` | doory/designs.go (applyOrdering whitelist + pk tie-break + message); other callers with assets family | 🟡 |
-| `backend/apps/assets/parsers.py` |  | ⬜ |
-| `backend/apps/assets/providers.py` |  | ⬜ |
-| `backend/apps/assets/remote.py` |  | ⬜ |
-| `backend/apps/assets/serializers.py` |  | ⬜ |
-| `backend/apps/assets/services.py` |  | ⬜ |
-| `backend/apps/assets/signals.py` |  | ⬜ |
-| `backend/apps/assets/stock.py` |  | ⬜ |
-| `backend/apps/assets/stocklimits.py` |  | ⬜ |
-| `backend/apps/assets/storage.py` |  | ⬜ |
-| `backend/apps/assets/tests/` |  | ⬜ |
-| `backend/apps/assets/throttling.py` |  | ⬜ |
-| `backend/apps/assets/uploads.py` |  | ⬜ |
+| `backend/apps/assets/parsers.py` | doory/views_auth.go jsonBody (bounded JSON; BoundedJSONParser edges pending) | 🟡 |
+| `backend/apps/assets/providers.py` | (provider registry + photo APIs — configured paths pending with remote slice) | ⬜ |
+| `backend/apps/assets/remote.py` | (remote fetch/SSRF pinned-address policy — next slice, needs fake-provider fixtures) | ⬜ |
+| `backend/apps/assets/serializers.py` | doory/assets.go (envelope, upload/update/query validation) | ✅ |
+| `backend/apps/assets/services.py` | doory/assets.go (prepare raster/quota/storage; markup/audio loud-pending, thumbnail content M14) | 🟡 |
+| `backend/apps/assets/signals.py` | (file cleanup on delete — pending file-lifecycle slice) | ⬜ |
+| `backend/apps/assets/stock.py` | doory/stock.go (search/import validation + no-config payloads); live provider paths pending (remote/SSRF slice) | 🟡 |
+| `backend/apps/assets/stocklimits.py` | (rate tracking — pending with provider slice) | ⬜ |
+| `backend/apps/assets/storage.py` | (delete-on-commit helpers — pending with file-lifecycle slice) | ⬜ |
+| `backend/apps/assets/tests/` | (dispositions: ledger/test-mapping-v*.json) | 🟡 |
+| `backend/apps/assets/throttling.py` | (DRF rate scopes — kernel family pending) | ⬜ |
+| `backend/apps/assets/uploads.py` | doory/assets.go (oversize reject, clean_name/clean_tags/strip — shared with brand/fonts) | ✅ |
 | `backend/apps/assets/urls.py` |  | ⬜ |
-| `backend/apps/assets/views.py` |  | ⬜ |
+| `backend/apps/assets/views.py` | doory/assets.go + doory/app.go (list/create/retrieve/patch/delete/usage) | 🟡 |
 
 ## `backend/apps/assets/audiolib/`
 
@@ -208,7 +208,7 @@ behavioral verification).
 | `backend/apps/core/apps.py` |  | ⬜ |
 | `backend/apps/core/csrf.py` | doory/csrf_verify.go (enforce_csrf causes + masked-token unmask) + doory/router.go (mixin ordering) | ✅ |
 | `backend/apps/core/exceptions.py` | doory/envelope.go (uniform error envelope + 401-for-anon; ValidationError field maps, ApiError, Throttled retry_after pending) | 🟡 |
-| `backend/apps/core/images.py` |  | ⬜ |
+| `backend/apps/core/images.py` | doory/assets.go (prepareRaster: decode-decides, dims/pixels, original-bytes storage); EXIF transpose/re-encode + AVIF + thumbnail encoder pending | 🟡 |
 | `backend/apps/core/management/` |  | ⬜ |
 | `backend/apps/core/middleware.py` | doory/middleware.go (PermissionsPolicy + PrivateApiCache; MediaSecurityHeaders with assets family) | 🟡 |
 | `backend/apps/core/models.py` |  | ⬜ |

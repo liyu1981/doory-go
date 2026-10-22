@@ -87,6 +87,10 @@ var (
 			`"folder":"<uuid>"`, "each side mints its own folder ids (dashed-uuid format asserted)"},
 		{regexp.MustCompile(`"parent":"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"`),
 			`"parent":"<uuid>"`, "each side mints its own folder ids (dashed-uuid format asserted)"},
+		{regexp.MustCompile(`"url":"/media/assets/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[a-z0-9]+"`),
+			`"url":"<media-asset>"`, "per-side random owner/asset ids in the stored path; format asserted"},
+		{regexp.MustCompile(`"thumb_url":"/media/assets/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/thumbs/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.webp"`),
+			`"thumb_url":"<media-thumb>"`, "per-side random ids in the thumbnail path; thumbs/<uuid>.webp asserted"},
 		{regexp.MustCompile(`"url":"/media/fonts/user/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[a-z0-9]+"`),
 			`"url":"<media-user-font>"`, "per-side random owner/variant ids in the stored path; media/fonts/user/<32hex>/<32hex>.<format> asserted"},
 		{regexp.MustCompile(`https?://[A-Za-z0-9.\[\]:-]+`),
@@ -200,6 +204,52 @@ func compare(stepIdx int, step Step, oracle, goSide *capture) []string {
 			kind, firstDiff(ob, gb), abbrev(oracle.Body), abbrev(goSide.Body))
 	}
 	return problems
+}
+
+// compareHeadersOnly compares status + headers but not the body (D12:
+// non-/api/ error pages are Django templates on one side and Go defaults on
+// the other; headers INCLUDING the media CSP keep being compared).
+func compareHeadersOnly(stepIdx int, step Step, oracle, goSide *capture) []string {
+	full := compare(stepIdx, step, oracle, &capture{Status: goSide.Status, Header: goSide.Header})
+	// compare() also flags body diffs: filter them out and mark the skip.
+	// Content-Type/Content-Length DESCRIBE the skipped body, so they leave
+	// with it; every other header (media CSP, nosniff, security stack)
+	// keeps comparing byte-for-byte.
+	var kept []string
+	for _, p := range full {
+		if contains(p, "body differs") {
+			// informational only: printed by the runner, never a failure
+			continue
+		}
+		if contains(p, `"content-length"`) || contains(p, `"content-type"`) {
+			continue
+		}
+		kept = append(kept, p)
+	}
+	// de-dup the skip note
+	seen := map[string]bool{}
+	var out []string
+	for _, p := range kept {
+		if seen[p] {
+			continue
+		}
+		seen[p] = true
+		out = append(out, p)
+	}
+	return out
+}
+
+func contains(s, sub string) bool {
+	return len(s) >= len(sub) && (indexOf(s, sub) >= 0)
+}
+
+func indexOf(s, sub string) int {
+	for i := 0; i+len(sub) <= len(s); i++ {
+		if s[i:i+len(sub)] == sub {
+			return i
+		}
+	}
+	return -1
 }
 
 // firstDiff reports the common-prefix length and shows both sides' context
