@@ -1,0 +1,14 @@
+HTTP/1.1 204 No Content
+Date: Wed, 21 Oct 2026 23:40:14 GMT
+Server: WSGIServer/0.2 CPython/3.12.10
+Allow: GET, HEAD, OPTIONS
+Cache-Control: no-store
+Permissions-Policy: accelerometer=(), bluetooth=(), browsing-topics=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), serial=(), usb=()
+X-Frame-Options: DENY
+Vary: Cookie, origin
+Content-Length: 0
+X-Content-Type-Options: nosniff
+Referrer-Policy: strict-origin-when-cross-origin
+Cross-Origin-Opener-Policy: same-origin
+Set-Cookie: csrftoken=0W5MwuvUooqU02B8tjpjKYetfwR3G9nq; expires=Wed, 20 Oct 2027 23:40:14 GMT; Max-Age=31449600; Path=/; SameSite=Lax
+

@@ -1,0 +1,1 @@
+{"error":{"code":"inline_asset_not_allowed","message":"Local (blob:, idb://) and oversized inline (data:) images must be uploaded as assets first."}}

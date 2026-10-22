@@ -120,6 +120,145 @@
           "limit_reached 409 at MAX_API_TOKENS_PER_USER"
         ]
       }
+    },
+    "designs": {
+      "backend/apps/designs/tests/conftest.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:designs/05+06 (fixture behavior inlined)"
+        ],
+        "missing": [
+          "factory helpers; no Go port planned (pytest scaffolding)"
+        ]
+      },
+      "backend/apps/designs/tests/helpers.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "helpers module — pytest-only"
+        ]
+      },
+      "backend/apps/designs/tests/test_designs.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:designs/05-designs (30 steps: CRUD, pagination, conflict, duplicate, trash)"
+        ],
+        "missing": [
+          "template creation",
+          "bulk action",
+          "thumbnail upload",
+          "design limit409",
+          "GET/PUT router edges"
+        ]
+      },
+      "backend/apps/designs/tests/test_validators.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:designs/05 steps8-11 (schemaVersion, blob, exclusion, blank)",
+          "unit target: doory/document.go (full walk)"
+        ],
+        "missing": [
+          "node/depth/float-boundary cases as named unit evidence",
+          "data-URL size boundary"
+        ]
+      },
+      "backend/apps/designs/tests/test_animation_validation.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "motion/easing/duration cases — validator ported; needs unit evidence with mutations"
+        ]
+      },
+      "backend/apps/designs/tests/test_audio_validation.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "audio track cases — validator ported; needs unit evidence"
+        ]
+      },
+      "backend/apps/designs/tests/test_presentation_validation.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "notes/durationSec cases — ported; needs unit evidence"
+        ]
+      },
+      "backend/apps/designs/tests/test_folders.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:designs/06-folders (23 steps)"
+        ],
+        "missing": [
+          "500-folder limit 409",
+          "concurrent duplicate race branch"
+        ]
+      },
+      "backend/apps/designs/tests/test_trash.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:designs/05 steps21-29 (not_in_trash, trashed patch409, restore, trash-empty)"
+        ],
+        "missing": [
+          "purge_expired_trash (management command)",
+          "signals file cleanup"
+        ]
+      },
+      "backend/apps/designs/tests/test_versions.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:designs/05 steps17-20 (auto+manual list/detail/restore)"
+        ],
+        "missing": [
+          "100-manual limit409",
+          "prune-at-50 case",
+          "label defaulting edge"
+        ]
+      },
+      "backend/apps/designs/tests/test_doc_toolkit.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "doc/ package — pending with fields/fill actions"
+        ]
+      },
+      "backend/apps/designs/tests/test_fields.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "fields action"
+        ]
+      },
+      "backend/apps/designs/tests/test_fill.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "fill/bulk_fill actions"
+        ]
+      },
+      "backend/apps/designs/tests/test_edits.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "edits/fill paths"
+        ]
+      },
+      "backend/apps/designs/tests/test_admin.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "admin surface (divergence D2)"
+        ]
+      },
+      "backend/apps/presets/tests/test_presets.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:designs/05 step30 (byte-exact seeded tree incl. to_px conversions)"
+        ],
+        "missing": [
+          "import validation (check_size) cases",
+          "seed command behavior"
+        ]
+      }
     }
   }
 }

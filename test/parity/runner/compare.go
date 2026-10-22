@@ -79,6 +79,16 @@ var (
 			`"id":"<uuid>"`, "per-row random uuid; each side mints its own (format asserted by the match)"},
 		{regexp.MustCompile(`"created_at":"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z"`),
 			`"created_at":"<iso-micro-z>"`, "row creation instant differs per side (RFC3339 micro-Z shape asserted)"},
+		{regexp.MustCompile(`"updated_at":"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z"`),
+			`"updated_at":"<iso-micro-z>"`, "each side stamps its own writes (RFC3339 micro-Z shape asserted)"},
+		{regexp.MustCompile(`"trashed_at":"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z"`),
+			`"trashed_at":"<iso-micro-z>"`, "trash instant differs per side (shape asserted; null stays literal)"},
+		{regexp.MustCompile(`"folder":"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"`),
+			`"folder":"<uuid>"`, "each side mints its own folder ids (dashed-uuid format asserted)"},
+		{regexp.MustCompile(`"parent":"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"`),
+			`"parent":"<uuid>"`, "each side mints its own folder ids (dashed-uuid format asserted)"},
+		{regexp.MustCompile(`https?://[A-Za-z0-9.\[\]:-]+`),
+			`<origin>`, "oracle and Go serve on different ports; pagination path+query after the origin stay compared"},
 		{regexp.MustCompile(`"prefix":"[0-9a-f]{12}"`),
 			`"prefix":"<12hex>"`, "random per issued token; format asserted by the match"},
 		{regexp.MustCompile(`"token":"doory_[0-9a-f]{12}_[A-Za-z0-9_-]{43}"`),
@@ -177,15 +187,38 @@ func compare(stepIdx int, step Step, oracle, goSide *capture) []string {
 	}
 
 	// Body: byte-exact after the recorded shape rules.
-	if string(normalizeBody(oracle.Body)) != string(normalizeBody(goSide.Body)) {
+	ob := normalizeBody(oracle.Body)
+	gb := normalizeBody(goSide.Body)
+	if string(ob) != string(gb) {
 		kind := "binary/bytes"
 		if oj, gj := jsonOK(oracle.Body), jsonOK(goSide.Body); oj && gj {
 			kind = "structurally-equal JSON (formatting-only drift)" + structuralNote(oracle.Body, goSide.Body)
 		}
-		add("body differs (%s):\n      oracle: %s\n      go:    %s",
-			kind, abbrev(oracle.Body), abbrev(goSide.Body))
+		add("body differs (%s):\n      first-diff: %s\n      oracle: %s\n      go:    %s",
+			kind, firstDiff(ob, gb), abbrev(oracle.Body), abbrev(goSide.Body))
 	}
 	return problems
+}
+
+// firstDiff reports the common-prefix length and shows both sides' context
+// around the first difference (after normalization).
+func firstDiff(a, b []byte) string {
+	i := 0
+	for i < len(a) && i < len(b) && a[i] == b[i] {
+		i++
+	}
+	ctx := func(x []byte) string {
+		lo, hi := i-40, i+40
+		if lo < 0 {
+			lo = 0
+		}
+		if hi > len(x) {
+			hi = len(x)
+		}
+		return string(x[lo:hi])
+	}
+	return fmt.Sprintf("at byte %d (len a=%d b=%d)\n        a: ...%s...\n        b: ...%s...",
+		i, len(a), len(b), ctx(a), ctx(b))
 }
 
 // canonHeaders lowercases names into a map of value-lists (multi-value

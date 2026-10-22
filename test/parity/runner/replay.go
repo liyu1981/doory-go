@@ -59,6 +59,9 @@ func Execute(repo string, sc *Scenario) ([]string, error) {
 		}
 		applyCaptures(step, captures["oracle"], o.Body)
 		applyCaptures(step, captures["go"], g.Body)
+		if len(step.Capture) > 0 {
+			fmt.Printf("      capture oracle=%v go=%v\n", captures["oracle"], captures["go"])
+		}
 
 		problems = append(problems, compare(i, step, o, g)...)
 

@@ -1,0 +1,15 @@
+GET /auth/csrf/ 
+POST /auth/register/ -H Content-Type: application/json -H X-CSRFToken: 0W5MwuvUooqU02B8tjpjKYetfwR3G9nq --data {"email":"des@example.com","password":"Tr0ub4dor&3xkcd9"}
+POST /designs/ -H Content-Type: application/json -H X-CSRFToken: LFWi2pHzxGNnP68cG9JcOJXrzKh6Mf3O --data {"title":"First Design"}
+POST /designs/ -H Content-Type: application/json -H X-CSRFToken: LFWi2pHzxGNnP68cG9JcOJXrzKh6Mf3O --data {"title":"Second Design","width":800,"height":600,"preset":"ig.story"}
+GET /designs/?page_size=1 
+GET /designs/?ordering=bogus 
+POST /designs/ -H Content-Type: application/json -H X-CSRFToken: LFWi2pHzxGNnP68cG9JcOJXrzKh6Mf3O --data {"document":{"schemaVersion":9,"width":10,"height":10,"pages":[]}}
+POST /designs/ -H Content-Type: application/json -H X-CSRFToken: LFWi2pHzxGNnP68cG9JcOJXrzKh6Mf3O --data {"title":"X","document":{"schemaVersion":1,"width":10,"height":10,"pages":[{"id":"p1","objects":[{"type":"image","src":"blob:http://x/y"}]}]}}
+POST /designs/ -H Content-Type: application/json -H X-CSRFToken: LFWi2pHzxGNnP68cG9JcOJXrzKh6Mf3O --data {"title":"T","template":"also-doc"}
+POST /designs/ -H Content-Type: application/json -H X-CSRFToken: LFWi2pHzxGNnP68cG9JcOJXrzKh6Mf3O --data {"document":{"schemaVersion":1,"width":10,"height":10,"pages":[{"id":"p","objects":[]}]},{"template":"slug"}
+POST /designs/ -H Content-Type: application/json -H X-CSRFToken: LFWi2pHzxGNnP68cG9JcOJXrzKh6Mf3O --data {"title":"   "}
+GET /designs/4edabe7e-3594-4c28-a822-98ee1ca868bb/ 
+PATCH /designs/4edabe7e-3594-4c28-a822-98ee1ca868bb/ -H Content-Type: application/json -H X-CSRFToken: LFWi2pHzxGNnP68cG9JcOJXrzKh6Mf3O --data {"document":{"schemaVersion":1,"width":10,"height":10,"pages":[{"id":"p","objects":[]}]},"base_revision":99}
+PATCH /designs/4edabe7e-3594-4c28-a822-98ee1ca868bb/ -H Content-Type: application/json -H X-CSRFToken: LFWi2pHzxGNnP68cG9JcOJXrzKh6Mf3O --data {"title":"Renamed","starred":true}
+GET /size-presets/ 

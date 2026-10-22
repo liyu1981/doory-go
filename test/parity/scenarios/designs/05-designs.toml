@@ -1,0 +1,211 @@
+# Behavior family: designs (family 4, PLAN.md §5) — CRUD slice.
+#
+# Oracle: pinned Django prod settings, fresh workdir DB (0002 seed rows
+# present on both sides via pnpm seedgen). Probe lineage:
+# probes/0004-designs (15 transcripts): create bytes, pagination link
+# shape (alphabetized query — rest_framework replace_query_param sorts),
+# validator envelopes, custom 409 conflict body, blank-title error.
+#
+# Comparator: byte-exact after the recorded shape rules (id/created_at/
+# updated_at/trashed_at/folder/parent uuids, pagination origin,
+# retry_after — reasons in runner/compare.go).
+#
+# Deferred in family (PORT_MAP 🟡): template creation (gallery), fill/
+# bulk_fill/fields/thumbnail/bulk actions, thumbnail storage, auto-version
+# pruning beyond50, design limit500 (one row pending is noted), malformed-
+# JSON parse_error message parity (CPython json text; core/parsers row).
+#
+# Auth-throttle note: register is the only auth-scoped request; design
+# routes ride UserRateThrottle 1200/min (kernel family ports DRF rates).
+
+name = "05-designs"
+description = "Design CRUD matches the oracle: list/pagination/filters/ordering, create with validator envelopes, revision conflict 409, trash lifecycle, duplicate, versions."
+driver = "http"
+tags = ["fast"]
+dialects = ["sqlite"]
+covers = [
+  "backend/apps/designs/views.py",
+  "backend/apps/designs/services.py",
+  "backend/apps/designs/serializers.py",
+  "backend/apps/designs/validators.py",
+  "backend/apps/designs/models.py",
+  "backend/apps/core/pagination.py",
+  "backend/apps/assets/ordering.py",
+]
+
+[env]
+GOOGLE_CLIENT_ID = "parity-client.test"
+SECURE_COOKIES = "false"
+DJANGO_SECRET_KEY = "parity-oracle-secret-key-0123456789"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/csrf/"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/register/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"des@example.com","password":"Tr0ub4dor&3xkcd9"}'
+
+# empty list: count 0, null links, empty results
+[[steps]]
+method = "GET"
+path = "/api/v1/designs/"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"title":"First Design"}'
+capture = { design1_id = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"title":"Second Design","width":800,"height":600,"preset":"ig.story"}'
+
+# pagination: page_size=1 -> alphabetized absolute next link (authority
+# normalized by rule; path+query compared), newest design first
+[[steps]]
+method = "GET"
+path = "/api/v1/designs/?page_size=1"
+capture = { list_id = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
+
+[[steps]]
+method = "GET"
+path = "/api/v1/designs/?ordering=bogus"
+
+# document validator envelopes (ApiError style: code + raised message)
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"document":{"schemaVersion":9,"width":10,"height":10,"pages":[]}}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"title":"X","document":{"schemaVersion":1,"width":10,"height":10,"pages":[{"id":"p1","objects":[{"type":"image","src":"blob:http://x/y"}]}]}}'
+
+# template + document mutual exclusion
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"document":{"schemaVersion":1,"width":10,"height":10,"pages":[{"id":"p","objects":[]}]},"template":"some-slug"}'
+
+# blank title (field-level, distinct from empty-after-clean)
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"title":"   "}'
+
+# retrieve full (document included; preset meta from create)
+[[steps]]
+method = "GET"
+path = "/api/v1/designs/{{capture:list_id}}/"
+
+# wrong base_revision -> custom 409 body with current{revision,updated_at}
+[[steps]]
+method = "PATCH"
+path = "/api/v1/designs/{{capture:list_id}}/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"document":{"schemaVersion":1,"width":10,"height":10,"pages":[{"id":"p","objects":[]}]},"base_revision":99}'
+
+# title+starred save: no revision bump
+[[steps]]
+method = "PATCH"
+path = "/api/v1/designs/{{capture:list_id}}/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"title":"Second Renamed","starred":true}'
+
+# document save with matching base_revision: revision 2 + auto version
+[[steps]]
+method = "PATCH"
+path = "/api/v1/designs/{{capture:list_id}}/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"document":{"schemaVersion":1,"width":800,"height":600,"pages":[{"id":"pp","background":{"type":"solid","color":"#ffffff"},"objects":[]}],"meta":{"presetId":"ig.story"}},"base_revision":1}'
+
+# starred filter + ordering by title ascending (tie-break pk invisible)
+[[steps]]
+method = "GET"
+path = "/api/v1/designs/?starred=true&ordering=title"
+
+# versions: auto version from the document save + manual create
+[[steps]]
+method = "GET"
+path = "/api/v1/designs/{{capture:list_id}}/versions/"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/{{capture:list_id}}/versions/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{}'
+capture = { version_id = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
+
+[[steps]]
+method = "GET"
+path = "/api/v1/designs/{{capture:list_id}}/versions/{{capture:version_id}}/"
+
+# restore the manual version: snapshot-before + revision bump
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/{{capture:list_id}}/versions/{{capture:version_id}}/restore/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+
+# permanent delete of a LIVE design -> 400 not_in_trash
+[[steps]]
+method = "DELETE"
+path = "/api/v1/designs/{{capture:design1_id}}/?permanent=true"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+
+# trash design1, patch it -> 409 design_trashed, then restore
+[[steps]]
+method = "DELETE"
+path = "/api/v1/designs/{{capture:design1_id}}/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+
+[[steps]]
+method = "PATCH"
+path = "/api/v1/designs/{{capture:design1_id}}/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"title":"nope"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/{{capture:design1_id}}/restore/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+
+# duplicate: "Copy of ...", revision 1, unstarred
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/{{capture:list_id}}/duplicate/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+
+# trash the copy, empty the trash, verify both list views
+[[steps]]
+method = "DELETE"
+path = "/api/v1/designs/{{capture:list_id}}/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+
+[[steps]]
+method = "GET"
+path = "/api/v1/designs/?trashed=true"
+
+[[steps]]
+method = "DELETE"
+path = "/api/v1/designs/trash/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+
+[[steps]]
+method = "GET"
+path = "/api/v1/designs/?trashed=true"
+
+# size presets: byte-exact seeded tree (0002 seed rows on both sides)
+[[steps]]
+method = "GET"
+path = "/api/v1/size-presets/"

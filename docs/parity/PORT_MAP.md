@@ -137,7 +137,7 @@ behavioral verification).
 | `backend/apps/assets/middleware.py` |  | ⬜ |
 | `backend/apps/assets/migrations/` |  | ⬜ |
 | `backend/apps/assets/models.py` |  | ⬜ |
-| `backend/apps/assets/ordering.py` |  | ⬜ |
+| `backend/apps/assets/ordering.py` | doory/designs.go (applyOrdering whitelist + pk tie-break + message); other callers with assets family | 🟡 |
 | `backend/apps/assets/parsers.py` |  | ⬜ |
 | `backend/apps/assets/providers.py` |  | ⬜ |
 | `backend/apps/assets/remote.py` |  | ⬜ |
@@ -212,7 +212,7 @@ behavioral verification).
 | `backend/apps/core/management/` |  | ⬜ |
 | `backend/apps/core/middleware.py` | doory/middleware.go (PermissionsPolicy + PrivateApiCache; MediaSecurityHeaders with assets family) | 🟡 |
 | `backend/apps/core/models.py` |  | ⬜ |
-| `backend/apps/core/pagination.py` |  | ⬜ |
+| `backend/apps/core/pagination.py` | doory/designs.go (paginate/pageSlice/pageLink: 24/100 sizes, page_size cap, alphabetized absolute links, Invalid page) | ✅ |
 | `backend/apps/core/parsers.py` |  | ⬜ |
 | `backend/apps/core/permissions.py` |  | ⬜ |
 | `backend/apps/core/storage.py` |  | ⬜ |
@@ -234,25 +234,25 @@ behavioral verification).
 
 | upstream | go | status |
 |---|---|---|
-| `backend/apps/designs/admin.py` |  | ⬜ |
-| `backend/apps/designs/apps.py` |  | ⬜ |
-| `backend/apps/designs/edits.py` |  | ⬜ |
-| `backend/apps/designs/exceptions.py` |  | ⬜ |
-| `backend/apps/designs/fill.py` |  | ⬜ |
-| `backend/apps/designs/folder_views.py` |  | ⬜ |
-| `backend/apps/designs/folders.py` |  | ⬜ |
-| `backend/apps/designs/management/` |  | ⬜ |
-| `backend/apps/designs/migrations/` |  | ⬜ |
-| `backend/apps/designs/models.py` |  | ⬜ |
-| `backend/apps/designs/parsers.py` |  | ⬜ |
-| `backend/apps/designs/serializers.py` |  | ⬜ |
-| `backend/apps/designs/services.py` |  | ⬜ |
-| `backend/apps/designs/signals.py` |  | ⬜ |
-| `backend/apps/designs/tests/` |  | ⬜ |
-| `backend/apps/designs/throttling.py` |  | ⬜ |
-| `backend/apps/designs/urls.py` |  | ⬜ |
-| `backend/apps/designs/validators.py` |  | ⬜ |
-| `backend/apps/designs/views.py` |  | ⬜ |
+| `backend/apps/designs/admin.py` | — | ⬜ |
+| `backend/apps/designs/apps.py` | — | ⬜ |
+| `backend/apps/designs/edits.py` | (pending: fill/fields actions) | ⬜ |
+| `backend/apps/designs/exceptions.py` | doory/document.go + doory/designs_views.go (invalid_document/inline_asset/document_too_large/design_trashed/not_in_trash codes + revision_conflict 409 body) | ✅ |
+| `backend/apps/designs/fill.py` | (pending: fill/bulk_fill actions) | ⬜ |
+| `backend/apps/designs/folder_views.py` | doory/folders.go (list/create/detail/patch/delete + design_count annotation) | 🟡 |
+| `backend/apps/designs/folders.py` | doory/folders.go (depth/cycle/unique/reparent rules); pending: LimitReached 409 at500 folders | 🟡 |
+| `backend/apps/designs/management/` | (purge_trash command — ops family) | ⬜ |
+| `backend/apps/designs/migrations/` | (schema: generated from oracle, digest-proven) | ✅ |
+| `backend/apps/designs/models.py` | doory/designs.go + doory/designs_versions.go + doory/folders.go (row ops, Meta ordering, thumbnail paths pending with assets) | 🟡 |
+| `backend/apps/designs/parsers.py` | doory/views_auth.go jsonBody (bounded); pending: DesignJSONParser media-type edge probes | 🟡 |
+| `backend/apps/designs/serializers.py` | doory/designs.go + doory/folders.go + doory/designs_versions.go (title/query/create/update/bulk pending, version+folder shapes) ; clean_text via doory/apitokens.go | 🟡 |
+| `backend/apps/designs/services.py` | doory/designs_views.go + doory/designs_versions.go (create/update/conflict/trash/restore/duplicate/purge/versions/prune); pending: template create, thumbnails, bulk_apply | 🟡 |
+| `backend/apps/designs/signals.py` | (thumbnail file cleanup on delete — assets family) | ⬜ |
+| `backend/apps/designs/tests/` | (dispositions: ledger/test-mapping-v*.json) | 🟡 |
+| `backend/apps/designs/throttling.py` | (fill/bulk throttles — pending with fill actions; kernel ports DRF rates) | ⬜ |
+| `backend/apps/designs/urls.py` | doory/app.go (router: list/detail/actions/versions + {uuid}/{design_pk} templates) | ✅ |
+| `backend/apps/designs/validators.py` | doory/document.go (complete: structure/motion/audio/walk/size bound) | ✅ |
+| `backend/apps/designs/views.py` | doory/designs.go + doory/designs_views.go (list/create/retrieve/partial_update/destroy/restore/duplicate/trash-empty + conflict); pending: fields/fill/bulk_fill/thumbnail/bulk | 🟡 |
 
 ## `backend/apps/designs/doc/`
 
@@ -403,14 +403,14 @@ behavioral verification).
 |---|---|---|
 | `backend/apps/presets/admin.py` |  | ⬜ |
 | `backend/apps/presets/apps.py` |  | ⬜ |
-| `backend/apps/presets/importer.py` |  | ⬜ |
-| `backend/apps/presets/management/` |  | ⬜ |
-| `backend/apps/presets/migrations/` |  | ⬜ |
-| `backend/apps/presets/models.py` |  | ⬜ |
-| `backend/apps/presets/tests/` |  | ⬜ |
-| `backend/apps/presets/urls.py` |  | ⬜ |
-| `backend/apps/presets/validators.py` |  | ⬜ |
-| `backend/apps/presets/views.py` |  | ⬜ |
+| `backend/apps/presets/importer.py` | doory/migrations/0002_presets.seed.sqlite.sql (row dump via pnpm seedgen — content parity without porting write()); FORMAT_VERSION via doory/presets.go | ✅ |
+| `backend/apps/presets/management/` | (seed_size_presets command — ops family) | ⬜ |
+| `backend/apps/presets/migrations/` | (schema + seed via generated migrations, digest-proven) | ✅ |
+| `backend/apps/presets/models.py` | doory/presets.go (row reads + width_px/height_px as to_px properties) | 🟡 |
+| `backend/apps/presets/tests/` | (dispositions: ledger/test-mapping-v*.json) | 🟡 |
+| `backend/apps/presets/urls.py` | doory/app.go (/size-presets/) | ✅ |
+| `backend/apps/presets/validators.py` | doory/presets.go (to_px + UNITS exact big.Rat rounding); pending: check_size (import-path validation) | 🟡 |
+| `backend/apps/presets/views.py` | doory/presets.go (size_presets: tree, ordering, raw JSON passthrough, cache header) | ✅ |
 
 ## `backend/apps/sharing/`
 

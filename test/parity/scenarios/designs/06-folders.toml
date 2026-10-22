@@ -1,0 +1,171 @@
+# Behavior family: designs (family 4) — folders slice.
+#
+# Tree rules from apps/designs/folders.py (depth 5, cycle prevention,
+# per-parent case-insensitive unique names, delete-and-reparent with clash
+# renaming) + FolderViewSet shapes (design_count on LIVE designs only,
+# Lower(name) ordering, parent=root|uuid filter, invalid uuid via the
+# view's bare UUIDField -> non_field_errors).
+#
+# Auth note (kernel pending): register is the only auth-scoped request.
+
+name = "06-folders"
+description = "Folder tree CRUD matches the oracle: unique names, nesting limits, cycles, design_count annotation, reparenting on delete."
+driver = "http"
+tags = ["fast"]
+dialects = ["sqlite"]
+covers = [
+  "backend/apps/designs/folder_views.py",
+  "backend/apps/designs/folders.py",
+  "backend/apps/designs/serializers.py",
+]
+
+[env]
+GOOGLE_CLIENT_ID = "parity-client.test"
+SECURE_COOKIES = "false"
+DJANGO_SECRET_KEY = "parity-oracle-secret-key-0123456789"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/csrf/"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/register/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"folders@example.com","password":"Tr0ub4dor&3xkcd9"}'
+
+[[steps]]
+method = "GET"
+path = "/api/v1/folders/"
+
+# create root folder (capture id)
+[[steps]]
+method = "POST"
+path = "/api/v1/folders/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"Work Files"}'
+capture = { f1 = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
+
+# duplicate name at the same parent ->400
+[[steps]]
+method = "POST"
+path = "/api/v1/folders/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"work files"}'
+
+# blank name after clean ->400
+[[steps]]
+method = "POST"
+path = "/api/v1/folders/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"   "}'
+
+# child folder
+[[steps]]
+method = "POST"
+path = "/api/v1/folders/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"Sub","parent":"{{capture:f1}}"}'
+capture = { f2 = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
+
+# invalid parent uuid (field-level)
+[[steps]]
+method = "POST"
+path = "/api/v1/folders/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"Bad","parent":"not-a-uuid"}'
+
+# non-uuid parent on LIST -> non_field_errors (bare run_validation)
+[[steps]]
+method = "GET"
+path = "/api/v1/folders/?parent=not-a-uuid"
+
+# cycle: move f1 under its own child f2 ->400
+[[steps]]
+method = "PATCH"
+path = "/api/v1/folders/{{capture:f1}}/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"parent":"{{capture:f2}}"}'
+
+# depth chain: b under a, c under b, d under c (depth4), e under d (=5);
+# child of e would be6 ->400
+[[steps]]
+method = "POST"
+path = "/api/v1/folders/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"da"}'
+capture = { da = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
+
+[[steps]]
+method = "POST"
+path = "/api/v1/folders/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"db","parent":"{{capture:da}}"}'
+capture = { db = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
+
+[[steps]]
+method = "POST"
+path = "/api/v1/folders/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"dc","parent":"{{capture:db}}"}'
+capture = { dc = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
+
+[[steps]]
+method = "POST"
+path = "/api/v1/folders/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"dd","parent":"{{capture:dc}}"}'
+capture = { dd = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
+
+[[steps]]
+method = "POST"
+path = "/api/v1/folders/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"de","parent":"{{capture:dd}}"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/folders/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"df","parent":"{{capture:dd}}"}'
+
+# design inside f1 (design_count comes alive)
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"title":"In Folder","folder":"{{capture:f1}}"}'
+
+# list root: f1 has design_count 1; nested da chain listed by name
+[[steps]]
+method = "GET"
+path = "/api/v1/folders/?parent=root"
+
+# rename f1 to a taken sibling name ->400 clash
+[[steps]]
+method = "PATCH"
+path = "/api/v1/folders/{{capture:da}}/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"da"}'
+
+# valid rename
+[[steps]]
+method = "PATCH"
+path = "/api/v1/folders/{{capture:da}}/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"da renamed"}'
+
+# delete f1: child f2 + design reparent to root
+[[steps]]
+method = "DELETE"
+path = "/api/v1/folders/{{capture:f1}}/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+
+# after delete: f2 sits at root with its design_count, the design is folder-less
+[[steps]]
+method = "GET"
+path = "/api/v1/folders/?parent=root"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/designs/?folder=root"

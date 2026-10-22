@@ -457,3 +457,45 @@ M3 progress log (apitokens family):
 - ⬜ Family pending: authenticate() + last_used tracking (mcp family),
   fallback-key rotation branch, confirm_email path (google), 409 limit
   scenario (needs 20 live tokens).
+
+M4 progress log (designs + presets families):
+
+- ✅ Probe: `test/parity/probes/0004-designs/` (15 transcripts) + a
+  folder/message micro-campaign during the loop: create bytes, alphabet-
+  ized absolute pagination links (replace_query_param SORTS query items),
+  ApiError-style validator envelopes, the custom409 conflict body with
+  `current`, blank-vs-empty-after-clean name distinction, DRF 6.1's two
+  UUID messages (typographic quotes in serializer field context,
+  plain `Must be a valid UUID.` for bare run_validation).
+- ✅ Port: `document.go` (COMPLETE 310-line validator: structure, motion,
+  audio tracks, iterative walk, size bound — all messages/codes),
+  `designs.go` (list filters/ordering/pagination, create incl. blank-
+  document struct with probe-exact key order, PATCH with revision
+  conflict, trash/restore/duplicate/purge/trash-empty),
+  `designs_views.go` (conflict envelope, auto-version snapshotting +
+  prune, services), `designs_versions.go` (list/create/detail/restore with
+  snapshot-before semantics), `folders.go` (depth5/cycle/unique/reparent
+  rules + design_count annotation), `presets.go` (seeded tree with exact
+  big.Rat to_px rounding + raw JSON column passthrough), plus seedgen
+  (0002 seed rows dumped verbatim from the oracle — content parity
+  without porting the importer).
+- ✅ Runner/comparator: pagination-origin normalization (path+query still
+  compared), updated_at/trashed_at/folder/parent shape rules, first-diff
+  byte-context reporting (drove every fix), capture debug print.
+- ✅ Loop-caught bugs (all real): Sprintf-before-args leaving literal `%s`
+  in SQL, dashed-vs-hex uuid storage lookups (detail routes, folder FKs,
+  filters), map-marshaled documents randomizing key order, blank-document
+  key order, to_px identity mistake (px*96), missing cache header on
+  size-presets, conflict-body map order, recordVersion snapshotting the
+  version instead of the current document, parent-field name/blank errors.
+- ✅ Scenarios `05-designs` (30 steps) + `06-folders` (23 steps) green;
+  suite now 6/6 (110 steps).
+- ✅ Artifacts: PORT_MAP rows reviewed for designs/presets/pagination/
+  ordering (complete: validators, exceptions, urls, presets views,
+  seed path ✅; partial with pending lists: views/services/serializers/
+  folders/models/parsers), test-mapping dispositions for all 16 designs
+  test files + presets test file.
+- ⬜ Family pending: template creation (gallery), fill/bulk_fill/fields/
+  thumbnail/bulk actions (+doc/ package), DesignJSONParser media-type
+  probes, purge_expired_trash command, thumbnails/signals file cleanup,
+  folder/design limit409 scenarios.
