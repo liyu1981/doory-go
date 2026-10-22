@@ -1,0 +1,146 @@
+# Behavior family: brand (family 5, PLAN.md §5) — brand kits CRUD.
+#
+# Probe lineage: probes/0005-elements-gallery-brand (brand create/list
+# shapes, nested child-error colors/fonts, flat ownership message).
+# Logos are assets rows (assets family): M5 asserts empty-logos shapes and
+# the logo_ids ownership rejection.
+#
+# Auth: default SessionAuthentication + IsAuthenticated (anon -> 401 before
+# any csrf check, like designs); register is the only auth-scoped request.
+
+name = "07-brand"
+description = "Brand kits match the oracle: validation shapes (nested vs flat), cleaned/lowercased fields, single-default flip, ordering, CRUD."
+driver = "http"
+tags = ["fast"]
+dialects = ["sqlite"]
+covers = [
+  "backend/apps/brand/views.py",
+  "backend/apps/brand/services.py",
+  "backend/apps/brand/serializers.py",
+  "backend/apps/brand/models.py",
+]
+
+[env]
+GOOGLE_CLIENT_ID = "parity-client.test"
+SECURE_COOKIES = "false"
+DJANGO_SECRET_KEY = "parity-oracle-secret-key-0123456789"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/csrf/"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/register/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"brandy@example.com","password":"Tr0ub4dor&3xkcd9"}'
+
+# anon list -> 401
+[[steps]]
+method = "GET"
+path = "/api/v1/brand-kits/"
+jar = "anon"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/brand-kits/"
+
+# create: cleaned name, lowercased hex, cleaned family, default kit
+[[steps]]
+method = "POST"
+path = "/api/v1/brand-kits/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"  My   Brand  ","is_default":true,"colors":[{"id":"primary","name":" Primary ","hex":"#AbC"}],"fonts":[{"role":"heading","family":"  Inter  "}]}'
+capture = { kit1 = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
+
+# nested child error: hex pattern message
+[[steps]]
+method = "POST"
+path = "/api/v1/brand-kits/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"Bad","colors":[{"id":"x","hex":"nope"}]}'
+
+# flat list-level error: duplicate colour ids
+[[steps]]
+method = "POST"
+path = "/api/v1/brand-kits/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"Dup","colors":[{"id":"a","hex":"#abc"},{"id":"a","hex":"#def"}]}'
+
+# nested role choice error (straight-quote DRF message) + flat duplicate roles
+[[steps]]
+method = "POST"
+path = "/api/v1/brand-kits/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"Role","fonts":[{"role":"wat","family":"F"}]}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/brand-kits/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"Role2","fonts":[{"role":"heading","family":"A"},{"role":"heading","family":"B"}]}'
+
+# blank name (trim -> blank error)
+[[steps]]
+method = "POST"
+path = "/api/v1/brand-kits/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"   "}'
+
+# logo ownership (assets family owns nothing)
+[[steps]]
+method = "POST"
+path = "/api/v1/brand-kits/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"Logos","logo_ids":["11111111-1111-1111-1111-111111111111"]}'
+
+# second default flips the first (single-default constraint)
+[[steps]]
+method = "POST"
+path = "/api/v1/brand-kits/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"Alpha","is_default":true}'
+capture = { kit2 = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
+
+# ordering: -is_default, name, created_at (Alpha default first)
+[[steps]]
+method = "GET"
+path = "/api/v1/brand-kits/"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/brand-kits/{{capture:kit1}}/"
+
+# non-uuid detail segment -> resolver 404 (SPACED dialect)
+[[steps]]
+method = "PATCH"
+path = "/api/v1/brand-kits/not-a-uuid/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"x"}'
+
+[[steps]]
+method = "PATCH"
+path = "/api/v1/brand-kits/{{capture:kit1}}/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"  Renamed   Kit  "}'
+capture = { kit3 = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
+
+# colors round trip (submitted order preserved)
+[[steps]]
+method = "PATCH"
+path = "/api/v1/brand-kits/{{capture:kit1}}/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"colors":[{"id":"z","name":"","hex":"#123456"},{"id":"a","name":"A","hex":"#fff"}]}'
+
+[[steps]]
+method = "DELETE"
+path = "/api/v1/brand-kits/{{capture:kit1}}/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+
+[[steps]]
+method = "GET"
+path = "/api/v1/brand-kits/"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/brand-kits/{{capture:kit1}}/"

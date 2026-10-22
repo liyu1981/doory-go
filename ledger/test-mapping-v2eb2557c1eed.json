@@ -259,6 +259,241 @@
           "seed command behavior"
         ]
       }
+    },
+    "elements": {
+      "backend/apps/elements/tests/test_api.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:catalog/08-catalog (empty-state shapes, filter validation, pagination, cache)"
+        ],
+        "missing": [
+          "seeded-content list behavior (ops content)",
+          "q/relevance ordering",
+          "pack preview annotation"
+        ]
+      },
+      "backend/apps/elements/tests/test_search.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "relevance expression — needs seeded rows + SQL-level evidence"
+        ]
+      },
+      "backend/apps/elements/tests/conftest.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "pytest scaffolding — no Go port planned"
+        ]
+      },
+      "backend/apps/elements/tests/factories.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "factories — no Go port planned"
+        ]
+      },
+      "backend/apps/elements/tests/packhelpers.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "helpers — no Go port planned"
+        ]
+      },
+      "backend/apps/elements/tests/test_admin.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "admin surface (D2)"
+        ]
+      },
+      "backend/apps/elements/tests/test_bulk.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "bulk publish/unpublish command path (ops)"
+        ]
+      },
+      "backend/apps/elements/tests/test_command.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "seed_elements command (ops content)"
+        ]
+      },
+      "backend/apps/elements/tests/test_graphics.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "graphics content tooling"
+        ]
+      },
+      "backend/apps/elements/tests/test_import.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "import_elements (ops content)"
+        ]
+      },
+      "backend/apps/elements/tests/test_manifest.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "pack manifest parsing (sync path)"
+        ]
+      },
+      "backend/apps/elements/tests/test_migration.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "0002 migration edge (schema digest-proven instead)"
+        ]
+      },
+      "backend/apps/elements/tests/test_models.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "model write-path cases (bulk_create guard)"
+        ]
+      },
+      "backend/apps/elements/tests/test_normalize.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "sync normalization (packsync path)"
+        ]
+      },
+      "backend/apps/elements/tests/test_packsync.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "sync_element_packs (ops command)"
+        ]
+      },
+      "backend/apps/elements/tests/test_sources.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "upstream sources (sync path)"
+        ]
+      },
+      "backend/apps/elements/tests/test_shapes_generator.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "generate_shapes tooling (content pipeline)"
+        ]
+      },
+      "backend/apps/elements/tests/test_tagdata.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "tag data pipeline"
+        ]
+      },
+      "backend/apps/gallery/tests/conftest.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "pytest scaffolding — no Go port planned"
+        ]
+      },
+      "backend/apps/gallery/tests/factories.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "factories — no Go port planned"
+        ]
+      },
+      "backend/apps/brand/tests/conftest.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "pytest scaffolding — no Go port planned"
+        ]
+      }
+    },
+    "gallery": {
+      "backend/apps/gallery/tests/conftest.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "pytest scaffolding — no Go port planned"
+        ]
+      },
+      "backend/apps/gallery/tests/factories.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "helpers — no Go port planned"
+        ]
+      },
+      "backend/apps/gallery/tests/test_admin.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "template content paths — seed_templates pending (ops content)"
+        ]
+      },
+      "backend/apps/gallery/tests/test_api.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:catalog/08-catalog (categories/templates empty shapes, filters, detail404, use auth flow)"
+        ],
+        "missing": [
+          "seeded list/detail/use happy paths",
+          "TemplateFilter invalid-choice messages (django-filter forms path — deliberately unasserted until probed)"
+        ]
+      },
+      "backend/apps/gallery/tests/test_commands.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "template content paths — seed_templates pending (ops content)"
+        ]
+      },
+      "backend/apps/gallery/tests/test_seed_templates.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "template content paths — seed_templates pending (ops content)"
+        ]
+      },
+      "backend/apps/gallery/tests/test_sitemap.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:catalog/08-catalog sitemap step (exact bytes, cache header, no Allow)"
+        ],
+        "missing": [
+          "published-template entries — need seeded templates (ops content)"
+        ]
+      },
+      "backend/apps/gallery/tests/test_validators.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "validate_template_document — needed for import_template/apply_document (ops content path)"
+        ]
+      }
+    },
+    "brand": {
+      "backend/apps/brand/tests/conftest.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "pytest scaffolding — no Go port planned"
+        ]
+      },
+      "backend/apps/brand/tests/test_brand_kits.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:brand/07-brand (20 steps)"
+        ],
+        "missing": [
+          "limit409 at 20 kits",
+          "logo attach with real assets"
+        ]
+      }
     }
   }
 }

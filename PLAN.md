@@ -499,3 +499,38 @@ M4 progress log (designs + presets families):
   thumbnail/bulk actions (+doc/ package), DesignJSONParser media-type
   probes, purge_expired_trash command, thumbnails/signals file cleanup,
   folder/design limit409 scenarios.
+
+M5 progress log (elements + gallery + brand families):
+
+- ✅ Probe: `test/parity/probes/0005-elements-gallery-brand/` (15
+  transcripts): empty packs, elements cache 300 (elements-only — gallery
+  views set none, middleware no-store applies), template detail
+  "Not found.", use "Template not found." (DRF custom NotFound message
+  vs get_object_or_404 default), exact sitemap bytes off SITE_URL, brand
+  create/list shapes with cleansed fields (hex lowercased) and the two
+  nested child-error shapes (colors hex, fonts role — straight-quote DRF
+  choice message) vs flat list-level messages.
+- ✅ Ports: `elements.go` (public reads, django-FORM choice messages with
+  invalid_choice codes, pagination 48, cache finalize), `gallery.go`
+  (categories/list/detail/use + TemplateFilter semantics, exact sitemap
+  with the published-template loop, slug-converter routing), `brand.go`
+  (full CRUD: declaration-order validation with partial-mode PATCH,
+  nested-vs-flat error shapes, single-default flip, ordering, limits),
+  router gained {slug} converter validation + AllowNone for non-DRF
+  Django views (no Allow on success).
+- ✅ Content strategy: element/gallery catalogs are SEED-COMMAND content
+  (ops family) — M5 asserts the full empty-state + validation surface;
+  rows note the content paths (seed_elements/seed_templates/import) as
+  pending rather than pretending coverage.
+- ✅ Loop-caught: django-filter choice errors carry code invalid_choice
+  (not invalid), PATCH partial mode must not demand absent required fields.
+- ✅ Scenarios `07-brand` (20 steps) + `08-catalog` (16 steps) green;
+  suite 8/8 (154 steps).
+- ✅ Artifacts: PORT_MAP rows reviewed (brand fully ✅; elements/gallery
+  partial with content-seeding pending lists), test-mapping dispositions
+  for every elements/gallery/brand test file (sitemap partial with
+  scenario evidence; seed/search/import paths pending ops content).
+- ⬜ Family pending: seeded-content happy paths (seed_elements/
+  seed_templates via row+file dumps), q/relevance search (needs rows),
+  template document validator + apply_document, write paths (packsync,
+  bulk, normalize).

@@ -1,0 +1,1 @@
+{"error":{"code":"validation_error","message":"Invalid input.","fields":{"logo_ids":["Every logo must be one of your own assets."]},"field_codes":{"logo_ids":["invalid"]}}}

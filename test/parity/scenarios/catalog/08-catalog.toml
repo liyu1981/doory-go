@@ -1,0 +1,113 @@
+# Behavior family: elements + gallery (family 5) — public catalog reads.
+#
+# Probe lineage: probes/0005-elements-gallery-brand: []-empty packs,
+# cache-control 300 on elements (elements-only — gallery views set none, so
+# middleware no-store applies), template detail "Not found.", use
+# "Template not found." after auth, exact sitemap bytes (SITE_URL based).
+#
+# Catalog CONTENT comes from seed commands (ops family): fresh installs
+# serve empty lists. Filter VALIDATION still exercises the django-filter
+# choice paths (Django FORM messages, distinct from DRF's).
+#
+# Auth: public reads have authentication_classes=[] (no Vary: Cookie);
+# template use needs a session (CSRF only when authenticated).
+
+name = "08-catalog"
+description = "Elements/gallery public catalog matches the oracle: empty-state shapes, filter validation, cache headers, sitemap bytes, template-use auth flow."
+driver = "http"
+tags = ["fast"]
+dialects = ["sqlite"]
+covers = [
+  "backend/apps/elements/views.py",
+  "backend/apps/elements/filters.py",
+  "backend/apps/elements/serializers.py",
+  "backend/apps/gallery/views.py",
+  "backend/apps/gallery/sitemap.py",
+  "backend/apps/gallery/filters.py",
+  "backend/apps/gallery/serializers.py",
+  "backend/apps/gallery/models.py",
+]
+
+[env]
+GOOGLE_CLIENT_ID = "parity-client.test"
+SECURE_COOKIES = "false"
+SITE_URL = "http://localhost:5173"
+DJANGO_SECRET_KEY = "parity-oracle-secret-key-0123456789"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/elements/packs/"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/elements/"
+
+# valid filters -> empty page (filters still parse/apply)
+[[steps]]
+method = "GET"
+path = "/api/v1/elements/?kind=icon&style=outline&pack=shapes&q=arrow&ordering=relevance"
+
+# django-filter choice message (Django FORMS path, not DRF)
+[[steps]]
+method = "GET"
+path = "/api/v1/elements/?kind=bogus"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/elements/?ordering=bogus"
+
+# invalid page -> DRF NotFound "Invalid page."
+[[steps]]
+method = "GET"
+path = "/api/v1/elements/?page=99"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/template-categories/"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/templates/"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/templates/?orientation=landscape&ordering=use_count&featured=true"
+
+# unknown slug -> DRF NotFound "Not found."
+[[steps]]
+method = "GET"
+path = "/api/v1/templates/nope/"
+
+# non-slug segment -> resolver (SPACED handler404 dialect)
+[[steps]]
+method = "GET"
+path = "/api/v1/templates/bad.slug!"
+
+# use: anonymous -> 401 (session + IsAuthenticated)
+[[steps]]
+method = "POST"
+path = "/api/v1/templates/nope/use/"
+jar = "anon"
+headers = { Content-Type = "application/json" }
+
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/csrf/"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/register/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"catalog@example.com","password":"Tr0ub4dor&3xkcd9"}'
+
+# use authenticated -> the custom DRF NotFound message
+[[steps]]
+method = "POST"
+path = "/api/v1/templates/nope/use/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+
+# sitemap: exact bytes (static pages off SITE_URL; no templates yet),
+# application/xml, public max-age 3600, NO Allow (Django view)
+[[steps]]
+method = "GET"
+path = "/sitemap.xml"

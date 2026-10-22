@@ -168,12 +168,12 @@ behavioral verification).
 | `backend/apps/brand/admin.py` |  | ⬜ |
 | `backend/apps/brand/apps.py` |  | ⬜ |
 | `backend/apps/brand/migrations/` |  | ⬜ |
-| `backend/apps/brand/models.py` |  | ⬜ |
-| `backend/apps/brand/serializers.py` |  | ⬜ |
-| `backend/apps/brand/services.py` |  | ⬜ |
+| `backend/apps/brand/models.py` | doory/brand.go (row CRUD, ordering, single-default clearing) | ✅ |
+| `backend/apps/brand/serializers.py` | doory/brand.go (name/colors/fonts/logo_ids validation: nested vs flat shapes probe-proven) | ✅ |
+| `backend/apps/brand/services.py` | doory/brand.go (create_kit limit/single-default under lock semantics, update_kit, logo set) | ✅ |
 | `backend/apps/brand/tests/` |  | ⬜ |
 | `backend/apps/brand/urls.py` |  | ⬜ |
-| `backend/apps/brand/views.py` |  | ⬜ |
+| `backend/apps/brand/views.py` | doory/brand.go (list/create/detail/patch/destroy) | ✅ |
 
 ## `backend/apps/collab/`
 
@@ -273,26 +273,26 @@ behavioral verification).
 | `backend/apps/elements/admin.py` |  | ⬜ |
 | `backend/apps/elements/apps.py` |  | ⬜ |
 | `backend/apps/elements/bulk.py` |  | ⬜ |
-| `backend/apps/elements/filters.py` |  | ⬜ |
+| `backend/apps/elements/filters.py` | doory/elements.go (pack/kind/style/ordering validation with Django FORM messages; q+relevance pending with content seeding) | 🟡 |
 | `backend/apps/elements/generated.py` |  | ⬜ |
 | `backend/apps/elements/importer.py` |  | ⬜ |
 | `backend/apps/elements/management/` |  | ⬜ |
 | `backend/apps/elements/manifest.py` |  | ⬜ |
 | `backend/apps/elements/migrations/` |  | ⬜ |
-| `backend/apps/elements/models.py` |  | ⬜ |
+| `backend/apps/elements/models.py` | doory/elements.go (row reads); bulk_create guard + write paths pending (sync commands) | 🟡 |
 | `backend/apps/elements/normalize.py` |  | ⬜ |
 | `backend/apps/elements/packsync.py` |  | ⬜ |
 | `backend/apps/elements/readers.py` |  | ⬜ |
 | `backend/apps/elements/search.py` |  | ⬜ |
 | `backend/apps/elements/seed.py` |  | ⬜ |
-| `backend/apps/elements/serializers.py` |  | ⬜ |
+| `backend/apps/elements/serializers.py` | doory/elements.go (pack/item envelopes; preview_svg annotation pending with content) | 🟡 |
 | `backend/apps/elements/signals.py` |  | ⬜ |
 | `backend/apps/elements/sources.py` |  | ⬜ |
 | `backend/apps/elements/svgdata.py` |  | ⬜ |
 | `backend/apps/elements/tagdata.py` |  | ⬜ |
 | `backend/apps/elements/tests/` |  | ⬜ |
 | `backend/apps/elements/urls.py` |  | ⬜ |
-| `backend/apps/elements/views.py` |  | ⬜ |
+| `backend/apps/elements/views.py` | doory/elements.go (packs + list: public reads, filters, pagination 48, cache 300) | 🟡 |
 
 ## `backend/apps/elements/templates/admin/elements/`
 
@@ -352,19 +352,19 @@ behavioral verification).
 |---|---|---|
 | `backend/apps/gallery/admin.py` |  | ⬜ |
 | `backend/apps/gallery/apps.py` |  | ⬜ |
-| `backend/apps/gallery/filters.py` |  | ⬜ |
-| `backend/apps/gallery/importer.py` |  | ⬜ |
+| `backend/apps/gallery/filters.py` | doory/gallery.go (category/q/orientation/preset/featured/ordering + total tie-breaks) | 🟡 |
+| `backend/apps/gallery/importer.py` | (seed_templates/import_template command — ops family content) | ⬜ |
 | `backend/apps/gallery/management/` |  | ⬜ |
 | `backend/apps/gallery/migrations/` |  | ⬜ |
-| `backend/apps/gallery/models.py` |  | ⬜ |
-| `backend/apps/gallery/serializers.py` |  | ⬜ |
+| `backend/apps/gallery/models.py` | doory/gallery.go (row reads + orientation derivation); apply_document pending with import_template | 🟡 |
+| `backend/apps/gallery/serializers.py` | doory/gallery.go (category/summary/detail envelopes) | 🟡 |
 | `backend/apps/gallery/services.py` |  | ⬜ |
 | `backend/apps/gallery/signals.py` |  | ⬜ |
-| `backend/apps/gallery/sitemap.py` |  | ⬜ |
+| `backend/apps/gallery/sitemap.py` | doory/gallery.go (exact bytes, SITE_URL base, published-template loop) | ✅ |
 | `backend/apps/gallery/tests/` |  | ⬜ |
 | `backend/apps/gallery/urls.py` |  | ⬜ |
 | `backend/apps/gallery/validators.py` |  | ⬜ |
-| `backend/apps/gallery/views.py` |  | ⬜ |
+| `backend/apps/gallery/views.py` | doory/gallery.go (categories/list/detail/use + TemplateFilter) | 🟡 |
 
 ## `backend/apps/mcp/`
 
@@ -485,7 +485,7 @@ behavioral verification).
 |---|---|---|
 | `backend/doory/asgi.py` |  | ⬜ |
 | `backend/doory/mcp_asgi.py` |  | ⬜ |
-| `backend/doory/urls.py` | doory/app.go (4 of 214 routes registered; kernel family) | 🟡 |
+| `backend/doory/urls.py` | doory/app.go (kernel + accounts + designs + folders + presets + elements + gallery + brand + sitemap routes; admin/static/media mounts pending) | 🟡 |
 | `backend/doory/wsgi.py` |  | ⬜ |
 
 ## `backend/doory/settings/`

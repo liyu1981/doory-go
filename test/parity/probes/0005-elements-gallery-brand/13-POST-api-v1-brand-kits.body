@@ -1,0 +1,1 @@
+{"error":{"code":"validation_error","message":"Invalid input.","fields":{"colors":{"0":{"hex":["Use #rgb or #rrggbb."]}}},"field_codes":{"colors":{"0":{"hex":["invalid"]}}}}}
