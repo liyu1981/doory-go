@@ -651,3 +651,51 @@ M8 progress log (sharing family — links, comments, public token views):
 - ⬜ Family pending: deactivate/reactivate flow (link-id capture after the
   public section), expiry-window boundaries, second-user author scoping,
   comment limit, shared-fonts fixture scenario.
+
+M9 progress log (exports family — spike S1 delivered):
+
+- ✅ Spike S1: `internal/chromium` — CDP driver (websocket) launching the
+  SAME system Chromium on both sides (EXPORT_CHROMIUM_PATH): attach,
+  setDocumentContent, printToPDF (px→inches), navigate, evaluate
+  (awaitPromise), event fan-out (the Fetch interceptor must not eat
+  waiters' load events — caught live), Fetch-requestPaused interception
+  with the policy (fail/continue/fulfill, worker-side fetch with no
+  redirects). `internal/renderworker` runs it as the per-render
+  SUBPROCESS (`doory render-worker spec.json`) with the upstream spec/
+  report JSON contract, env allowlist, TMPDIR isolation and kill-group
+  semantics — chromium_worker.py's architecture preserved.
+- ✅ `internal/svg` — full sanitizer port (allowlists, CSS safety with
+  escape unescaping, href rules, use-expansion bounds, intrinsic size),
+  DIFFERENTIAL-tested against the oracle sanitizer on a hostile fixture
+  set (script/DTD/xlink/style).
+- ✅ `internal/pdfmeta` — pypdf-equivalent surgery: exact boxes anchored
+  top-left from chromium's rounded sheet, Trim/Bleed for bleed/marks,
+  /Lang, /Creator //Title; number writing matches pypdf's round-6 +
+  strip (empirically derived: 0.9599900000000048 -> 0.95999,
+  1.0800019999999932 -> 1.080002); classic-xref parse + rebuild.
+- ✅ `internal/pdfscan` + comparator mode `pdf`: page count, boxes,
+  catalog values (PDF strings unescaped — pypdf octal escapes); PDF
+  bytes are never compared (chromium embeds per-render ids/times).
+- ✅ Ports: `exports.go` (pdf/image/download views, validation with
+  DRF min/max messages, disabled gates IN ORACLE ORDER — design lookup
+  precedes the image gate), `render.go` (geometry/crop marks/HTML/
+  fonts embedding/render slots/worker model), `delivery.go` (Django-
+  signing byte-compatible port incl. b62 timestamps + compression),
+  `filenames.go` (simple + structured), runner stub render page served
+  once per run with the render protocol (deterministic PNG bytes
+  compared directly).
+- ✅ Loop-caught (all real): expression-vs-call evaluation (playwright
+  auto-calls, CDP doesn't → IIFEs), Fetch-enable racing navigation
+  (enable AFTER attach on the page session), EXPORT_* env reads missing
+  from FromEnv, regex without capture groups, pypdf round-6 number
+  writing, empty-body multipart parse order, disabled-gate ordering.
+- ✅ Scenarios `13-exports` (13 steps: validation, PDF structure through
+  the shared chromium, image via the stub, delivery404) +
+  `14-export-disabled` (6 steps) green; suite 13/13 (189 steps).
+- ✅ Artifacts: PORT_MAP exports+core/svg rows reviewed (pdfmeta/policy/
+  layout/delivery/fonts/exceptions/svg ✅; views/services/renderer/
+  worker/filenames partial with pending lists), all 13 exports test files
+  dispositioned.
+- ⬜ Family pending: pdfmeta bleed+marks box cases, ExportBusy/timeout
+  paths, jpg/webp conversion (no pure-Go WebP encoder — encoder
+  substitution), fonts-in-pdf scenario, purge_exports command (ops).

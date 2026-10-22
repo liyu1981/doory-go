@@ -1,0 +1,65 @@
+# Behavior family: exports — the DISABLED surfaces (operator off-switches).
+#
+# SERVER_PDF_ENABLED=false (env) and SERVER_IMAGE_EXPORT_ENABLED unset
+# (default FALSE — base.py ships image export off): both endpoints answer
+# their disabled404s before touching a browser or a design.
+#
+# Deferred (see 13-exports): the enabled pipelines.
+
+name = "14-export-disabled"
+description = "Disabled exports match the oracle: server_pdf_disabled and server_image_export_disabled404 envelopes."
+driver = "http"
+tags = ["fast"]
+dialects = ["sqlite"]
+covers = [
+  "backend/apps/exports/views.py",
+  "backend/apps/exports/exceptions.py",
+]
+
+[env]
+GOOGLE_CLIENT_ID = "parity-client.test"
+SECURE_COOKIES = "false"
+DJANGO_SECRET_KEY = "parity-oracle-secret-key-0123456789"
+SERVER_PDF_ENABLED = "false"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/csrf/"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/register/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"off@example.com","password":"Tr0ub4dor&3xkcd9"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/exports/pdf/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+multipart = [
+  { name = "width", value = "800" },
+  { name = "height", value = "600" },
+  { name = "pages", file = "test/parity/testdata/svgs/basic.svg" },
+]
+
+# image export: the oracle looks the design up BEFORE the enabled gate, so
+# an unknown design answers not_found (probe-verified live) ...
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/00000000-0000-0000-0000-000000000000/export/image/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"format":"png"}'
+
+# ... and a real design hits the disabled gate inside export_image.
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"title":"Off Design"}'
+capture = { did = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/{{capture:did}}/export/image/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"format":"png"}'

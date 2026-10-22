@@ -1,0 +1,147 @@
+# Behavior family: exports (family 9, PLAN.md §5) — the S1 spike landed:
+# BOTH sides drive the SAME system Chromium (EXPORT_CHROMIUM_PATH) — the
+# oracle via playwright, Go via internal/chromium (CDP). Probe lineage:
+# probes/0009-exports (validation envelopes, pdf headers, page-index
+# message naming the REDUCED index, disabled semantics).
+#
+# Comparator: PDF BYTES carry per-render ids/times (chromium), so pdf
+# steps compare the pdfscan canonical structure (page count, boxes,
+# catalog) + headers minus content-length; image PNG bytes come from the
+# deterministic render-page stub (runner-served, identical bytes both
+# sides).
+#
+# Deferred (PORT_MAP pending): pdfmeta exact-box surgery (boxes stay
+# chromium's on both sides until then), webp/jpg conversion parity (no
+# pure-Go WebP encoder; Pillow-vs-Go JPEG bytes), ExportBusy slots,
+# delivery creation (lands with MCP), structured filenames with preset
+# parts, fonts embedding happy path.
+
+name = "13-exports"
+description = "Server-side exports match the oracle: validation envelopes, PDF structure through the shared chromium binary, image render via the stub protocol, signed-download 404."
+driver = "http"
+tags = ["fast"]
+dialects = ["sqlite"]
+covers = [
+  "backend/apps/exports/views.py",
+  "backend/apps/exports/serializers.py",
+  "backend/apps/exports/services.py",
+  "backend/apps/exports/renderer.py",
+  "backend/apps/exports/chromium_worker.py",
+  "backend/apps/exports/layout.py",
+  "backend/apps/exports/policy.py",
+  "backend/apps/exports/filenames.py",
+  "backend/apps/exports/delivery.py",
+  "backend/apps/exports/exceptions.py",
+  "backend/apps/core/svg.py",
+]
+
+[env]
+GOOGLE_CLIENT_ID = "parity-client.test"
+SECURE_COOKIES = "false"
+DJANGO_SECRET_KEY = "parity-oracle-secret-key-0123456789"
+SITE_URL = "http://localhost:5173"
+SERVER_IMAGE_EXPORT_ENABLED = "true"
+EXPORT_CHROMIUM_PATH = "/usr/bin/chromium-browser"
+EXPORT_CHROMIUM_NO_SANDBOX = "true"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/csrf/"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/register/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"expo@example.com","password":"Tr0ub4dor&3xkcd9"}'
+
+# pdf validation: pages checked before the scalars
+[[steps]]
+method = "POST"
+path = "/api/v1/exports/pdf/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+
+[[steps]]
+method = "POST"
+path = "/api/v1/exports/pdf/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+multipart = [
+  { name = "width", value = "800" },
+  { name = "height", value = "600" },
+]
+
+# unsafe svg -> the page-numbered invalid_svg message
+[[steps]]
+method = "POST"
+path = "/api/v1/exports/pdf/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+comparator = "pdf"
+multipart = [
+  { name = "width", value = "800" },
+  { name = "height", value = "600" },
+  { name = "pages", file = "test/parity/testdata/svgs/script.svg" },
+]
+
+# happy path through the shared chromium (PDF structure comparator)
+[[steps]]
+method = "POST"
+path = "/api/v1/exports/pdf/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+comparator = "pdf"
+multipart = [
+  { name = "width", value = "800" },
+  { name = "height", value = "600" },
+  { name = "title", value = "My Export" },
+  { name = "pages", file = "test/parity/testdata/svgs/basic.svg" },
+]
+
+# two pages with per-page sizes (named @page sizes through pdfmeta-less boxes)
+[[steps]]
+method = "POST"
+path = "/api/v1/exports/pdf/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+comparator = "pdf"
+multipart = [
+  { name = "width", value = "800" },
+  { name = "height", value = "600" },
+  { name = "sizes", value = "[{\"width\":400,\"height\":300},{\"width\":200,\"height\":100}]" },
+  { name = "pages", file = "test/parity/testdata/svgs/basic.svg" },
+  { name = "pages", file = "test/parity/testdata/svgs/basic.svg" },
+]
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"title":"Export Me"}'
+capture = { did = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
+
+# image validation envelopes
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/{{capture:did}}/export/image/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"format":"png","scale":9}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/{{capture:did}}/export/image/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"format":"png","page":5}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/{{capture:did}}/export/image/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"format":"bmp"}'
+
+# happy image: stub render page (deterministic PNG on both sides)
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/{{capture:did}}/export/image/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"format":"png"}'
+
+# signed download: forged token -> the DRF NotFound default
+[[steps]]
+method = "GET"
+path = "/api/v1/exports/image/not-a-real-token/"

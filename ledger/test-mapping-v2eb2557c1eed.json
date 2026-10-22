@@ -786,6 +786,110 @@
           "admin surface (D2)"
         ]
       }
+    },
+    "exports": {
+      "backend/apps/exports/tests/conftest.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "pytest scaffolding — no Go port planned"
+        ]
+      },
+      "backend/apps/exports/tests/helpers.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "test helpers — no Go port planned"
+        ]
+      },
+      "backend/apps/exports/tests/test_api.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:exports/13-exports + 14-export-disabled (validation, headers, disabled gates)"
+        ],
+        "missing": [
+          "throttled scopes (kernel pending), oversize boundaries"
+        ]
+      },
+      "backend/apps/exports/tests/test_chromium.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity via 13-exports PDF/image happy paths through the shared chromium (CDP driver)"
+        ],
+        "missing": [
+          "worker timeout/kill paths, blocked-request accounting"
+        ]
+      },
+      "backend/apps/exports/tests/test_filenames.py": {
+        "disposition": "pending",
+        "evidence": [
+          "filenames ported + exercised via Content-Disposition in 13-exports"
+        ],
+        "missing": [
+          "structured filename table cases as unit evidence"
+        ]
+      },
+      "backend/apps/exports/tests/test_fonts.py": {
+        "disposition": "pending",
+        "evidence": [
+          "fonts.py ported (media names/sniff/caps) — embedding unexercised"
+        ],
+        "missing": [
+          "fonts-in-pdf scenario"
+        ]
+      },
+      "backend/apps/exports/tests/test_image_api.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:13-exports + 14 (validation, png happy via stub, disabled + lookup order)"
+        ],
+        "missing": [
+          "jpg/webp conversion (encoder parity pending), placeholder warnings"
+        ]
+      },
+      "backend/apps/exports/tests/test_image_export.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "real render-page draw (stub covers the protocol; frontend draw is user case-by-case scope)"
+        ]
+      },
+      "backend/apps/exports/tests/test_layout.py": {
+        "disposition": "pending",
+        "evidence": [
+          "layout ported; HTML bytes are rendered, not compared"
+        ],
+        "missing": [
+          "geometry/markup unit table"
+        ]
+      },
+      "backend/apps/exports/tests/test_pdfmeta.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:13-exports PDF structure (boxes, /Lang, /Creator via pdfscan)"
+        ],
+        "missing": [
+          "bleed+crop-mark Trim/BleedBox cases, excess-rejection boundaries"
+        ]
+      },
+      "backend/apps/exports/tests/test_policy.py": {
+        "disposition": "partial",
+        "evidence": [
+          "policy ported; exercised via blocked requests in renders"
+        ],
+        "missing": [
+          "named decision table as unit evidence"
+        ]
+      },
+      "backend/apps/exports/tests/test_renderer.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity via renders (slots/worker/report contract)"
+        ],
+        "missing": [
+          "ExportBusy/timeout paths"
+        ]
+      }
     }
   }
 }

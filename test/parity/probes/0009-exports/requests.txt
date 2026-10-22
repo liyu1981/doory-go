@@ -1,0 +1,10 @@
+GET /auth/csrf/ 
+POST /exports/pdf/ -H X-CSRFToken: yxdZKqi2IBpegsnBPD5TXjZSd0uBr934
+POST /exports/pdf/ -H X-CSRFToken: yxdZKqi2IBpegsnBPD5TXjZSd0uBr934 -F width=800 -F height=600
+POST /exports/pdf/ -H X-CSRFToken: yxdZKqi2IBpegsnBPD5TXjZSd0uBr934 -F width=800 -F height=600 -F pages=@/home/yli/doory-go/test/parity/testdata/svgs/script.svg;filename=page1.svg
+POST /exports/pdf/ -H X-CSRFToken: yxdZKqi2IBpegsnBPD5TXjZSd0uBr934 -F width=800 -F height=600 -F pages=@/home/yli/doory-go/test/parity/testdata/svgs/basic.svg;filename=page1.svg
+POST /designs/1d06a537-7613-41c0-9521-1ea076e46ab2/export/image/ -H Content-Type: application/json -H X-CSRFToken: yxdZKqi2IBpegsnBPD5TXjZSd0uBr934 --data {"format":"webp"}
+POST /designs/1d06a537-7613-41c0-9521-1ea076e46ab2/export/image/ -H Content-Type: application/json -H X-CSRFToken: yxdZKqi2IBpegsnBPD5TXjZSd0uBr934 --data {"format":"png","scale":9}
+POST /designs/1d06a537-7613-41c0-9521-1ea076e46ab2/export/image/ -H Content-Type: application/json -H X-CSRFToken: yxdZKqi2IBpegsnBPD5TXjZSd0uBr934 --data {"format":"png","page":5}
+POST /designs/1d06a537-7613-41c0-9521-1ea076e46ab2/export/image/ -H Content-Type: application/json -H X-CSRFToken: yxdZKqi2IBpegsnBPD5TXjZSd0uBr934 --data {"format":"png"}
+GET /exports/image/not-a-real-token/ 

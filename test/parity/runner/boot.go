@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -45,7 +46,7 @@ func (s *Side) jar(name string) http.CookieJar {
 
 // bootPair builds the Go binary, migrates its workdir DB, starts both
 // servers and waits until each answers /api/v1/health/.
-func (r *Run) bootPair(sc *Scenario) (*Side, *Side, error) {
+func (r *Run) bootPair(sc *Scenario, renderURL string) (*Side, *Side, error) {
 	binPath := filepath.Join(r.WorkDir, "doory-bin")
 	build := exec.Command("go", "build", "-o", binPath, "./cmd/doory")
 	build.Dir = r.Repo
@@ -101,6 +102,14 @@ func (r *Run) bootPair(sc *Scenario) (*Side, *Side, error) {
 		"SECURE_COOKIES=false",
 	)
 	oracleCmd.Env = append(oracleCmd.Env, scenarioEnv(sc)...)
+	if renderURL != "" {
+		oracleCmd.Env = append(oracleCmd.Env,
+			"EXPORT_RENDER_PAGE_URL="+renderURL,
+			// The render page's origin must be allowed by the export policy
+			// (upstream: the SITE origin serving render.html; here: the
+			// runner's stub server).
+			"EXPORT_ALLOWED_ORIGINS="+strings.Join(append([]string{originOf(renderURL)}, scenarioAllowed(sc)...), ","))
+	}
 	oracleCmd.Stdout = oracle.log
 	oracleCmd.Stderr = oracle.log
 	oracleCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
@@ -119,6 +128,11 @@ func (r *Run) bootPair(sc *Scenario) (*Side, *Side, error) {
 		// Same plain-HTTP local-testing opt-out as the oracle (prod.py docs).
 		"SECURE_COOKIES=false")
 	serve.Env = append(serve.Env, scenarioEnv(sc)...)
+	if renderURL != "" {
+		serve.Env = append(serve.Env,
+			"EXPORT_RENDER_PAGE_URL="+renderURL,
+			"EXPORT_ALLOWED_ORIGINS="+strings.Join(append([]string{originOf(renderURL)}, scenarioAllowed(sc)...), ","))
+	}
 	serve.Stdout = goSide.log
 	serve.Stderr = goSide.log
 	serve.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
@@ -137,6 +151,26 @@ func (r *Run) bootPair(sc *Scenario) (*Side, *Side, error) {
 		return nil, nil, err
 	}
 	return oracle, goSide, nil
+}
+
+// originOf returns scheme://host[:port] of a URL.
+func originOf(raw string) string {
+	if i := strings.Index(raw, "://"); i >= 0 {
+		rest := raw[i+3:]
+		if j := strings.IndexAny(rest, "/?#"); j >= 0 {
+			rest = rest[:j]
+		}
+		return raw[:i+3] + rest
+	}
+	return raw
+}
+
+// scenarioAllowed preserves any scenario-declared extra origins.
+func scenarioAllowed(sc *Scenario) []string {
+	if v, ok := sc.Env["EXPORT_ALLOWED_ORIGINS"]; ok && v != "" {
+		return strings.Split(v, ",")
+	}
+	return nil
 }
 
 func scenarioEnv(sc *Scenario) []string {

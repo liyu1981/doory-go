@@ -39,6 +39,11 @@ type Step struct {
 	// CSRF_COOKIE_NEEDS_UPDATE). Checked per side, never across sides:
 	// values are per-request randomness (shape rules cover the format).
 	CookieStable bool `toml:"cookie_stable"`
+	// Comparator selects the comparison mode for this step:
+	// "exact" (default) or "pdf" (PDF bytes carry per-render ids/times —
+	// compare the pdfscan canonical structure + headers minus
+	// content-length instead; PLAN.md M9 note).
+	Comparator string `toml:"comparator"`
 	// Jar names a cookie jar for this step (default "main"): separate jars
 	// model separate browsers/sessions — e.g. two simultaneous logins for
 	// the session-death assertion.

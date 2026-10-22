@@ -216,7 +216,7 @@ behavioral verification).
 | `backend/apps/core/parsers.py` |  | ⬜ |
 | `backend/apps/core/permissions.py` |  | ⬜ |
 | `backend/apps/core/storage.py` |  | ⬜ |
-| `backend/apps/core/svg.py` |  | ⬜ |
+| `backend/apps/core/svg.py` | internal/svg (sanitize + info + intrinsic size — differential-tested against the oracle sanitizer fixtures) | ✅ |
 | `backend/apps/core/tests/` |  | ⬜ |
 | `backend/apps/core/urls.py` | doory/app.go (health + config routes; schema/docs with contract driver) | 🟡 |
 | `backend/apps/core/views.py` | doory/views.go (health, config, handler404/handler500 envelope paths; sitemap with gallery family) | 🟡 |
@@ -305,23 +305,23 @@ behavioral verification).
 | upstream | go | status |
 |---|---|---|
 | `backend/apps/exports/apps.py` |  | ⬜ |
-| `backend/apps/exports/chromium_worker.py` |  | ⬜ |
-| `backend/apps/exports/delivery.py` |  | ⬜ |
-| `backend/apps/exports/exceptions.py` |  | ⬜ |
-| `backend/apps/exports/filenames.py` |  | ⬜ |
-| `backend/apps/exports/fonts.py` |  | ⬜ |
-| `backend/apps/exports/layout.py` |  | ⬜ |
-| `backend/apps/exports/management/` |  | ⬜ |
+| `backend/apps/exports/chromium_worker.py` | internal/renderworker + internal/chromium (CDP driver over the same system chromium; substitution recorded) | 🟡 |
+| `backend/apps/exports/delivery.py` | doory/delivery.go (Django-signing port, store/purge/open) | ✅ |
+| `backend/apps/exports/exceptions.py` | doory/exports.go + doory/render.go (all export codes+messages) | ✅ |
+| `backend/apps/exports/filenames.py` | doory/filenames.go (simple + structured, slug, preset parts) | 🟡 |
+| `backend/apps/exports/fonts.py` | doory/render.go (media storage names, sniffed font bytes, size caps) | ✅ |
+| `backend/apps/exports/layout.py` | doory/render.go (PageGeometry, crop marks, shadow-root sections, font CSS) | ✅ |
+| `backend/apps/exports/management/` | (purge_exports command — ops family) | ⬜ |
 | `backend/apps/exports/models.py` |  | ⬜ |
-| `backend/apps/exports/pdfmeta.py` |  | ⬜ |
-| `backend/apps/exports/policy.py` |  | ⬜ |
-| `backend/apps/exports/renderer.py` |  | ⬜ |
-| `backend/apps/exports/serializers.py` |  | ⬜ |
-| `backend/apps/exports/services.py` |  | ⬜ |
-| `backend/apps/exports/tests/` |  | ⬜ |
-| `backend/apps/exports/throttling.py` |  | ⬜ |
+| `backend/apps/exports/pdfmeta.py` | internal/pdfmeta (exact boxes anchored top-left, Trim/Bleed, /Lang, /Creator — pypdf round-6 number writing) | ✅ |
+| `backend/apps/exports/policy.py` | internal/renderpolicy (origin/prefix decisions, path traversal, fetch rules) | ✅ |
+| `backend/apps/exports/renderer.py` | doory/render.go (slots, worker model, env allowlist, report mapping) | 🟡 |
+| `backend/apps/exports/serializers.py` | doory/exports.go (PdfExport/ImageExport validation: finite bounds, sizes/fonts JSON, page ref) | 🟡 |
+| `backend/apps/exports/services.py` | doory/exports.go + doory/render.go (sanitize->layout->render pipeline, page picking, conversion) | 🟡 |
+| `backend/apps/exports/tests/` | (dispositions: ledger/test-mapping-v*.json) | 🟡 |
+| `backend/apps/exports/throttling.py` | (ExportRateThrottle — kernel rate limits pending) | ⬜ |
 | `backend/apps/exports/urls.py` |  | ⬜ |
-| `backend/apps/exports/views.py` |  | ⬜ |
+| `backend/apps/exports/views.py` | doory/exports.go (pdf/image/download views, validation, disabled gates in oracle order) | 🟡 |
 
 ## `backend/apps/fonts/`
 

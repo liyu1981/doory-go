@@ -1,0 +1,1 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><style>.a{fill:red} .b{background:url(javascript:alert(1))} u\72l(http://evil.com/x){}</style><style>/* comment */ @import 'http://evil';</style><rect class="a" width="10" height="10"/></svg>

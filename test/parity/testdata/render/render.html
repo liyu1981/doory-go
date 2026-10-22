@@ -1,0 +1,27 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>render stub</title></head>
+<body>
+<script>
+// Deterministic render-page stub implementing the doory render protocol
+// (chromium_worker RENDER_READY / RENDER_IMAGE): the same bytes on both
+// sides of a pair; real-frontend validation is the user's case-by-case
+// testing scope, not parity (PLAN.md §0).
+window.__dooryRenderReady = true;
+window.__dooryRender = function (input) {
+  var page = (input.document.pages && input.document.pages[input.page]) || {};
+  var width = Math.round(page.width || input.document.width);
+  var height = Math.round(page.height || input.document.height);
+  var m = input.multiplier || 1;
+  return {
+    ok: true,
+    png: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAYCAYAAACbU/80AAAAL0lEQVR42u3OMQEAIAwDsA4haMbxkNEnUZDZZFM09201cFImICAgICAgICAgUA98KBsE2RiRdecAAAAASUVORK5CYII=",
+    width: Math.round(width * m),
+    height: Math.round(height * m),
+    pageId: page.id || "",
+    pageIndex: input.page || 0,
+    placeholders: 0,
+    missingFonts: []
+  };
+};
+</script>
+</body></html>

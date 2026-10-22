@@ -1,0 +1,15 @@
+HTTP/1.1 200 OK
+Date: Thu, 22 Oct 2026 12:43:55 GMT
+Server: WSGIServer/0.2 CPython/3.12.10
+Content-Type: application/pdf
+Content-Disposition: attachment; filename="design.pdf"
+Cache-Control: no-store
+X-Content-Type-Options: nosniff
+Allow: POST, OPTIONS
+Permissions-Policy: accelerometer=(), bluetooth=(), browsing-topics=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), serial=(), usb=()
+X-Frame-Options: DENY
+Content-Length: 5484
+Vary: Cookie, origin
+Referrer-Policy: strict-origin-when-cross-origin
+Cross-Origin-Opener-Policy: same-origin
+

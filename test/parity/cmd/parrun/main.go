@@ -11,7 +11,10 @@ package main
 
 import (
 	"fmt"
+	"net"
+	"net/http"
 	"os"
+	"path/filepath"
 
 	"doory-go/internal/parity"
 	"doory-go/test/parity/runner"
@@ -39,6 +42,18 @@ func main() {
 		fatal(fmt.Errorf("oracle venv missing — run 'pnpm oracle:setup'"))
 	}
 
+	// Serve the deterministic render-page stub (image export protocol).
+	renderDir := filepath.Join(repo, "test", "parity", "testdata", "render")
+	renderPort, err := freeTCPPort()
+	if err != nil {
+		fatal(err)
+	}
+	renderSrv := &http.Server{Addr: "127.0.0.1:" + renderPort,
+		Handler: http.FileServer(http.Dir(renderDir))}
+	go func() { _ = renderSrv.ListenAndServe() }()
+	defer renderSrv.Close()
+	renderURL := "http://127.0.0.1:" + renderPort + "/render.html"
+
 	files, err := runner.Discover(paths, fastOnly)
 	if err != nil {
 		fatal(err)
@@ -55,7 +70,7 @@ func main() {
 			fatal(err)
 		}
 		fmt.Printf("scenario %s (%s, driver=%s)\n", sc.Name, file, sc.Driver)
-		problems, err := runner.Execute(repo, sc)
+		problems, err := runner.Execute(repo, sc, renderURL)
 		if err != nil {
 			fmt.Printf("  ERROR: %v\n", err)
 			failed++
@@ -80,4 +95,13 @@ func main() {
 func fatal(err error) {
 	fmt.Fprintln(os.Stderr, "parrun:", err)
 	os.Exit(1)
+}
+
+func freeTCPPort() (string, error) {
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return "", err
+	}
+	defer l.Close()
+	return fmt.Sprintf("%d", l.Addr().(*net.TCPAddr).Port), nil
 }

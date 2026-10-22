@@ -13,9 +13,61 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+
+	"doory-go/internal/pdfscan"
 	"strings"
 	"time"
 )
+
+// comparePDF compares a PDF export: status + headers (minus
+// content-length — chromium embeds per-render ids/times) + the pdfscan
+// canonical structure instead of bytes (page count, boxes, catalog keys).
+func comparePDF(stepIdx int, step Step, oracle, goSide *capture) []string {
+	var problems []string
+	if oracle.Status != goSide.Status {
+		problems = append(problems, fmt.Sprintf("step %02d: status: oracle=%d go=%d", stepIdx+1, oracle.Status, goSide.Status))
+	}
+	oh := canonHeaders(oracle.Header)
+	gh := canonHeaders(goSide.Header)
+	delete(oh, "content-length")
+	delete(gh, "content-length")
+	for k := range oh {
+		if volatileHeaders[k] {
+			delete(oh, k)
+		}
+	}
+	for k := range gh {
+		if volatileHeaders[k] {
+			delete(gh, k)
+		}
+	}
+	for name, ov := range oh {
+		if volatileHeaders[name] {
+			continue
+		}
+		gv, ok := gh[name]
+		if !ok || strings.Join(ov, "\x00") != strings.Join(gv, "\x00") {
+			problems = append(problems, fmt.Sprintf("step %02d: header %q: oracle=%v go=%v", stepIdx+1, name, ov, gv))
+		}
+	}
+	for name := range gh {
+		if _, ok := oh[name]; !ok && !volatileHeaders[name] {
+			problems = append(problems, fmt.Sprintf("step %02d: header %q only on go side: %v", stepIdx+1, name, gh[name]))
+		}
+	}
+	// body: canonical structure
+	if oracle.Status == 200 && goSide.Status == 200 {
+		oStruct, oErr := pdfscan.Scan(oracle.Body)
+		gStruct, gErr := pdfscan.Scan(goSide.Body)
+		if oErr != nil || gErr != nil {
+			problems = append(problems, fmt.Sprintf("step %02d: pdf parse: oracle=%v go=%v", stepIdx+1, oErr, gErr))
+		} else if oStruct.Canonical() != gStruct.Canonical() {
+			problems = append(problems, fmt.Sprintf("step %02d: pdf structure differs:\n      oracle: %s\n      go:    %s",
+				stepIdx+1, oStruct.Canonical(), gStruct.Canonical()))
+		}
+	}
+	return problems
+}
 
 // RepoRoot is the repo base for relative file paths (set by Execute).
 var RepoRoot string
@@ -28,7 +80,7 @@ type Run struct {
 
 // Execute boots the pair, replays the scenario and reports. Returns the
 // list of problems (empty = green).
-func Execute(repo string, sc *Scenario) ([]string, error) {
+func Execute(repo string, sc *Scenario, renderURL string) ([]string, error) {
 	workDir := filepath.Join(repo, ".oracle", "parity", fmt.Sprintf("%s-%d", sc.Name, time.Now().UnixNano()))
 	if err := os.MkdirAll(workDir, 0o755); err != nil {
 		return nil, err
@@ -36,7 +88,7 @@ func Execute(repo string, sc *Scenario) ([]string, error) {
 	r := &Run{Repo: repo, WorkDir: workDir}
 	RepoRoot = repo
 
-	oracle, goSide, err := r.bootPair(sc)
+	oracle, goSide, err := r.bootPair(sc, renderURL)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +119,9 @@ func Execute(repo string, sc *Scenario) ([]string, error) {
 			fmt.Printf("      capture oracle=%v go=%v\n", captures["oracle"], captures["go"])
 		}
 
-		if step.HeadersOnly {
+		if step.Comparator == "pdf" {
+			problems = append(problems, comparePDF(i, step, o, g)...)
+		} else if step.HeadersOnly {
 			if len(o.Body) != len(g.Body) || string(o.Body) != string(g.Body) {
 				fmt.Printf("      step %02d: body skipped (D12: non-API error pages differ by design)\n", i+1)
 			}
