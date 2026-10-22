@@ -1,0 +1,1 @@
+{"error":{"code":"validation_error","message":"Invalid input.","fields":{"asset_id":["This field is required."]},"field_codes":{"asset_id":["required"]}}}

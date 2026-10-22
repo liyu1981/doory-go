@@ -1,0 +1,14 @@
+HTTP/1.1 201 Created
+Date: Thu, 22 Oct 2026 14:12:46 GMT
+Server: WSGIServer/0.2 CPython/3.12.10
+Content-Type: application/json
+Allow: GET, POST, HEAD, OPTIONS
+Cache-Control: no-store
+Permissions-Policy: accelerometer=(), bluetooth=(), browsing-topics=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), serial=(), usb=()
+X-Frame-Options: DENY
+Content-Length: 395
+Vary: Cookie, origin
+X-Content-Type-Options: nosniff
+Referrer-Policy: strict-origin-when-cross-origin
+Cross-Origin-Opener-Policy: same-origin
+

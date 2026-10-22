@@ -1,0 +1,7 @@
+probe=0010-ai
+upstream_commit=2eb2557c1eed3aa256a78f1874abfb5a1315849c
+probed_at=2026-10-22T14:12:40Z
+settings=doory.settings.prod (DJANGO_SECRET_KEY=parity-oracle-secret-key-0123456789)
+phaseA=defaults (AI_USER_PROVIDERS=off)
+phaseB=AI_USER_PROVIDERS=everyone, AI_MAX_PROVIDERS_PER_USER=2, AI_PROVIDER_1_URL=http://127.0.0.1:9 (unreachable)
+note=raw evidence; never edit these files, only add new probe dirs

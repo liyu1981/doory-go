@@ -1,0 +1,1 @@
+[{"id":"env-1:fast","label":"Fast","task":"background-removal","kind":"server","provider_name":"Local server","owner":"operator","sends_offsite":false},{"id":"env-1:best-model","label":"Best","task":"background-removal","kind":"server","provider_name":"Local server","owner":"operator","sends_offsite":false}]

@@ -1,0 +1,5 @@
+System check identified some issues:
+
+WARNINGS:
+?: (ai.W004) Users may store API keys for their own AI servers, encrypted with a key derived from SECRET_KEY. Changing SECRET_KEY without keeping the old one in DJANGO_SECRET_KEY_FALLBACKS makes them unreadable.
+	HINT: Set AI_SECRETS_KEY to a key of its own.

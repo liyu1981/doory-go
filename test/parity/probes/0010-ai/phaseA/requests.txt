@@ -1,0 +1,12 @@
+GET /api/v1/ai/contract.yaml 
+GET /api/v1/ai/models/ 
+GET /api/v1/ai/models/?task=bogus 
+GET /api/v1/ai/providers/ 
+POST /api/v1/ai/providers/ -H Content-Type: application/json -d {"name":"x"}
+POST /api/v1/ai/bogus/ -H Content-Type: application/json -d {}
+POST /api/v1/ai/background-removal/ -H Content-Type: application/json -d {"model":"device"}
+POST /api/v1/ai/background-removal/ -H Content-Type: application/json -d {"asset_id":"00000000-0000-0000-0000-000000000000","model":"device"}
+POST /api/v1/ai/background-removal/ -H Content-Type: application/json -d {"asset_id":"00000000-0000-0000-0000-000000000000","model":"nope:fast","options":"x"}
+POST /api/v1/assets/ -F file=@/home/yli/doory-go/test/parity/testdata/assets/fixture.png
+POST /api/v1/ai/background-removal/ -H Content-Type: application/json -d {"asset_id":"9c7b3597-d9b5-4df8-847c-358286ea1a6a","model":"device"}
+POST /api/v1/ai/background-removal/ -H Content-Type: application/json -d {"asset_id":"9c7b3597-d9b5-4df8-847c-358286ea1a6a","model":"env-1:fast"}

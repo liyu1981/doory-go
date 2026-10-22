@@ -890,6 +890,83 @@
           "ExportBusy/timeout paths"
         ]
       }
+    },
+    "ai": {
+      "backend/apps/ai/tests/__init__.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "package marker"
+        ]
+      },
+      "backend/apps/ai/tests/conftest.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "pytest scaffolding - no Go port planned"
+        ]
+      },
+      "backend/apps/ai/tests/fakes.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "fake provider fixtures - land with the fake-provider harness (M10 pending slice)"
+        ]
+      },
+      "backend/apps/ai/tests/test_admin.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "Django admin (D2 deferred)"
+        ]
+      },
+      "backend/apps/ai/tests/test_api.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:ai/15-ai (30 steps) + 16-ai-disabled (11): catalogue, contract, gate, CRUD validation, limit, run validation to transport"
+        ],
+        "missing": [
+          "throttled scopes (kernel pending)",
+          "style_config reader messages",
+          "LoadModels/Test views (pending harness)"
+        ]
+      },
+      "backend/apps/ai/tests/test_secrets.py": {
+        "disposition": "partial",
+        "evidence": [
+          "internal/aikeys: oracle-encrypted fixtures decrypt, Go tokens decrypt under cryptography, roundtrip + wrong-key tests"
+        ],
+        "missing": [
+          "AI_SECRETS_KEY primary/fallback matrix as HTTP evidence"
+        ]
+      },
+      "backend/apps/ai/tests/test_services.py": {
+        "disposition": "pending",
+        "evidence": [
+          "run pipeline ported to the transport (15-ai steps 22-24)"
+        ],
+        "missing": [
+          "provider exchange (build/send/parse), result assets, caching, in-flight busy"
+        ]
+      },
+      "backend/apps/ai/tests/test_styles.py": {
+        "disposition": "pending",
+        "evidence": [
+          "doory style build ported (not network-probed)"
+        ],
+        "missing": [
+          "style config readers, request/response tables"
+        ]
+      },
+      "backend/apps/ai/tests/test_transport.py": {
+        "disposition": "partial",
+        "evidence": [
+          "user-policy form messages probed via provider create (15-ai step 07); operator dial refusal (step 24)"
+        ],
+        "missing": [
+          "DNS/private-address decision table (needs fake hosts)"
+        ]
+      }
     }
   }
 }

@@ -1,0 +1,15 @@
+HTTP/1.1 200 OK
+Date: Thu, 22 Oct 2026 14:12:45 GMT
+Server: WSGIServer/0.2 CPython/3.12.10
+Content-Type: application/yaml; charset=utf-8
+Content-Length: 5316
+Content-Disposition: inline; filename="openapi.yaml"
+Cache-Control: public, max-age=3600
+Allow: GET, HEAD, OPTIONS
+Permissions-Policy: accelerometer=(), bluetooth=(), browsing-topics=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), serial=(), usb=()
+X-Frame-Options: DENY
+Vary: origin
+X-Content-Type-Options: nosniff
+Referrer-Policy: strict-origin-when-cross-origin
+Cross-Origin-Opener-Policy: same-origin
+

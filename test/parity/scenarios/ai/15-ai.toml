@@ -1,0 +1,231 @@
+# Behavior family: ai (family 11, PLAN.md M10) — the model catalogue, the
+# provider contract file, the user's own providers behind AI_USER_PROVIDERS,
+# and the task run path up to the provider transport.
+# Probe lineage: probes/0010-ai (two phases: gate-off, everyone + env provider).
+name = "15-ai"
+description = "AI matches the oracle: contract served verbatim, env-provider catalogue options, provider CRUD with every validation message and the keeps-secret address rule, model replace, per-user limit, and the run path through option resolution to the refused transport."
+family = "ai"
+driver = "http"
+tags = ["fast"]
+dialects = ["sqlite"]
+
+covers = [
+  "backend/apps/ai/views.py",
+  "backend/apps/ai/serializers.py",
+  "backend/apps/ai/catalog.py",
+  "backend/apps/ai/env.py",
+  "backend/apps/ai/models.py",
+  "backend/apps/ai/quotas.py",
+  "backend/apps/ai/errors.py",
+  "backend/apps/ai/secrets.py",
+  "backend/apps/ai/services.py",
+  "backend/apps/ai/tasks.py",
+  "backend/apps/ai/transport.py",
+  # styles/__init__.py has no PORT_MAP row (registry keys ported via ai.go)
+  "backend/apps/core/parsers.py",
+]
+
+[env]
+AI_USER_PROVIDERS = "everyone"
+AI_MAX_PROVIDERS_PER_USER = "2"
+AI_PROVIDER_1_URL = "http://127.0.0.1:9"
+AI_PROVIDER_1_LABEL = "Local server"
+AI_PROVIDER_1_TASKS = "background-removal"
+AI_PROVIDER_1_MODELS = "fast:Fast,best-model:Best"
+
+[[steps]]
+name = "01 csrf"
+method = "GET"
+path = "/api/v1/auth/csrf/"
+
+[[steps]]
+name = "02 register"
+method = "POST"
+path = "/api/v1/auth/register/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"aiprobe@example.com","password":"Tr0ub4dor&3xkcd9"}'
+
+[[steps]]
+name = "03 contract served verbatim"
+method = "GET"
+path = "/api/v1/ai/contract.yaml"
+
+[[steps]]
+name = "04 models list (env provider options)"
+method = "GET"
+path = "/api/v1/ai/models/"
+
+[[steps]]
+name = "05 models list filtered by task"
+method = "GET"
+path = "/api/v1/ai/models/?task=background-removal"
+
+[[steps]]
+name = "06 providers empty"
+method = "GET"
+path = "/api/v1/ai/providers/"
+
+[[steps]]
+name = "07 create: http scheme refused under the user policy"
+method = "POST"
+path = "/api/v1/ai/providers/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"PlainHttp","base_url":"http://10.0.0.5","style":"doory","tasks":["background-removal"]}'
+
+[[steps]]
+name = "08 create with secret"
+method = "POST"
+path = "/api/v1/ai/providers/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"Mine","base_url":"https://ai.example.com","style":"doory","tasks":["background-removal"],"secret":"sk-oracle-secret-1","auth_header":"X-Api-Key"}'
+capture = { pid = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
+
+[[steps]]
+name = "09 create: ftp scheme refused (same message)"
+method = "POST"
+path = "/api/v1/ai/providers/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"Bad","base_url":"ftp://x","tasks":["background-removal"]}'
+
+[[steps]]
+name = "10 create: secret with line break"
+method = "POST"
+path = "/api/v1/ai/providers/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"Line","base_url":"https://ai.example.com","tasks":["background-removal"],"secret":"a\nb"}'
+
+[[steps]]
+name = "11 create: task choice"
+method = "POST"
+path = "/api/v1/ai/providers/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"T","base_url":"https://ai.example.com","tasks":["nope"]}'
+
+[[steps]]
+name = "12 create: timeout min value"
+method = "POST"
+path = "/api/v1/ai/providers/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"TO","base_url":"https://ai.example.com","tasks":["background-removal"],"timeout_seconds":0}'
+
+[[steps]]
+name = "13 detail"
+method = "GET"
+path = "/api/v1/ai/providers/{{capture:pid}}/"
+
+[[steps]]
+name = "14 patch: address change with stored secret refused"
+method = "PATCH"
+path = "/api/v1/ai/providers/{{capture:pid}}/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"base_url":"https://other.example.com"}'
+
+[[steps]]
+name = "15 patch: clear the secret"
+method = "PATCH"
+path = "/api/v1/ai/providers/{{capture:pid}}/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"secret":""}'
+
+[[steps]]
+name = "16 patch: address change after clearing (slash stripped)"
+method = "PATCH"
+path = "/api/v1/ai/providers/{{capture:pid}}/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"base_url":"https://third.example.com/"}'
+
+[[steps]]
+name = "17 put models: replace"
+method = "PUT"
+path = "/api/v1/ai/providers/{{capture:pid}}/models/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"models":[{"task":"background-removal","remote_name":"fast","label":"Fast","enabled":true},{"task":"background-removal","remote_name":"slow","enabled":false}]}'
+
+[[steps]]
+name = "18 put models: unknown child task"
+method = "PUT"
+path = "/api/v1/ai/providers/{{capture:pid}}/models/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"models":[{"task":"background-removal","remote_name":"fast"},{"task":"bogus","remote_name":"x"}]}'
+
+[[steps]]
+name = "19 create: second server allowed"
+method = "POST"
+path = "/api/v1/ai/providers/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"Second","base_url":"https://two.example.com","tasks":["background-removal"]}'
+
+[[steps]]
+name = "20 create: third refused (limit 2)"
+method = "POST"
+path = "/api/v1/ai/providers/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"Third","base_url":"https://three.example.com","tasks":["background-removal"]}'
+
+[[steps]]
+name = "21 upload the task's source asset"
+method = "POST"
+path = "/api/v1/assets/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+multipart = [
+  { name = "file", file = "test/parity/testdata/assets/fixture.png" },
+]
+capture = { aid = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
+
+[[steps]]
+name = "22 run: device option unavailable"
+method = "POST"
+path = "/api/v1/ai/background-removal/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"asset_id":"{{capture:aid}}","model":"device"}'
+
+[[steps]]
+name = "23 run: unknown env model"
+method = "POST"
+path = "/api/v1/ai/background-removal/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"asset_id":"{{capture:aid}}","model":"env-1:missing"}'
+
+[[steps]]
+name = "24 run: provider unreachable (connection refused)"
+method = "POST"
+path = "/api/v1/ai/background-removal/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"asset_id":"{{capture:aid}}","model":"env-1:fast"}'
+
+[[steps]]
+name = "25 run: missing asset_id field"
+method = "POST"
+path = "/api/v1/ai/background-removal/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"model":"device"}'
+
+[[steps]]
+name = "26 run: options not a dict"
+method = "POST"
+path = "/api/v1/ai/background-removal/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"asset_id":"{{capture:aid}}","model":"env-1:fast","options":"x"}'
+
+[[steps]]
+name = "27 run: unknown task"
+method = "POST"
+path = "/api/v1/ai/bogus/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = "{}"
+
+[[steps]]
+name = "28 detail of an unknown provider"
+method = "GET"
+path = "/api/v1/ai/providers/00000000-0000-0000-0000-000000000000/"
+
+[[steps]]
+name = "29 delete the provider"
+method = "DELETE"
+path = "/api/v1/ai/providers/{{capture:pid}}/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+
+[[steps]]
+name = "30 detail after delete"
+method = "GET"
+path = "/api/v1/ai/providers/{{capture:pid}}/"

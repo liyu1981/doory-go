@@ -1,0 +1,83 @@
+# Behavior family: ai (family 11, PLAN.md M10) — default installation:
+# AI_USER_PROVIDERS=off gates every own-provider route (403) while the
+# public contract file and the authenticated catalogue still answer.
+# Probe lineage: probes/0010-ai phaseA.
+name = "16-ai-disabled"
+description = "Default installation (AI_USER_PROVIDERS=off): the public contract file still answers, the authenticated catalogue is empty, every own-provider route returns 403 ai_user_providers_disabled, and the task view validates before looking the asset up."
+driver = "http"
+tags = ["fast"]
+dialects = ["sqlite"]
+
+covers = [
+  "backend/apps/ai/views.py",
+  "backend/apps/ai/catalog.py",
+  "backend/apps/ai/serializers.py",
+  "backend/apps/core/exceptions.py",
+]
+
+[[steps]]
+name = "01 csrf"
+method = "GET"
+path = "/api/v1/auth/csrf/"
+
+[[steps]]
+name = "02 register"
+method = "POST"
+path = "/api/v1/auth/register/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"aidisabled@example.com","password":"Tr0ub4dor&3xkcd9"}'
+
+[[steps]]
+name = "03 contract is public even with providers off"
+method = "GET"
+path = "/api/v1/ai/contract.yaml"
+
+[[steps]]
+name = "04 models list: empty (no device, no providers)"
+method = "GET"
+path = "/api/v1/ai/models/"
+
+[[steps]]
+name = "05 models list: unknown task"
+method = "GET"
+path = "/api/v1/ai/models/?task=bogus"
+
+[[steps]]
+name = "06 providers list refused"
+method = "GET"
+path = "/api/v1/ai/providers/"
+
+[[steps]]
+name = "07 provider create refused"
+method = "POST"
+path = "/api/v1/ai/providers/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"name":"x"}'
+
+[[steps]]
+name = "08 task run: unknown task"
+method = "POST"
+path = "/api/v1/ai/bogus/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = "{}"
+
+[[steps]]
+name = "09 task run: asset_id required"
+method = "POST"
+path = "/api/v1/ai/background-removal/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"model":"device"}'
+
+[[steps]]
+name = "10 task run: unknown asset (lookup before option)"
+method = "POST"
+path = "/api/v1/ai/background-removal/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"asset_id":"00000000-0000-0000-0000-000000000000","model":"device"}'
+
+[[steps]]
+name = "11 task run: options not a dict"
+method = "POST"
+path = "/api/v1/ai/background-removal/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"asset_id":"00000000-0000-0000-0000-000000000000","model":"nope:fast","options":"x"}'

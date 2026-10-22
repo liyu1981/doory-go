@@ -69,30 +69,30 @@ behavioral verification).
 |---|---|---|
 | `backend/apps/ai/admin.py` |  | ⬜ |
 | `backend/apps/ai/apps.py` |  | ⬜ |
-| `backend/apps/ai/catalog.py` | doory/views.go (ai_config: user_providers_mode, public_options for the no-models/no-providers path, default_option, has_server_options w/o env providers) | 🟡 |
+| `backend/apps/ai/catalog.py` | doory/ai_catalog.go + doory/views.go (options/find audience merge, public() order; ai_config helpers) | 🟡 |
 | `backend/apps/ai/checks.py` |  | ⬜ |
-| `backend/apps/ai/env.py` |  | ⬜ |
-| `backend/apps/ai/errors.py` |  | ⬜ |
+| `backend/apps/ai/env.py` | doory/ai_env.go (AI_PROVIDER_<n>_* parse, validation drops, MODELS/TASKS) | 🟡 |
+| `backend/apps/ai/errors.py` | doory/ai_policy.go + ai_taskview.go (STATUS map, ai_<code> envelopes, gate/quota codes) | 🟡 |
 | `backend/apps/ai/management/` |  | ⬜ |
 | `backend/apps/ai/migrations/` |  | ⬜ |
-| `backend/apps/ai/models.py` |  | ⬜ |
-| `backend/apps/ai/quotas.py` |  | ⬜ |
-| `backend/apps/ai/results.py` |  | ⬜ |
-| `backend/apps/ai/secrets.py` |  | ⬜ |
-| `backend/apps/ai/serializers.py` |  | ⬜ |
-| `backend/apps/ai/services.py` |  | ⬜ |
-| `backend/apps/ai/tasks.py` |  | ⬜ |
-| `backend/apps/ai/tests/` |  | ⬜ |
-| `backend/apps/ai/throttling.py` |  | ⬜ |
-| `backend/apps/ai/transport.py` |  | ⬜ |
-| `backend/apps/ai/urls.py` |  | ⬜ |
-| `backend/apps/ai/views.py` |  | ⬜ |
+| `backend/apps/ai/models.py` | doory/ai_rows.go (Provider/ProviderModel/AICall rows, audience, keeps-secret origin) | 🟡 |
+| `backend/apps/ai/quotas.py` | doory/ai_run.go (used_today, seconds_until_reset, ai_quota throttled envelope) | 🟡 |
+| `backend/apps/ai/results.py` | doory/ai_run.go (read_source cap; full SourceImage decode pending with pipelines) | 🟡 |
+| `backend/apps/ai/secrets.py` | internal/aikeys (Fernet + HKDF; cross-proven both directions vs cryptography) | ✅ |
+| `backend/apps/ai/serializers.py` | doory/ai_validation.go (Provider/ProviderModels/TaskRequest rules, ordered envelopes) | ✅ |
+| `backend/apps/ai/services.py` | doory/ai_taskview.go + ai_run.go (run to transport; load-models/test pending) | 🟡 |
+| `backend/apps/ai/tasks.py` | doory/ai.go (TASKS registry; validate_options over empty schemas) | ✅ |
+| `backend/apps/ai/tests/` | (dispositions: ledger/test-mapping-v*.json) | 🟡 |
+| `backend/apps/ai/throttling.py` | (AIRateThrottle - kernel rate limits pending) | ⬜ |
+| `backend/apps/ai/transport.py` | doory/ai_policy.go (policies, check_url form, refused dial -> ai_unreachable) | 🟡 |
+| `backend/apps/ai/urls.py` | doory/app.go (5 routes; load-models/test not registered - pending) | 🟡 |
+| `backend/apps/ai/views.py` | doory/ai_views.go + ai_taskview.go (gate, catalogue, contract, CRUD, task view) | 🟡 |
 
 ## `backend/apps/ai/styles/`
 
 | upstream | go | status |
 |---|---|---|
-| `backend/apps/ai/styles/base.py` |  | ⬜ |
+| `backend/apps/ai/styles/base.py` | doory/ai_run.go (doory multipart build; readers/response parse pending) | 🟡 |
 | `backend/apps/ai/styles/custom.py` |  | ⬜ |
 | `backend/apps/ai/styles/doory.py` |  | ⬜ |
 | `backend/apps/ai/styles/json_b64.py` |  | ⬜ |

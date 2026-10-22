@@ -699,3 +699,77 @@ M9 progress log (exports family — spike S1 delivered):
 - ⬜ Family pending: pdfmeta bleed+marks box cases, ExportBusy/timeout
   paths, jpg/webp conversion (no pure-Go WebP encoder — encoder
   substitution), fonts-in-pdf scenario, purge_exports command (ops).
+
+M10 scoping (ai family — sources read, semantics derived; build next):
+
+- **Secrets (the crypto heart)**: `apps/ai/secrets.py` — Fernet with
+  keys: AI_SECRETS_KEY (+fallbacks) else HKDF-SHA256 derived from
+  SECRET_KEY (salt `doory.ai.secrets`, info `provider secrets v1`).
+  cryptography internals recovered: key = b64url-decoded 32 bytes,
+  signing = key[:16], encryption = key[16:] (AES-128-CBC + HMAC-SHA256,
+  version 0x80 + timestamp + IV). Go port = crypto/aes + HMAC; cross-impl
+  unit proof plan: oracle encrypts under the probe SECRET_KEY → Go
+  decrypts, and vice versa (pbkdf2/apitokens evidence pattern).
+- **Transport/SSRF policy** (`transport.py`): user policy https-only,
+  ports 443/8443 (+AI_USER_PROVIDERS_ALLOW_HTTP/ALLOWED_PORTS), every
+  resolved address must be public; operator policy any scheme/port,
+  private only for AI_ALLOWED_PRIVATE_HOSTS or IP literals. check_url
+  form rules (no credentials, no query/fragment, unsafe-char refusal,
+  2048 cap, host trailing-dot strip, unspecified/multicast refused).
+  `resolve_hosts=False` = form-only check (the admin validation path).
+- **Env providers** (env.py): AI_PROVIDER_<n>_* (URL/STYLE/STYLE_CONFIG/
+  TASKS/MODELS/AUTH_HEADER/AUTH_VALUE/SEND_OFFSITE/TIMEOUT/MAX_IMAGE/
+ QUOTA), id `env-<n>`, never persisted; validation → ConfigError.
+- **Views**: ModelListView (options; unknown_task404; device+env+DB
+  providers), ContractView (serve checked-in contract/openapi.yaml,
+  public + cache3600), providers CRUD gated by UserProvidersAllowed
+  (AI_USER_PROVIDERS=off default → 403 ai_user_providers_disabled —
+  assertable), ProviderModels PUT (replace models), load-models/test
+  (network → pending with the fake-provider harness), TaskView
+  (unknown_task404, TaskRequestSerializer, asset404, option resolution:
+  ModelNotAvailable404/RunsOnDevice400, provider paths pending).
+- **Quotas**: AICall daily counting (local midnight) + QuotaReached429
+  with wait sentence + Retry-After (same rendering as lockout/share).
+- **Errors**: ai_<code> envelope mapping (STATUS table),
+  ai_model_not_found/ai_runs_on_device/ai_unsupported_asset/ai_quota/
+  ai_user_providers_disabled.
+- **Slice**: secrets + catalog + contract + provider CRUD + models-put +
+  task-view validation/resolution + quotas; pending: load-models/test/
+  proxy/styles pipelines + transport call paths (fake-provider harness,
+  like assets/remote), admin site (D2), reencrypt command (ops).
+
+M10 progress log (ai family):
+
+- ✅ `internal/aikeys` — Fernet (key[:16] HMAC / key[16:] AES-128-CBC,
+  padded urlsafe b64 tokens) + HKDF-SHA256 derivation; CROSS-PROVEN both
+  directions: two oracle-cryptography-encrypted fixtures decrypt here,
+  a Go-encrypted token decrypts under cryptography.
+- ✅ Ports: `doory/ai*.go` (settings/env providers, transport policies +
+  check_url form rules, catalogue with audience merge, provider rows +
+  ordered serializer output, gate + CRUD + models-put + contract view,
+  task view with declaration-order validation, run pipeline to the
+  refused dial, quotas/AICall/in-flight), `doory/contract_openapi.yaml`
+  (embedded, byte-served with FileResponse headers), 5 app.go routes
+  (slug LAST).
+- ✅ Loop-caught (all real): net/http PathValue vs the router's own
+  routeParam (slug task + uuid lookups were empty), append-slash
+  redirecting EXACTLY-routed non-slash paths (contract.yaml -> 301),
+  missing bound args in two loadAIProviders calls, dashless UUID storage
+  vs dashed API ids (hexUUID canonicalization), NOT NULL
+  secret_encrypted vs nil []byte, Go map key sorting vs DRF declaration
+  order (options + nested models), created_at needing renderDRFDatetime
+  (T+Z isoformat, +1 byte), newUUID4Hex vs newUUID4HexDashed for Django
+  uuid pks.
+- ✅ Scenarios `15-ai` (30 steps: contract bytes, env-provider options,
+  CRUD with every validation message, keeps-secret rule, model replace,
+  per-user limit, run to ai_unreachable) + `16-ai-disabled` (11 steps:
+  gate 403s, public contract, validation-before-lookup) green; suite
+  15/15.
+- ✅ Artifacts: PORT_MAP ai section reviewed (secrets/serializers/tasks
+  done; rest partial with pending lists), all 9 ai test files
+  dispositioned.
+- ⬜ Family pending: load-models/test views + the full provider exchange
+  (fake-provider harness), style_config reader messages, DNS/private-
+  address decision table, AI quota HTTP form (needs successful calls),
+  device options (installed-model registry), throttles, admin (D2),
+  reencrypt command (ops).

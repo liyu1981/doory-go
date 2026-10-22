@@ -1,0 +1,25 @@
+GET /api/v1/ai/models/ 
+GET /api/v1/ai/models/?task=background-removal 
+GET /api/v1/ai/providers/ 
+POST /api/v1/ai/providers/ -H Content-Type: application/json -d {"name":"PlainHttp","base_url":"http://10.0.0.5","style":"doory","tasks":["background-removal"]}
+POST /api/v1/ai/providers/ -H Content-Type: application/json -d {"name":"Mine","base_url":"https://ai.example.com","style":"doory","tasks":["background-removal"],"secret":"sk-oracle-secret-1","auth_header":"X-Api-Key"}
+POST /api/v1/ai/providers/ -H Content-Type: application/json -d {"name":"Bad","base_url":"ftp://x","tasks":["background-removal"]}
+POST /api/v1/ai/providers/ -H Content-Type: application/json -d {"name":"Line","base_url":"https://ai.example.com","tasks":["background-removal"],"secret":"a\nb"}
+POST /api/v1/ai/providers/ -H Content-Type: application/json -d {"name":"T","base_url":"https://ai.example.com","tasks":["nope"]}
+POST /api/v1/ai/providers/ -H Content-Type: application/json -d {"name":"TO","base_url":"https://ai.example.com","tasks":["background-removal"],"timeout_seconds":0}
+provider=c340ce08-e93a-4d33-a649-124f2eedcaa1
+GET /api/v1/ai/providers/c340ce08-e93a-4d33-a649-124f2eedcaa1/ 
+PATCH /api/v1/ai/providers/c340ce08-e93a-4d33-a649-124f2eedcaa1/ -H Content-Type: application/json -d {"base_url":"https://other.example.com"}
+PATCH /api/v1/ai/providers/c340ce08-e93a-4d33-a649-124f2eedcaa1/ -H Content-Type: application/json -d {"secret":""}
+PATCH /api/v1/ai/providers/c340ce08-e93a-4d33-a649-124f2eedcaa1/ -H Content-Type: application/json -d {"base_url":"https://third.example.com/"}
+PUT /api/v1/ai/providers/c340ce08-e93a-4d33-a649-124f2eedcaa1/models/ -H Content-Type: application/json -d {"models":[{"task":"background-removal","remote_name":"fast","label":"Fast","enabled":true},{"task":"background-removal","remote_name":"slow","enabled":false}]}
+PUT /api/v1/ai/providers/c340ce08-e93a-4d33-a649-124f2eedcaa1/models/ -H Content-Type: application/json -d {"models":[{"task":"background-removal","remote_name":"fast"},{"task":"bogus","remote_name":"x"}]}
+POST /api/v1/ai/providers/ -H Content-Type: application/json -d {"name":"Second","base_url":"https://two.example.com","tasks":["background-removal"]}
+POST /api/v1/ai/providers/ -H Content-Type: application/json -d {"name":"Third","base_url":"https://three.example.com","tasks":["background-removal"]}
+POST /api/v1/ai/background-removal/ -H Content-Type: application/json -d {"asset_id":"00000000-0000-0000-0000-000000000000","model":"device"}
+POST /api/v1/ai/background-removal/ -H Content-Type: application/json -d {"asset_id":"00000000-0000-0000-0000-000000000000","model":"env-1:fast"}
+GET /api/v1/ai/providers/00000000-0000-0000-0000-000000000000/ 
+POST /api/v1/assets/ -F file=@/home/yli/doory-go/test/parity/testdata/assets/fixture.png
+POST /api/v1/ai/background-removal/ -H Content-Type: application/json -d {"asset_id":"fcfce5a2-e57e-408d-9e21-2e1c0e8cfe6d","model":"device"}
+POST /api/v1/ai/background-removal/ -H Content-Type: application/json -d {"asset_id":"fcfce5a2-e57e-408d-9e21-2e1c0e8cfe6d","model":"env-1:missing"}
+POST /api/v1/ai/background-removal/ -H Content-Type: application/json -d {"asset_id":"fcfce5a2-e57e-408d-9e21-2e1c0e8cfe6d","model":"env-1:fast"}
