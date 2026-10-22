@@ -6,6 +6,9 @@
 backend/db.sqlite3
 backend/media/
 backend/staticfiles/
+# The Go app's default MEDIA_ROOT (repo-root media/): runtime uploads from
+# local runs and the parity suite; never tracked (housekeeping commit).
+media/
 *.pyc
 __pycache__/
 .venv/
