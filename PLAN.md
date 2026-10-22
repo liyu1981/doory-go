@@ -810,3 +810,23 @@ M11 scoping + spike S0 progress (collab family):
   limits/middleware, stats endpoint, then paired scenarios; known engine
   gap to cover: array index ops over decoded multi-value batches
   (PATCHES.md known gaps).
+
+M11 progress log (continued):
+
+- ✅ `internal/yproto` — protocol.py port: lib0 Reader/Writer (varuint,
+  varbytes, varstring, UTF-16 length), frame parsing (sync/awareness/
+  query-awareness with trailing-byte rules + 4400 ProtocolError),
+  state vectors (bounded entries), awareness updates (bounded count +
+  state bytes), and the BOUNDED UPDATE SCANNER (scan_update: gaps,
+  unknown roots, XML/Skip refs, any-depth bound, reference/delete-set
+  history checks, extents, new_clients, originless/right_only/inside_refs
+  counters with the bisect over multi-value spans).
+- ✅ Scanner conformance: `scan_fixtures.py` captures the oracle's
+  verdicts for the real edit-stream updates (replayed against the state
+  they would apply to), the concurrent streams, plus7 crafted negatives
+  (truncated, trailing, empty, huge client count, unknown root,
+  reference gap,40-level nesting) — `internal/yproto` reproduces every
+  accept (with all counters/extents/new-clients/originless totals) and
+  every reject message byte-exactly (22/22).
+- ⬜ Next: schema.py + engine.py port (document<->Y conversion, budgets,
+  compaction), room/store/consumers, WS driver, scenarios.
