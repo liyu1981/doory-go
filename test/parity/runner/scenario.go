@@ -39,10 +39,21 @@ type Step struct {
 	// model separate browsers/sessions — e.g. two simultaneous logins for
 	// the session-death assertion.
 	Jar string `toml:"jar"`
+	// Multipart builds ONE deterministic multipart body (fixed boundary) sent
+	// byte-identically to both sides — file paths are repo-relative.
+	Multipart []MultipartPart `toml:"multipart"`
 	// Capture pulls named groups out of THIS side's response body into
 	// per-side variables for later {{capture:name}} substitutions (each
 	// side consumes its OWN values — e.g. delete the id it created).
 	Capture map[string]string `toml:"capture"`
+}
+
+// MultipartPart is one part of a multipart body: a form value or a file
+// (path relative to the repo root).
+type MultipartPart struct {
+	Name  string `toml:"name"`
+	Value string `toml:"value"`
+	File  string `toml:"file"`
 }
 
 // Load parses a scenario file.

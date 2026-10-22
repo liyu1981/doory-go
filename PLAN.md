@@ -534,3 +534,43 @@ M5 progress log (elements + gallery + brand families):
   seed_templates via row+file dumps), q/relevance search (needs rows),
   template document validator + apply_document, write paths (packsync,
   bulk, normalize).
+
+M6 progress log (fonts family — the S2 spike):
+
+- ✅ Probe: `test/parity/probes/0006-fonts/` (12 transcripts): empty
+  catalogue + cache 300, FilterSet messages (django-FORM
+  `Select a valid choice.` vs the upload serializer's straight-quote
+  choice vs the Django-core script validator whose field_code renders
+  JSON **null**), upload201 envelope, the409 variant clash, the sorted
+  family-mismatch sentence, junk-file prefixes.
+- ✅ Spike S2 delivered: `internal/fontparse` — sniff (ttc/magic), sfnt
+  table directory, name (platform preference + UTF-16BE), cmap (formats
+  0/4/6/12 with fontTools getBestCmap preference), OS/2/head/post probes
+  (weight with Python round-half-to-EVEN, italic, PANOSE category with the
+  correct byte offsets), script coverage table, WOFF per-table zlib, and
+  WOFF2 (brotli decode with a hard budget + the transformed-directory
+  rules recovered from the pinned fontTools source: transformLength IFF
+  transformed, glyf/loca default-transform semantics). Cross-proven
+  probe-first: fontparse_test.go asserts the ORACLE's probe_worker facts
+  for the TTF AND WOFF2 fixtures (family/weight/style/category/glyphs/
+  scripts) — mutation-provable.
+- ✅ Ports: `fonts.go` (public list filters/messages incl. code-NULL,
+  pagination 50, cache finalize; mine list), `fonts_upload.go`
+  (FontUploadSerializer validation, add_user_font merge/quotas/clashes,
+  probe-accurate storage paths with DASHED uuids, slugify, cleanFamilyName,
+  delete lifecycle).
+- ✅ Runner: deterministic multipart bodies (fixed boundary, byte-identical
+  to both sides) + a media-user-font URL shape rule (per-side random ids,
+  format asserted).
+- ✅ Envelope engine: field_codes render `null` for code-less Django-core
+  validator errors (probe-proven).
+- ✅ Loop-caught: media path uuids are DASHED (Django str(uuid)),
+  post.isFixedPitch sits after the underline fields (fontTools postFormat
+  struct), WOFF2 transformLength presence rule.
+- ✅ Scenario `10-fonts` (21 steps) green; suite 9/9 (175 steps).
+- ✅ Artifacts: PORT_MAP fonts rows reviewed (uploads/inspector/probe/
+  filters/serializers ✅ complete; views/models partial with sync/catalog
+  pending), all 12 fonts test files dispositioned.
+- ⬜ Family pending: sync_fonts content + catalogue data (ops), usage
+  stats, admin (D2), subprocess-isolation substitution note (D6-style
+  in-process bounded parse).

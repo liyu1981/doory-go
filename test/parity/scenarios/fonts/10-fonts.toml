@@ -1,0 +1,173 @@
+# Behavior family: fonts (family 6, PLAN.md §5).
+#
+# Probe lineage: probes/0006-fonts (12 transcripts): empty catalogue +
+# cache 300, FilterSet messages (django-FORM choice invalid_choice; the
+# Django-core script validator whose field_code is JSON NULL), upload201
+# envelope (variants/unicode_ranges/popularity 9999, media URL), the409
+# variant clash PROVING the Go woff2 path parses to the same weight/style
+# as fontTools, the sorted family-mismatch sentence, junk-file prefixes,
+# and the upload-serializer's straight-quote choice message (distinct from
+# the FilterSet's Django message on the same vocabulary).
+#
+# Metadata parity evidence: internal/fontparse tests cross-prove the
+# oracle's own probe_worker facts (family/weight/style/category/glyphs/
+# scripts) for the TTF and WOFF2 fixtures.
+#
+# Content note: the PUBLIC catalogue is seeded by sync_fonts (ops family) —
+# /fonts/ stays [] until content lands; uploads exercise the full write path.
+# DRF rate throttles (upload scope) ride the kernel-family pending port.
+
+name = "10-fonts"
+description = "Fonts match the oracle: catalogue filters/messages, multipart upload with content probing, merge/clash limits, delete lifecycle."
+driver = "http"
+tags = ["fast"]
+dialects = ["sqlite"]
+covers = [
+  "backend/apps/fonts/views.py",
+  "backend/apps/fonts/serializers.py",
+  "backend/apps/fonts/uploads.py",
+  "backend/apps/fonts/filters.py",
+  "backend/apps/fonts/inspector.py",
+  "backend/apps/fonts/probe_worker.py",
+  "backend/apps/fonts/models.py",
+]
+
+[env]
+GOOGLE_CLIENT_ID = "parity-client.test"
+SECURE_COOKIES = "false"
+DJANGO_SECRET_KEY = "parity-oracle-secret-key-0123456789"
+
+# public catalogue (empty until sync_fonts seeds content)
+[[steps]]
+method = "GET"
+path = "/api/v1/fonts/"
+
+# FilterSet messages: django-FORM choice vs the core validator's NULL code
+[[steps]]
+method = "GET"
+path = "/api/v1/fonts/?category=bogus"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/fonts/?script=Bad_Script"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/fonts/?ordering=bogus"
+
+# mine requires a session
+[[steps]]
+method = "GET"
+path = "/api/v1/fonts/mine/"
+jar = "anon"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/csrf/"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/register/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"fonter@example.com","password":"Tr0ub4dor&3xkcd9"}'
+
+[[steps]]
+method = "GET"
+path = "/api/v1/fonts/mine/"
+
+# upload the TTF fixture (content probing: family/weight/style/category)
+[[steps]]
+method = "POST"
+path = "/api/v1/fonts/mine/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+multipart = [
+  { name = "files", file = "test/parity/testdata/fonts/fixture.ttf" },
+]
+capture = { fam1 = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
+
+[[steps]]
+method = "GET"
+path = "/api/v1/fonts/mine/"
+
+# the SAME family as WOFF2 -> same weight/style -> variant_exists clash:
+# this asserts the Go WOFF2 parse reached fontTools-identical metadata.
+[[steps]]
+method = "POST"
+path = "/api/v1/fonts/mine/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+multipart = [
+  { name = "files", file = "test/parity/testdata/fonts/fixture.woff2" },
+]
+
+# two different families without an override -> the sorted mismatch sentence
+[[steps]]
+method = "POST"
+path = "/api/v1/fonts/mine/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+multipart = [
+  { name = "files", file = "test/parity/testdata/fonts/fixture.ttf" },
+  { name = "files", file = "test/parity/testdata/fonts/fixture2.ttf" },
+]
+
+# junk bytes -> sniff message prefixed with the filename
+[[steps]]
+method = "POST"
+path = "/api/v1/fonts/mine/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+multipart = [
+  { name = "files", file = "test/parity/testdata/fonts/junk.bin" },
+]
+
+# serializer choice (straight quotes) vs the FilterSet's Django message
+[[steps]]
+method = "POST"
+path = "/api/v1/fonts/mine/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+multipart = [
+  { name = "files", file = "test/parity/testdata/fonts/fixture2.ttf" },
+  { name = "category", value = "bogus" },
+]
+
+# family override cleaned to nothing -> the family field error
+[[steps]]
+method = "POST"
+path = "/api/v1/fonts/mine/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+multipart = [
+  { name = "files", file = "test/parity/testdata/fonts/fixture2.ttf" },
+  { name = "family", value = "   !!!   " },
+]
+
+# second family (buginese) uploads cleanly
+[[steps]]
+method = "POST"
+path = "/api/v1/fonts/mine/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+multipart = [
+  { name = "files", file = "test/parity/testdata/fonts/fixture2.ttf" },
+]
+
+# both families listed (family, id ordering)
+[[steps]]
+method = "GET"
+path = "/api/v1/fonts/mine/"
+
+# delete the first family (files + rows), then it is gone -> 404
+[[steps]]
+method = "DELETE"
+path = "/api/v1/fonts/mine/{{capture:fam1}}/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+
+[[steps]]
+method = "GET"
+path = "/api/v1/fonts/mine/"
+
+[[steps]]
+method = "DELETE"
+path = "/api/v1/fonts/mine/{{capture:fam1}}/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+
+# public catalogue still serves the cache header on empty
+[[steps]]
+method = "GET"
+path = "/api/v1/fonts/?q=noto"

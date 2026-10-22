@@ -1,0 +1,12 @@
+GET /fonts/ 
+GET /fonts/?category=bogus 
+GET /fonts/?script=Bad_Script 
+GET /fonts/?ordering=bogus 
+GET /fonts/mine/ 
+GET /auth/csrf/ 
+POST /fonts/mine/ -H X-CSRFToken: 9gnfBATB6cyqZ17DKSzTX4NxJa2O1cAJ -F files=@/home/yli/doory-go/test/parity/testdata/fonts/fixture.ttf
+GET /fonts/mine/ 
+POST /fonts/mine/ -H X-CSRFToken: 9gnfBATB6cyqZ17DKSzTX4NxJa2O1cAJ -F files=@/home/yli/doory-go/test/parity/testdata/fonts/fixture.woff2
+POST /fonts/mine/ -H X-CSRFToken: 9gnfBATB6cyqZ17DKSzTX4NxJa2O1cAJ -F files=@/home/yli/doory-go/test/parity/testdata/fonts/fixture.ttf -F files=@/home/yli/doory-go/test/parity/testdata/fonts/fixture2.ttf
+POST /fonts/mine/ -H X-CSRFToken: 9gnfBATB6cyqZ17DKSzTX4NxJa2O1cAJ -F files=@/tmp/junk.bin
+POST /fonts/mine/ -H X-CSRFToken: 9gnfBATB6cyqZ17DKSzTX4NxJa2O1cAJ -F files=@/home/yli/doory-go/test/parity/testdata/fonts/fixture.woff2 -F category=bogus

@@ -87,6 +87,8 @@ var (
 			`"folder":"<uuid>"`, "each side mints its own folder ids (dashed-uuid format asserted)"},
 		{regexp.MustCompile(`"parent":"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"`),
 			`"parent":"<uuid>"`, "each side mints its own folder ids (dashed-uuid format asserted)"},
+		{regexp.MustCompile(`"url":"/media/fonts/user/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[a-z0-9]+"`),
+			`"url":"<media-user-font>"`, "per-side random owner/variant ids in the stored path; media/fonts/user/<32hex>/<32hex>.<format> asserted"},
 		{regexp.MustCompile(`https?://[A-Za-z0-9.\[\]:-]+`),
 			`<origin>`, "oracle and Go serve on different ports; pagination path+query after the origin stay compared"},
 		{regexp.MustCompile(`"prefix":"[0-9a-f]{12}"`),

@@ -494,6 +494,98 @@
           "logo attach with real assets"
         ]
       }
+    },
+    "fonts": {
+      "backend/apps/fonts/tests/conftest.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "pytest scaffolding — no Go port planned"
+        ]
+      },
+      "backend/apps/fonts/tests/factories.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "factories — no Go port planned"
+        ]
+      },
+      "backend/apps/fonts/tests/fakes.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "fake providers for sync — ops content path"
+        ]
+      },
+      "backend/apps/fonts/tests/fontfiles.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "test font corpus builders — fixture corpus lives in test/parity/testdata/fonts instead"
+        ]
+      },
+      "backend/apps/fonts/tests/test_admin.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "admin surface (D2)"
+        ]
+      },
+      "backend/apps/fonts/tests/test_api.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:fonts/10-fonts (catalogue filters, upload envelope, delete lifecycle)"
+        ],
+        "missing": [
+          "see evidence note in disposition"
+        ]
+      },
+      "backend/apps/fonts/tests/test_catalog_data.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "catalogue data build (ops content)"
+        ]
+      },
+      "backend/apps/fonts/tests/test_inspector.py": {
+        "disposition": "partial",
+        "evidence": [
+          "unit:internal/fontparse tests — TTF+WOFF2 probe-facts cross-proven against probe_worker output, sniff rejections"
+        ],
+        "missing": [
+          "subprocess isolation harness (Go parses in-process with a decode budget — implementation substitution under D6-style rules)"
+        ]
+      },
+      "backend/apps/fonts/tests/test_sources.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "Fontsource fetch (ops content)"
+        ]
+      },
+      "backend/apps/fonts/tests/test_sync.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "sync_fonts (ops content)"
+        ]
+      },
+      "backend/apps/fonts/tests/test_usage.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "usage stats for catalogue (ops content)"
+        ]
+      },
+      "backend/apps/fonts/tests/test_user_fonts.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:fonts/10-fonts — upload happy path, mismatch, junk, clash, override, quota messages"
+        ],
+        "missing": [
+          "quota-threshold boundaries (50 families / 150MB), concurrent race branch, empty-file FileField path"
+        ]
+      }
     }
   }
 }

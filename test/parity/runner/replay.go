@@ -17,6 +17,9 @@ import (
 	"time"
 )
 
+// RepoRoot is the repo base for relative file paths (set by Execute).
+var RepoRoot string
+
 // Run is one scenario execution context.
 type Run struct {
 	Repo    string
@@ -31,6 +34,7 @@ func Execute(repo string, sc *Scenario) ([]string, error) {
 		return nil, err
 	}
 	r := &Run{Repo: repo, WorkDir: workDir}
+	RepoRoot = repo
 
 	oracle, goSide, err := r.bootPair(sc)
 	if err != nil {
@@ -125,9 +129,23 @@ func send(side *Side, step Step, vars map[string]string) (*capture, error) {
 	if step.Body != "" {
 		body = bytes.NewReader([]byte(resolveCaptures(step.Body, vars)))
 	}
-	req, err := http.NewRequest(method, side.Base+reqPath, body)
-	if err != nil {
-		return nil, err
+	var req *http.Request
+	var err error
+	if len(step.Multipart) > 0 {
+		raw, contentType, merr := buildMultipart(step.Multipart, RepoRoot)
+		if merr != nil {
+			return nil, merr
+		}
+		req, err = http.NewRequest(method, side.Base+reqPath, bytes.NewReader(raw))
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Content-Type", contentType)
+	} else {
+		req, err = http.NewRequest(method, side.Base+reqPath, body)
+		if err != nil {
+			return nil, err
+		}
 	}
 	// Identical request headers on both sides (single client, deterministic
 	// set): Accept like curl's default, no Accept-Encoding games.

@@ -327,24 +327,24 @@ behavioral verification).
 
 | upstream | go | status |
 |---|---|---|
-| `backend/apps/fonts/admin.py` |  | ⬜ |
+| `backend/apps/fonts/admin.py` | — (admin surface — divergence D2) | ⬜ |
 | `backend/apps/fonts/apps.py` |  | ⬜ |
-| `backend/apps/fonts/catalog.py` |  | ⬜ |
-| `backend/apps/fonts/filters.py` |  | ⬜ |
-| `backend/apps/fonts/inspector.py` |  | ⬜ |
+| `backend/apps/fonts/catalog.py` | — (catalogue data build — ops family content) | ⬜ |
+| `backend/apps/fonts/filters.py` | doory/fonts.go (q/category/script/ordering incl. the code-NULL script validator) | ✅ |
+| `backend/apps/fonts/inspector.py` | internal/fontparse/fontparse.go (sniff, family clean, FontInfo) | ✅ |
 | `backend/apps/fonts/management/` |  | ⬜ |
 | `backend/apps/fonts/migrations/` |  | ⬜ |
-| `backend/apps/fonts/models.py` |  | ⬜ |
-| `backend/apps/fonts/probe_worker.py` |  | ⬜ |
-| `backend/apps/fonts/serializers.py` |  | ⬜ |
+| `backend/apps/fonts/models.py` | doory/fonts.go + doory/fonts_upload.go (row ops, variant rows, path semantics); write-path guard (bulk) pending | 🟡 |
+| `backend/apps/fonts/probe_worker.py` | internal/fontparse (sfnt/WOFF/WOFF2 tables, cmap, weight/style/category/scripts — cross-proven vs probe_worker in fontparse_test.go) | ✅ |
+| `backend/apps/fonts/serializers.py` | doory/fonts.go + doory/fonts_upload.go (family/variant envelope grouping, upload validation) | ✅ |
 | `backend/apps/fonts/signals.py` |  | ⬜ |
-| `backend/apps/fonts/sources.py` |  | ⬜ |
-| `backend/apps/fonts/sync.py` |  | ⬜ |
-| `backend/apps/fonts/tests/` |  | ⬜ |
-| `backend/apps/fonts/uploads.py` |  | ⬜ |
+| `backend/apps/fonts/sources.py` | — (Fontsource fetch — ops family content) | ⬜ |
+| `backend/apps/fonts/sync.py` | — (sync_fonts command — ops family content) | ⬜ |
+| `backend/apps/fonts/tests/` | (dispositions: ledger/test-mapping-v*.json) | 🟡 |
+| `backend/apps/fonts/uploads.py` | doory/fonts_upload.go (add_user_font: inspect, merge, quotas, clashes, storage paths) | ✅ |
 | `backend/apps/fonts/urls.py` |  | ⬜ |
 | `backend/apps/fonts/usage.py` |  | ⬜ |
-| `backend/apps/fonts/views.py` |  | ⬜ |
+| `backend/apps/fonts/views.py` | doory/fonts.go (public list + mine list/upload + delete, cache finalize) | 🟡 |
 
 ## `backend/apps/gallery/`
 
