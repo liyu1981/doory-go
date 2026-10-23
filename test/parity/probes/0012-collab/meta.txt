@@ -1,0 +1,5 @@
+probe=0012-collab
+upstream_commit=2eb2557c1eed3aa256a78f1874abfb5a1315849c
+probed_at=2026-10-23T01:14:58Z
+settings=doory.settings.prod via uvicorn doory.asgi:application
+note=raw evidence; never edit these files, only add new probe dirs

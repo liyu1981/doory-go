@@ -868,3 +868,74 @@ M11 progress log (schema + engine ports):
 - ⬜ Next: room/store/consumers (admit/release, outboxes, ready frame,
   44xx close codes), access/limits/middleware, stats endpoint, the WS
   driver in the parity runner, paired scenarios.
+
+M11 remaining build order (sources read this session, semantics noted):
+
+1. `doory/collab_access.go` — access.py: Grant/Forbidden/DesignGone/
+   PasswordNeeded/Locked, owner_grant (trashed ->4404 design_trashed),
+   link_grant over the M8 sharing helpers (resolve/enforce/record),
+   origin_allowed (scheme+host match against CSRF_TRUSTED_ORIGINS +
+   SITE_URL patterns + ALLOWED_HOSTS validation - port Django's
+   validate_host logic).
+2. `doory/collab_store.go` — store.py: LoadedState/load_or_init
+   (select-for-update + staleness rule `base_revision == revision OR not
+   reset_allowed`), reset_state, append_update, read/apply_compaction
+   (snapshot-claim CAS), flush_document (up_to_date / external_change /
+   revision bump + describeDocument facts + auto-version via
+   maybeRecordAutoVersion), read/commit_replacement (ticket CAS),
+   load_current, purge_stale_presence, unflushed_designs, admit (insert
+   then count: design_full/too_many_connections), other_instance_serves,
+   release, heartbeat (10s heartbeat,30s stale x4), room_is_live
+   (the409 use_realtime guard input), check_access (session recheck via
+   HASH_SESSION_KEY + auth-hash fallbacks, link role/expiry/revocation
+   -> closed reasons) and its CLOSE_FOR_REASON map
+   (4403/4401/4404 in room.py).
+3. `doory/collab_room.go` — room.py (945): actor with inbox/outbox pumps
+   (OUTBOX512/INBOX2000), Member (controlled/awareness/introduced sets,
+   can_write = owner|edit), VersionTracker (contiguous+ahead set),
+   awareness slots (2048B,60s expiry, palette colours), ready/pong
+   frames, flush scheduling + compaction threshold, recheck cycles,
+   db() wrapper = single-process direct calls.
+   DECISION: channels/notify_design (signals -> group layer) becomes
+   direct in-process calls into the RoomRegistry (single-process
+   substitution; behaviour identical for paired scenarios - record in the
+   M11 log; multi-process redis layer stays upstream-only).
+4. `doory/collab_consumer.go` — consumers.py: RealtimeOriginValidator,
+   client_ip (NUM_PROXIES/XFF), connect flow (4401/4429 rate +
+   pending/auth timer4408, owner fast-path, DESIGN gone4404),
+   enter/admit/ready frame (role/canWrite/user/title/revision/limits),
+   auth frames (bad_auth4400, forbidden4403, password_required errors,
+   throttled4429), receive path (4413 frame cap, TokenBucket4429,
+   ping/flush/bad_frame, scan+room.submit), disconnect/release.
+   notify/availability/signals/middleware/stats: in-process notify hub;
+   realtime_enabled = settings flag; RealtimeGuardMiddleware = the same
+   check in the designs PATCH path (409 use_realtime JSON); signals
+   design_saved/link_changed -> registry notify (title/recheck); stats
+   endpoint (staff) behind IsAdminUser.
+5. WS driver in test/parity/runner: per-step `ws` support — dial with
+   cookie jar + Origin header, text/binary frames (hex payloads), expect
+   frames (match/capture ready fields), close code+reason assertions,
+   multi-connection scenarios (A/B roles) + `env` per scenario.
+6. Scenarios:17-collab (owner connect/ready/ping-pong/CRDT roundtrip via
+   engine fixtures, close codes),18-collab-guard (409 use_realtime +
+   stats staff-only). Then PORT_MAP/dispositions + PLAN final log +
+   sweep + one M11 commit.
+
+M11 probe 0012-collab (oracle WS via uvicorn doory.asgi, in-memory channel
+layer) — raw evidence in test/parity/probes/0012-collab/frames.json:
+- Phase A (owner): ready frame {role, canWrite, user{id,name,avatar_url},
+  title, revision, limits{maxFrameBytes:1048576, maxParticipants:25}}
+  immediately followed by binary sync/step1 (13B state-vector request);
+  text ping -> {"type":"pong"}; client sync/step1 -> sync/step2 (345B
+  full-state update); clean local close.
+- Phase B: foreign Origin -> handshake refused with HTTP403 (no upgrade);
+  no session cookie -> upgrade accepted then close4401 not_authenticated.
+- Phase C: unknown text frame type -> close4400 bad_frame; unknown binary
+  message type -> close4400 bad_frame (after the standard ready/sync
+  prelude frames).
+Probe harness notes: oracle served with uvicorn (prod settings +
+DATABASE_URL=oracle.sqlite3), per-phase unique emails, websockets v17 API
+(recv returns the message; send infers binary from bytes).
+- ⬜ Build next: doory/collab_room.go (actor) + collab_consumer.go (the
+  contract above), gorilla/websocket upgrade on ws/designs/{uuid}/ with
+  the origin validator, then the runner's ws driver + scenarios.
