@@ -830,3 +830,41 @@ M11 progress log (continued):
   every reject message byte-exactly (22/22).
 - ⬜ Next: schema.py + engine.py port (document<->Y conversion, budgets,
   compaction), room/store/consumers, WS driver, scenarios.
+
+M11 progress log (schema + engine ports):
+
+- ✅ `internal/yschema` — schema.py port: document <-> Y mapping (roots
+  meta/pageOrder/pages; _clean/_unique_ids/_page_map/_object_map with
+  the insert-before-populate builder discipline), the DEFENSIVE reader
+  (props with depth bound, _ordered first-occurrence/dangling rules,
+  anomalies incl. bad_props paths + no_pages), has_no_pages, repair
+  (runs-removal, unlisted deletion, restored-page), json_equal.
+  write_changes/sync_order (the REST-save diff engine) lands with the
+  designs slice.
+- ✅ Conformance: write/read roundtrips for all four fixture documents
+  == the oracle's ydoc_to_document output; READ over the oracle's own
+  snapshots; the replayed edit-stream final state; both converged
+  concurrent states; live-document replacement (write_document clears
+  the roots). Plain-JSON page values (pycrdt dict assignment) are
+  flagged unlisted and skipped - exactly as the oracle reader does.
+- ✅ `doory/collab_engine.go` — engine.py port: apply_client_updates
+  (scanner + UpdateBudget + the exact/near-limit size logic + slow-apply
+  poison + noop detection + merged delta + pages_gone), UpdateBudget
+  (new-clients/right-only/inside-refs/originless caps with the same
+  reject messages), Convert (validated DoryDocument via the M4
+  validator), RepairDelta (state-vector delta), MakeReplacement,
+  document size with Python json.dumps(ensure_ascii=False) byte rules.
+- ✅ Engine conformance (engine_fixtures.py): the oracle's batch verdicts
+  (12 updates incl. one no-op, outcomes/sv/size/applied-count/flags) and
+  the no-op replay rejection reproduced exactly; the merged delta (from
+  the pre-batch state vector - merge_updates storage semantics) rebuilds
+  the same state on top of the base.
+- ✅ Engine loop-caught: full states exclude DELETED structs (mid-stream
+  clock gaps are legal), while a client group whose FIRST struct starts
+  beyond the known state pends as a whole (open_doc of a merge_updates
+  result on an empty document integrates nothing) - the pending rule in
+  third_party/yjs-go is group-granular for the first clock and
+  item-granular for parents.
+- ⬜ Next: room/store/consumers (admit/release, outboxes, ready frame,
+  44xx close codes), access/limits/middleware, stats endpoint, the WS
+  driver in the parity runner, paired scenarios.

@@ -225,13 +225,53 @@ func ApplyUpdate(d *Doc, update []byte, origin interface{}) error {
 	// Integrate items, retrying the ones whose parents have not arrived yet
 	// (reference pendingStructs): a multi-client full-state update groups
 	// clients in arbitrary order, so children may precede their parents.
-	queue := append(append([]*Item{}, d.pending...), items...)
+	// A client group whose FIRST struct starts beyond that client's current
+	// state pends as a whole (missing history); structs may have mid-stream
+	// clock gaps (full states exclude deleted items - probed against pycrdt).
+	type groupT struct {
+		client uint64
+		items  []*Item
+	}
+	var groups []groupT
+	for _, item := range items {
+		n := len(groups)
+		if n > 0 && groups[n-1].client == item.ID.Client {
+			groups[n-1].items = append(groups[n-1].items, item)
+		} else {
+			groups = append(groups, groupT{client: item.ID.Client, items: []*Item{item}})
+		}
+	}
+	var pendingItems []*Item
+	for _, p := range d.pending {
+		pendingItems = append(pendingItems, p)
+	}
 	d.pending = nil
+	queue := pendingItems
+	for _, g := range groups {
+		for _, item := range g.items {
+			queue = append(queue, item)
+		}
+	}
+	// gate: per-group first-clock contiguity, tracked as we integrate.
+	gate := map[uint64]uint64{}
+	for client := range d.store.clients {
+		gate[client] = d.store.getState(client)
+	}
+	groupStart := map[uint64]bool{} // client -> first item seen in this batch
 	progress := true
 	for progress && len(queue) > 0 {
 		progress = false
 		next := queue[:0]
 		for _, item := range queue {
+			if !groupStart[item.ID.Client] && item.ID.Clock > gate[item.ID.Client] {
+				// First struct of this client beyond the known state: the
+				// history in front of it has not arrived - pend and retry.
+				if _, done := groupStart[item.ID.Client]; !done {
+					next = append(next, item)
+					continue
+				}
+			}
+			groupStart[item.ID.Client] = true
 			d.mu.Lock()
 			ok := integrateItem(d, item)
 			d.mu.Unlock()
