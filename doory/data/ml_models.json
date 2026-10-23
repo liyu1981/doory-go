@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "models": [
+    {
+      "id": "u2netp",
+      "task": "background-removal",
+      "name": "U²-Net (small)",
+      "description": "The 4.7 MB variant of U²-Net: a salient-object model that runs in a fraction of a second on a laptop CPU. Doory's default.",
+      "priority": 10,
+      "default": true,
+      "file": "u2netp.onnx",
+      "bytes": 4574861,
+      "sha256": "309c8469258dda742793dce0ebea8e6dd393174f89934733ecc8b14c76f4ddd8",
+      "urls": [
+        "https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2netp.onnx",
+        "https://huggingface.co/BritishWerewolf/U-2-Netp/resolve/7112208dbac3a3642496c8d54e2f0f9bb3dc1dc8/onnx/model.onnx"
+      ],
+      "homepage": "https://github.com/xuebinqin/U-2-Net",
+      "license": {
+        "spdx": "Apache-2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0",
+        "holder": "U²-Net by Xuebin Qin, Zichen Zhang, Chenyang Huang, Masood Dehghan, Osmar R. Zaiane and Martin Jagersand (Pattern Recognition, 2020).",
+        "evidence": "Verified 2026-10-04. The upstream repository https://github.com/xuebinqin/U-2-Net carries the Apache License 2.0 (LICENSE at commit ac7e1c817ecab7c7dff5ce6b1abba61cd213ff29), and its README distributes u2netp.pth (4.7 MB) as part of the project without any further terms; no non-commercial clause appears in the repository. The weights were trained on DUTS-TR only. The ONNX file is the export published by the rembg project (MIT) and is byte-identical to the Apache-2.0 mirror https://huggingface.co/BritishWerewolf/U-2-Netp (commit 7112208dbac3a3642496c8d54e2f0f9bb3dc1dc8), whose model card states that it is licensed under Apache-2.0 to match the original."
+      },
+      "input": {
+        "name": "input.1",
+        "size": 320,
+        "mean": [0.485, 0.456, 0.406],
+        "std": [0.229, 0.224, 0.225],
+        "rescale": "max"
+      },
+      "output": "1959"
+    },
+    {
+      "id": "u2net",
+      "task": "background-removal",
+      "name": "U²-Net",
+      "description": "The full U²-Net (176 MB download, once per browser): somewhat more robust on busy scenes and fine detail. Install it with `sync_models --model u2net`; it is advertised in preference to the small model.",
+      "priority": 20,
+      "default": false,
+      "file": "u2net.onnx",
+      "bytes": 175997641,
+      "sha256": "8d10d2f3bb75ae3b6d527c77944fc5e7dcd94b29809d47a739a7a728a912b491",
+      "urls": [
+        "https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2net.onnx",
+        "https://huggingface.co/BritishWerewolf/U-2-Net/resolve/c08042b462485d8597c89d3ce831d00be8582c5c/onnx/model.onnx"
+      ],
+      "homepage": "https://github.com/xuebinqin/U-2-Net",
+      "license": {
+        "spdx": "Apache-2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0",
+        "holder": "U²-Net by Xuebin Qin, Zichen Zhang, Chenyang Huang, Masood Dehghan, Osmar R. Zaiane and Martin Jagersand (Pattern Recognition, 2020).",
+        "evidence": "Verified 2026-10-04. The upstream repository https://github.com/xuebinqin/U-2-Net carries the Apache License 2.0 (LICENSE at commit ac7e1c817ecab7c7dff5ce6b1abba61cd213ff29), and its README distributes u2net.pth (176.3 MB) as part of the project without any further terms; no non-commercial clause appears in the repository. The weights were trained on DUTS-TR only. The ONNX file is the export published by the rembg project (MIT) and is byte-identical to the Apache-2.0 mirror https://huggingface.co/BritishWerewolf/U-2-Net (commit c08042b462485d8597c89d3ce831d00be8582c5c), whose model card states that it is licensed under Apache-2.0 to match the original."
+      },
+      "input": {
+        "name": "input.1",
+        "size": 320,
+        "mean": [0.485, 0.456, 0.406],
+        "std": [0.229, 0.224, 0.225],
+        "rescale": "max"
+      },
+      "output": "1959"
+    }
+  ]
+}
