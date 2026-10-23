@@ -29,6 +29,7 @@ type Settings struct {
 	MediaRoot                string
 	BulkFillMaxRows          int
 	MCPEnabled               bool
+	McpPath                   string // MCP_PATH (default /mcp)
 	AIUserProviders          string
 	AIOffsiteNotice          string
 	AIProvidersEnabled       bool
@@ -57,6 +58,10 @@ type Settings struct {
 	ExportAllowedOrigins     []string // EXPORT_ALLOWED_ORIGINS (default site origin + :8000)
 	ExportStorageRoot        string   // EXPORT_STORAGE_ROOT (default ./exports)
 	McpExportURLTTLSeconds   int      // MCP_EXPORT_URL_TTL_SECONDS (default 600)
+	McpCallsPerMinute         int      // MCP_CALLS_PER_MINUTE (default 120; 0 = unlimited)
+	McpMaxRequestBytes        int      // MCP_MAX_REQUEST_BYTES (default 4MB)
+	McpExportInlineMaxBytes  int      // MCP_EXPORT_INLINE_MAX_BYTES (default 1MB)
+	McpExportURLUploads       bool     // URL_IMAGE_UPLOADS (default true; MCP_URL_UPLOADS legacy)
 	BackgroundRemovalDefault string   // AI_TASK_DEFAULTS[background-removal] (base.py env, default "device")
 	AIProviderEnvProvider    []AIEnvProvider
 
@@ -125,6 +130,7 @@ func FromEnv() *Settings {
 		MediaRoot:                envStr("MEDIA_ROOT", "media"),
 		BulkFillMaxRows:          envInt("BULK_FILL_MAX_ROWS", 100),
 		MCPEnabled:               envBool("MCP_ENABLED", false),
+		McpPath:                   envStr("MCP_PATH", "/mcp"),
 		AIUserProviders:          envStr("AI_USER_PROVIDERS", "off"),
 		AIOffsiteNotice:          strings.TrimSpace(envStr("AI_OFFSITE_NOTICE", "")),
 		AIProvidersEnabled:       envBool("AI_PROVIDERS_ENABLED", true),
@@ -158,6 +164,10 @@ func FromEnv() *Settings {
 		ExportWorkDir:            envStr("EXPORT_WORK_DIR", ""),
 		ExportStorageRoot:        envStr("EXPORT_STORAGE_ROOT", "exports"),
 		McpExportURLTTLSeconds:   envInt("MCP_EXPORT_URL_TTL_SECONDS", 600),
+		McpCallsPerMinute:         envInt("MCP_CALLS_PER_MINUTE", 120),
+		McpMaxRequestBytes:        envInt("MCP_MAX_REQUEST_BYTES", 4*1024*1024),
+		McpExportInlineMaxBytes:   envInt("MCP_EXPORT_INLINE_MAX_BYTES", 1024*1024),
+		McpExportURLUploads:       envBool("URL_IMAGE_UPLOADS", true),
 		MaxDesignsPerUser:        envInt("MAX_DESIGNS_PER_USER", 5000),
 		UserStorageQuotaBytes:    int64(envInt("USER_STORAGE_QUOTA_BYTES", 2*1024*1024*1024)),
 		BackgroundRemovalDefault: envStr("BACKGROUND_REMOVAL_DEFAULT", "device"),

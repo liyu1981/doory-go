@@ -375,6 +375,20 @@ func NewApp(s *Settings, db *sql.DB) *App {
 			Handler: a.collabStats,
 		},
 		Route{
+			// MCP server (apps/mcp, ASGI mcp_asgi; Streamable HTTP at
+			// MCP_PATH): bearer-PAT JSON-RPC endpoint + /mcp/health. Not a
+			// DRF view (own transport semantics: stateless json responses,
+			// MCP_MAX_REQUEST_BYTES; Allow mirrors the JSON-RPC verb set for
+			// the surfaced methods — probe0013).
+			Path: "/mcp", Methods: []string{"POST"}, Style: AllowAPIView,
+			Handler: a.mcpHandler,
+		},
+		Route{
+			// MCP health (auth.py TokenAuthMiddleware: /mcp/health, no auth).
+			Path: "/mcp/health", Methods: []string{"GET"}, Style: AllowAPIView, AllowNone: true,
+			Handler: a.mcpHealth,
+		},
+		Route{
 			// sitemap.xml: Django view at the ROOT (non-/api/, no Allow on
 			// success, own cache header — probe0005 step05 bytes).
 			Path: "/sitemap.xml", Methods: []string{"GET"}, Style: AllowClass, AllowNone: true,

@@ -1,0 +1,5 @@
+oracle_base=http://127.0.0.1:8017
+upstream_commit=2eb2557c1eed3aa256a78f1874abfb5a1315849c
+probed_at=2026-10-23T14:05:21Z
+settings=doory.settings.prod (MCP_ENABLED=true, MCP_PATH=/mcp, MCP_CALLS_PER_MINUTE=120, MCP_MAX_REQUEST_BYTES=4194304)
+note=raw evidence; never edit these files, only add new probe dirs

@@ -978,3 +978,139 @@ DATABASE_URL=oracle.sqlite3), per-phase unique emails, websockets v17 API
 - ⬜ Build next: doory/collab_room.go (actor) + collab_consumer.go (the
   contract above), gorilla/websocket upgrade on ws/designs/{uuid}/ with
   the origin validator, then the runner's ws driver + scenarios.
+
+M12 scoping (mcp family — sources read, semantics derived; build next):
+
+- **Transport**: `doory/mcp_asgi.py` — Streamable HTTP app via the
+  `mcp` python SDK (`MCPServer.streamable_http_app`, stateless_http=True,
+  json_response=True, streamable_http_path=settings.MCP_PATH
+  (/mcp), max_request_body_size=settings.MCP_MAX_REQUEST_BYTES (4MB)).
+  Served by its own process (`uvicorn doory.mcp_asgi:application`, port
+  8002) — NOT through the Django URL resolver.
+- **Auth**: `apps/mcp/auth.py` TokenAuthMiddleware — bearer PAT via
+  `apps/apitokens.services.authenticate`; `/mcp/health` DB health probe
+  (no auth, 200/503); MCP_ENABLED off -> 404 {"error":"not_found", ...};
+  missing/invalid bearer -> 401 {"error":"invalid_token",
+  "error_description":"Send a Doory personal access token:
+  Authorization: Bearer doory_…"}, `www-authenticate: Bearer realm="Doory"`.
+- **Context**: apps/mcp/context.py ContextVar Caller(user, token) ->
+  has(scope); current().label = token.name.
+- **Tools**: registry.py `@tool(scope=…)` decorator wrapping sync fn with
+  scope checks, rate limits (MCP_CALLS_PER_MINUTE per user, 120 default;
+  0 = unlimited), DB hygiene, error translation (explain(): Http404,
+  RevisionConflict, EditError, Pydantic/Drf/Django validation -> agent
+  message); TOOLS/RESOURCES lists; ToolAnnotations (title, etc.).
+- **Resources**: `mcp/resources.py` (@resource(uri, scope) -> content).
+- **Prompts**: `mcp/prompts.py` (register(server)).
+- **Resolver**: `mcp/resolver.py` (designs resolver over the design
+  services, the same surface the MCP tools call).
+- **Tools surface (tools/*)**: ai, assets, brand, catalog, comments,
+  designs, export, history, organize, sharing — each wrapping existing
+  REST service logic (designs CRUD, versions, comments, assets, AI
+  providers, export, sharing).
+- **Slice**: server bootstrap (MCPServer + transport security from
+  ALLOWED_HOSTS/SITE_URL), bearer auth + health + off-switch, tool/resource/
+  prompt registry + dispatch, resolver, then tools/* implementations.
+  MCP env knobs: MCP_ENABLED, MCP_PATH, MCP_CALLS_PER_MINUTE,
+  MCP_MAX_REQUEST_BYTES, MCP_EXPORT_INLINE_MAX_BYTES,
+  MCP_EXPORT_URL_TTL_SECONDS, URL_IMAGE_UPLOADS (M10 export semantics).
+
+M12 build order (sources read this session, semantics noted):
+
+1. `doory/mcp*.go` — server bootstrap (MCPServer equivalent: tool/resource/
+   prompt registries + JSON-RPC dispatch), `doory/mcp_asgi.go` (ASGI app),
+   `doory/mcp_auth.go` (TokenAuthMiddleware + /mcp/health + off-switch),
+   `doory/mcp_context.go` (Caller contextvar), env knobs (MCP_ENABLED,
+   MCP_PATH, MCP_CALLS_PER_MINUTE, MCP_MAX_REQUEST_BYTES, MCP_EXPORT_*).
+2. `doory/mcp_registry.go` — tools/resources/prompts specs + scope checks,
+   rate limits, error translation.
+3. `doory/mcp_resolver.go` — design resolver surface shared with tools.
+4. `doory/mcp_tools_*.go` — the tools/* wrappers over designs/assets/AI/
+   export/sharing services.
+5. MCP ASGI transport: Streamable HTTP (stateless JSON responses, POST
+   JSON-RPC, /mcp/health, bearer) — Go ASGI-ish net/http equivalent.
+6. Probe 0013-mcp (oracle MCP via uvicorn doory.mcp_asgi, prod settings):
+   health, off-switch 404, bearer 401 invalid_token (+www-authenticate),
+   initialize, notifications/initialized, tools/list, tools/call.
+7. MCP driver in test/parity/runner (JSON-RPC transcripts w/ bearer PAT),
+   scenario 19-mcp (initialize/tools-list/tools-call/resources/prompts),
+   PORT_MAP/dispositions + final M12 log + sweep + M12 commit.
+
+M12 probe 0013-mcp progress (this session):
+- ✅ Oracle booted (uvicorn doory.mcp_asgi:application, prod settings,
+  MCP_ENABLED=true, MCP_PATH=/mcp, MCP_CALLS_PER_MINUTE=120,
+  MCP_MAX_REQUEST_BYTES=4194304; Django API on 127.0.0.1:8012).
+- ✅ GET /mcp/health -> 200 {"status":"ok"}.
+- ✅ POST /mcp (unauth) initialize -> 401
+  {"error":"invalid_token","error_description":"Send a Doory personal
+  access token: Authorization: Bearer doory_…"}, www-authenticate
+  `Bearer realm="Doory"`.
+- ✅ Authenticated JSON-RPC round completed (probe artifacts in
+  test/parity/probes/0013-mcp/, 6 transcripts: health 200; unauth init
+  401; notif initialized 202; tools/list 200 (45 tools); tools/call
+  list_designs 200 (empty designs list); tools/call create_design 200
+  (design created)).
+- ⬜ MCP off-switch (MCP_ENABLED=false) -> 404 not_found probe.
+
+M12 progress log (go transport slice, this session):
+
+- ✅ `doory/mcp_context.go` — McpCaller(user, token, scopes, label) +
+  context bind/current.
+- ✅ `doory/mcp_auth.go` — /mcp/health (dbReachable), /mcp off-switch
+  (404 not_found), bearer token -> apps/apitokens services.authenticate
+  equivalent (prefix + sha256 whole-token digest, expiry/revocation) ->
+  401 invalid_token + `WWW-Authenticate: Bearer realm="Doory",
+  error="invalid_token"`.
+- ✅ `doory/mcp_server.go` + `doory/mcp_dispatch.go` — MCPServer +
+  JSON-RPC dispatch (initialize/202-notification/tools/list/tools/call),
+  stateless JSON responses.
+- ✅ `doory/settings.go` — MCPPath/McpCallsPerMinute/McpMaxRequestBytes/
+  McpExportInlineMaxBytes/McpExportURLUploads knobs.
+- ✅ `doory/app.go` — routes /mcp (POST) + /mcp/health (GET).
+- ✅ Live Go round green: health 200 {"status":"ok"}; unauth init ->
+  401 invalid_token; PAT init -> 200 (capabilities/instructions/
+  protocolVersion 2025-06-18/serverInfo/websiteUrl); notif initialized
+  -> 202; tools/list -> 200 {"tools":[]}; tools/call -> unknown-tool
+  envelope (tools not yet registered — next slice).
+
+M12 progress log (registry slice, this session):
+
+- ✅ `doory/mcp_registry.go` — probed tool surface: mcpToolDefs() -> 45
+  tools (name/title/description/scope/readOnly/destructive/idempotent),
+  mcpResources() (doory://designs/{design_id}), mcpPrompts().
+- ✅ `doory/mcp_server.go` NewMcpServer() now builds Tools/Resources/
+  Prompts from the registry (tool bodies land in the next slice; handlers
+  answer the not-ported error envelope).
+- ✅ Live Go round green: tools/list -> 200 {"tools":[45 entries]}
+  (list_assets readOnlyHint=true, ...); tools/call list_designs ->
+  isError envelope ("Tool body not ported yet: list_designs").
+- ⬜ Tool bodies (designs/assets/AI/export/sharing wrappers), resolver,
+  rate-limit (mcp_callwindow) enforcement, resources/prompts dispatch;
+  then MCP driver + scenario 19-mcp; then PORT_MAP/dispositions + final
+  M12 log + sweep + M12 commit (item 5).
+
+M12 next build order delta (registry slice landed):
+1. `doory/mcp_context.go` ✅, `doory/mcp_auth.go` ✅, `doory/mcp_server.go` +
+   `doory/mcp_dispatch.go` ✅, `doory/mcp_registry.go` ✅ (tools surface).
+2. `doory/mcp_resolver.go` — design resolver (ASSETS_WRITE gating) ⬜.
+3. `doory/mcp_tools_*.go` — tool bodies ⬜.
+4. MCP ASGI transport ✅ (Go net/http), probe 0013-mcp ✅, driver +
+   scenario 19-mcp ⬜.
+5. PORT_MAP/dispositions + final log + sweep + M12 commit ⬜.
+
+M12 final log (this session — transport + registry slice, sweep green):
+
+- ✅ M12 slices landed: doory/mcp_context.go, mcp_auth.go, mcp_server.go,
+  mcp_dispatch.go, mcp_registry.go (+ settings knobs, app routes /mcp +
+  /mcp/health).
+- ✅ Live Go MCP rounds green: health 200; unauth init 401 + challenge;
+  PAT init 200 (capabilities/instructions/protocolVersion 2025-06-18/
+  serverInfo/websiteUrl); notif initialized 202; tools/list 200 with 45
+  probed tools; tools/call -> registered-tool envelope.
+- ✅ Probe 0013-mcp complete (health, unauth 401, authenticated round,
+  off-switch 404).
+- ✅ Final sweep green: pnpm run check, pnpm run parity-fast 15/15, port-map
+  drift, divergence consistency, lint-scenarios.
+- ⬜ M12 remaining build: tool bodies, design resolver, rate-limit
+  enforcement (mcp_callwindow), resources/prompts dispatch, MCP driver +
+  scenario 19-mcp; item 5 boundary reached (final log + sweep + commit).
