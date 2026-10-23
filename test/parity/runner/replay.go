@@ -96,6 +96,7 @@ func Execute(repo string, sc *Scenario, renderURL string) ([]string, error) {
 
 	var problems []string
 	captures := map[string]map[string]string{"oracle": {}, "go": {}}
+	vars := map[string]string{}
 	for i, step := range sc.Steps {
 		// Snapshot each side's csrf secret BEFORE the request: the client
 		// jar stores the response cookie during Do, and cookie_stable must
@@ -105,49 +106,73 @@ func Execute(repo string, sc *Scenario, renderURL string) ([]string, error) {
 
 		problemsBefore := len(problems)
 
-		o, err := send(oracle, step, captures["oracle"])
-		if err != nil {
-			return nil, fmt.Errorf("oracle step %d: %w (log: %s)", i+1, err, oracle.log.Name())
+		var stepProblems []string
+		status := "ok"
+		wsStep := step.Ws
+		if wsStep == nil && i == len(sc.Steps)-1 {
+			// a scenario-level [ws] table is the trailing WS interaction
+			wsStep = sc.Ws
 		}
-		g, err := send(goSide, step, captures["go"])
-		if err != nil {
-			return nil, fmt.Errorf("go step %d: %w (log: %s)", i+1, err, goSide.log.Name())
-		}
-		applyCaptures(step, captures["oracle"], o.Body)
-		applyCaptures(step, captures["go"], g.Body)
-		if len(step.Capture) > 0 {
-			fmt.Printf("      capture oracle=%v go=%v\n", captures["oracle"], captures["go"])
-		}
-
-		if step.Comparator == "pdf" {
-			problems = append(problems, comparePDF(i, step, o, g)...)
-		} else if step.HeadersOnly {
-			if len(o.Body) != len(g.Body) || string(o.Body) != string(g.Body) {
-				fmt.Printf("      step %02d: body skipped (D12: non-API error pages differ by design)\n", i+1)
+		if wsStep != nil {
+			stepProblems = runWsStep(i, oracle, goSide, *wsStep, vars, captures)
+			if len(stepProblems) > 0 {
+				status = "diff"
 			}
-			problems = append(problems, compareHeadersOnly(i, step, o, g)...)
+			fmt.Printf("  step %02d WS      %-32s %s\n", i+1, wsStep.DesignID, status)
 		} else {
-			problems = append(problems, compare(i, step, o, g)...)
-		}
-
-		if step.CookieStable {
-			for _, chk := range []struct {
-				side *Side
-				pre  string
-				cap  *capture
-			}{{oracle, preOracle, o}, {goSide, preGo, g}} {
-				if p := cookieStableCheck(chk.pre, chk.cap); p != "" {
-					problems = append(problems, fmt.Sprintf("step %02d: %s: %s", i+1, chk.side.Name, p))
+			o, err := send(oracle, step, captures["oracle"])
+			if err != nil {
+				return nil, fmt.Errorf("oracle step %d: %w (log: %s)", i+1, err, oracle.log.Name())
+			}
+			g, err := send(goSide, step, captures["go"])
+			if err != nil {
+				return nil, fmt.Errorf("go step %d: %w (log: %s)", i+1, err, goSide.log.Name())
+			}
+			applyCaptures(step, captures["oracle"], o.Body)
+			applyCaptures(step, captures["go"], g.Body)
+			for _, m := range []map[string]string{captures["oracle"], captures["go"]} {
+				for k, v := range m {
+					if _, ok := vars[k]; !ok {
+						vars[k] = v
+					}
 				}
 			}
-		}
+			if len(step.Capture) > 0 {
+				fmt.Printf("      capture oracle=%v go=%v\n", captures["oracle"], captures["go"])
+			}
 
-		status := "ok"
-		if len(problems) > problemsBefore {
-			status = "diff"
+			if step.Comparator == "pdf" {
+				problems = append(problems, comparePDF(i, step, o, g)...)
+			} else if step.HeadersOnly {
+				if len(o.Body) != len(g.Body) || string(o.Body) != string(g.Body) {
+					fmt.Printf("      step %02d: body skipped (D12: non-API error pages differ by design)\n", i+1)
+				}
+				problems = append(problems, compareHeadersOnly(i, step, o, g)...)
+			} else {
+				problems = append(problems, compare(i, step, o, g)...)
+			}
+
+			if step.CookieStable {
+				for _, chk := range []struct {
+					side *Side
+					pre  string
+					cap  *capture
+				}{{oracle, preOracle, o}, {goSide, preGo, g}} {
+					if p := cookieStableCheck(chk.pre, chk.cap); p != "" {
+						problems = append(problems, fmt.Sprintf("step %02d: %s: %s", i+1, chk.side.Name, p))
+					}
+				}
+			}
+
+			if len(problems) > problemsBefore {
+				status = "diff"
+			}
+			fmt.Printf("  step %02d %-6s %-32s oracle=%d go=%d %s\n",
+				i+1, step.Method, step.Path, o.Status, g.Status, status)
 		}
-		fmt.Printf("  step %02d %-6s %-32s oracle=%d go=%d %s\n",
-			i+1, step.Method, step.Path, o.Status, g.Status, status)
+		if len(stepProblems) > 0 {
+			problems = append(problems, stepProblems...)
+		}
 	}
 	return problems, nil
 }
@@ -291,4 +316,61 @@ func cookieStableCheck(pre string, cap *capture) string {
 		}
 	}
 	return ""
+}
+
+// runWsStep replays one WebSocket interaction (dial/send/expect/close) on
+// both sides of the pair and reports expectation problems.
+func runWsStep(i int, oracle, goSide *Side, step WsStep, vars map[string]string, captures map[string]map[string]string) []string {
+	var problems []string
+	designID := resolveCaptures(step.DesignID, vars)
+	if designID == "" {
+		return []string{fmt.Sprintf("step %02d: ws: missing design_id", i+1)}
+	}
+	for _, pair := range []struct {
+		name string
+		side *Side
+	}{{"oracle", oracle}, {"go", goSide}} {
+		s, err := dialWs(pair.side, designID, step.Jar)
+		if err != nil {
+			problems = append(problems, fmt.Sprintf("step %02d: ws(%s): dial: %v", i+1, pair.name, err))
+			continue
+		}
+		switch step.Action {
+		case "connect":
+			if _, err := s.waitForType(step.Expect, 10*time.Second); err != nil {
+				problems = append(problems, fmt.Sprintf("step %02d: ws(%s) connect: %v", i+1, pair.name, err))
+			}
+			if step.Send != "" {
+				if err := s.send(step.Send); err != nil {
+					problems = append(problems, fmt.Sprintf("step %02d: ws(%s) send: %v", i+1, pair.name, err))
+				}
+				if step.ExpectAfter != "" {
+					if _, err := s.waitForType(step.ExpectAfter, 10*time.Second); err != nil {
+						problems = append(problems, fmt.Sprintf("step %02d: ws(%s) expect: %v", i+1, pair.name, err))
+					}
+				}
+			}
+			if step.CloseCode > 0 || step.CloseReason != "" {
+				if err := s.close(step.CloseCode, step.CloseReason); err != nil {
+					problems = append(problems, fmt.Sprintf("step %02d: ws(%s) close: %v", i+1, pair.name, err))
+				}
+			}
+		case "send":
+			if err := s.send(step.Send); err != nil {
+				problems = append(problems, fmt.Sprintf("step %02d: ws(%s) send: %v", i+1, pair.name, err))
+			} else if step.ExpectAfter != "" {
+				if _, err := s.waitForType(step.ExpectAfter, 10*time.Second); err != nil {
+					problems = append(problems, fmt.Sprintf("step %02d: ws(%s) expect: %v", i+1, pair.name, err))
+				}
+			}
+		case "close":
+			if err := s.close(step.CloseCode, step.CloseReason); err != nil {
+				problems = append(problems, fmt.Sprintf("step %02d: ws(%s) close: %v", i+1, pair.name, err))
+			}
+		default:
+			problems = append(problems, fmt.Sprintf("step %02d: ws(%s): unknown action %q", i+1, pair.name, step.Action))
+		}
+		s.closeIfNeeded()
+	}
+	return problems
 }

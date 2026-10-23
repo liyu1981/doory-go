@@ -22,6 +22,9 @@ type Scenario struct {
 	Dialects    []string          `toml:"dialects"`
 	Env         map[string]string `toml:"env"` // applied to BOTH sides
 	Steps       []Step            `toml:"steps"`
+	// Ws is the scenario-level WebSocket interaction (dial/send/expect/
+	// close) when the scenario is not an HTTP replay.
+	Ws          *WsStep           `toml:"ws"`
 }
 
 // Step is one request replayed against both sides.
@@ -55,6 +58,9 @@ type Step struct {
 	// per-side variables for later {{capture:name}} substitutions (each
 	// side consumes its OWN values — e.g. delete the id it created).
 	Capture map[string]string `toml:"capture"`
+	// Ws is a WebSocket interaction (dial/send/expect/close) instead of
+	// the plain HTTP replay for this step.
+	Ws *WsStep `toml:"ws"`
 }
 
 // MultipartPart is one part of a multipart body: a form value or a file

@@ -887,9 +887,16 @@ M11 progress log (consumer runtime + live WS verification):
   item (welcome never dispatched; syncs never sent; pings worked because
   they bypass the room actor via the outbox). Fixed with an explicit
   batching flag.
+- ✅ Runner WS driver landed (`test/parity/runner/ws.go` + step-level
+  `ws`/`[ws]` TOML binding): dial (`ws://<host>/api/v1/ws/designs/<uuid>/`
+  with jar cookies + Origin), waitForType (JSON `type`), send (JSON text /
+  binary hex), close. Scenario 17-collab wired (connect+ping+pong+close).
+  Run so far: dial/handshake reachable; oracle side still 404s on the
+  design-scoped route in the scenario context (probe-proven path), Go side
+  accepted and awaited ready.
 - ⬜ Next: client sync step2 batch/commit relay (live), auth/pending/
-  token-bucket close codes, stats endpoint, WS driver in the runner,
-  scenarios 17/18.
+  token-bucket close codes, stats endpoint, scenario 17 green on both
+  sides, scenarios 17/18.
 
 M11 remaining build order (sources read this session, semantics noted):
 

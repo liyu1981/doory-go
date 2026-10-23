@@ -1,0 +1,51 @@
+# Behavior family: collab (family 15, PLAN.md M11) — realtime WS runtime:
+# owner handshake (ready + welcome sync), ping/pong, close codes, via the
+# runner's ws step driver.
+#
+# Probe lineage: probes/0012-collab (oracle WS via uvicorn doory.asgi):
+# phase A owner ready{frame,canWrite,user,title,revision,limits} ->
+# binary sync/step1; text ping -> pong; client sync -> server sync/step2;
+# phase C unknown frame type -> close 4400 bad_frame; phase B no-session ->
+# close 4401 not_authenticated; foreign origin -> HTTP403.
+#
+# The Go side was loop-caught twice during bring-up (design uuid dashed vs
+# uuid.hex storage form; room actor batch loop hung before the welcome
+# dispatched) and is now live-verified: ready -> welcome sync/step1 delivered,
+# ping -> pong delivered.
+
+name = "17-collab"
+description = "Realtime collab owner WS: connect/ready/welcome sync, ping-pong, clean close."
+driver = "ws"
+family = "collab"
+tags = []
+dialects = ["sqlite"]
+covers = [
+  "backend/apps/collab/consumers.py",
+]
+
+[env]
+DJANGO_SECRET_KEY = "parity-oracle-secret-key-0123456789"
+SECURE_COOKIES = "false"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/csrf/"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/register/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"collab@example.com","password":"Tr0ub4dor&3xkcd9"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"title":"Collab WS"}'
+capture = { did = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
+
+[[steps]]
+method = "GET"
+path = "/api/v1/designs/{{capture:did}}/"
+
+ws = { action = "connect", design_id = "{{capture:did}}", expect = "ready", send = '{"type":"ping"}', expect_after = "pong", close_code = 1000, close_reason = "bye" }
