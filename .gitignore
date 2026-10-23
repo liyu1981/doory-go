@@ -15,7 +15,6 @@ __pycache__/
 
 # Build output.
 node_modules/
-doory
 /dist/
 
 # Oracle scratch: venv, probe DBs, media (must stay outside the mirror).

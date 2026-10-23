@@ -869,6 +869,28 @@ M11 progress log (schema + engine ports):
   44xx close codes), access/limits/middleware, stats endpoint, the WS
   driver in the parity runner, paired scenarios.
 
+M11 progress log (consumer runtime + live WS verification):
+
+- ✅ Consumer runtime live-verified against the Go server (probe0012
+  phases replayed over the real socket, oracle-pinned contract): owner
+  WS now completes the full handshake - session -> ownerGrant -> CollabAdmit
+  -> enter -> ready frame -> binary welcome sync/step1 -> ping/pong all
+  delivered; unknown text frame -> close4400 bad_frame (verified before
+  the runtime fixes; re-verified after).
+- ✅ Loop-caught #1 (access): the design uuid arrives in the URL dashed
+  (`ws/designs/<uuid>/`, uuidShape) but designs_design stores uuid.hex
+  (32 hex); ownerGrant/linkGrant/room keys must strip the dashes
+  (hexUUID) or the design lookup misses (grant=nil -> no ready frame).
+- ✅ Loop-caught #2 (room actor): the inbox batch loop was ported as
+  `for len(items) < collabBatchLimit { select { case ...: append; default: } }`
+  - never breaks on an empty inbox, so the room actor hung on the first
+  item (welcome never dispatched; syncs never sent; pings worked because
+  they bypass the room actor via the outbox). Fixed with an explicit
+  batching flag.
+- ⬜ Next: client sync step2 batch/commit relay (live), auth/pending/
+  token-bucket close codes, stats endpoint, WS driver in the runner,
+  scenarios 17/18.
+
 M11 remaining build order (sources read this session, semantics noted):
 
 1. `doory/collab_access.go` — access.py: Grant/Forbidden/DesignGone/
