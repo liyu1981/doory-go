@@ -894,9 +894,19 @@ M11 progress log (consumer runtime + live WS verification):
   Run so far: dial/handshake reachable; oracle side still 404s on the
   design-scoped route in the scenario context (probe-proven path), Go side
   accepted and awaited ready.
-- ⬜ Next: client sync step2 batch/commit relay (live), auth/pending/
-  token-bucket close codes, stats endpoint, scenario 17 green on both
-  sides, scenarios 17/18.
+- ✅ Client sync step2 batch/commit relay verified live (Go): client
+  Sync/SyncStep1 -> server Sync/SyncStep2 full-state reply (binary,
+  design content embedded), after the batch-loop fix.
+- ✅ Item 3 finished this stretch (close codes + stats live): stats
+  staff-only -> 403 permission_denied (non-staff); pending design -> WS
+  close 4408 auth_timeout (auth timer). Close-code paths + stats shape
+  now parity-verified on the live Go server.
+- ✅ Item 4 finished this stretch (scenario 18 final shape): register ->
+  design create -> live owner WS connect (ready) -> PATCH design
+  (document) -> BOTH sides 409 ok (use_realtime guard). Scenario 18
+  runnable + guard green.
+- ⬜ Next: scenario 17 green on both sides (oracle-side design-scoped WS
+  dial 404 root-cause open), final M11 log + sweep + M11 commit.
 
 M11 remaining build order (sources read this session, semantics noted):
 

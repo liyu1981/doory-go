@@ -1,15 +1,14 @@
 # Behavior family: collab (family 15, PLAN.md M11) — collab guard rails:
-# the designs PATCH realtime guard (409 use_realtime) and the staff-only
-# collab stats endpoint, via the http driver.
+# the designs PATCH realtime guard (409 use_realtime) + staff-only stats.
 
 name = "18-collab-guard"
-description = "Realtime collab guards: designs PATCH realtime 409 + staff-only collab stats."
+description = "Realtime collab guard: designs PATCH realtime 409 with a live room + staff-only stats."
 driver = "http"
 family = "collab"
 tags = []
 dialects = ["sqlite"]
 covers = [
-  "backend/apps/collab/views.py",
+  "backend/apps/collab/middleware.py",
 ]
 
 [env]
@@ -35,7 +34,14 @@ body = '{"title":"Collab Guard"}'
 capture = { did = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
 
 [[steps]]
+method = "GET"
+path = "/api/v1/designs/{{capture:did}}/"
+
+[[steps]]
+ws = { action = "connect", design_id = "{{capture:did}}", expect = "ready", close_code = 0, close_reason = "" }
+
+[[steps]]
 method = "PATCH"
-path = "/api/v1/designs/{{capture:did}}/0/"
+path = "/api/v1/designs/{{capture:did}}/"
 headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
 body = '{"document":{"schemaVersion":1,"width":10,"height":10,"pages":[{"id":"p","objects":[]}]},"base_revision":99}'
