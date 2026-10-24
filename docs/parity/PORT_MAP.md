@@ -128,12 +128,12 @@ behavioral verification).
 |---|---|---|
 | `backend/apps/assets/admin.py` | (admin surface — divergence D2) | ⬜ |
 | `backend/apps/assets/apps.py` |  | ⬜ |
-| `backend/apps/assets/audio.py` | (audio sniff/parse — pending; uploads answer loud notPorted) | ⬜ |
+| `backend/apps/assets/audio.py` | doory/commands_audio.go validateAudioContainer (per-extension container check for sync_audio; the deep metadata parse — duration/channels for uploads — stays pending with the upload pipeline) | 🟡 |
 | `backend/apps/assets/audio_stock.py` | doory/stock.go (search/info/import/preview no-config shapes incl. Freesound messages); live paths pending | 🟡 |
 | `backend/apps/assets/credits.py` | (stock credit ledger — pending with provider slice) | ⬜ |
 | `backend/apps/assets/exceptions.py` | doory/stock.go + doory/assets.go (stock/quota/file error codes+messages used in M7 paths) | 🟡 |
 | `backend/apps/assets/freesound.py` | (Freesound client — pending with remote slice) | ⬜ |
-| `backend/apps/assets/management/` | (sync_audio command — ops family) | ⬜ |
+| `backend/apps/assets/management/` | doory/commands_audio.go (sync_audio: bundled library install + index.json catalogue + prune, --list/--dry-run/--force/--from-dir). Third-party packs pending (manifest lists none; archive reader not ported). | 🟡 |
 | `backend/apps/assets/middleware.py` | doory/middleware.go (mediaSecurityHeaders: nosniff overwrite + CSP + svg attachment, chain #10) | ✅ |
 | `backend/apps/assets/migrations/` |  | ⬜ |
 | `backend/apps/assets/models.py` | doory/assets.go (row CRUD, upload_to path semantics) | 🟡 |
@@ -157,9 +157,9 @@ behavioral verification).
 
 | upstream | go | status |
 |---|---|---|
-| `backend/apps/assets/audiolib/install.py` |  | ⬜ |
-| `backend/apps/assets/audiolib/manifest.py` |  | ⬜ |
-| `backend/apps/assets/audiolib/packs.py` |  | ⬜ |
+| `backend/apps/assets/audiolib/install.py` | doory/commands_audio.go (audio_root, is_installed/_intact, entry_json catalogue, atomic writes, prune, sync) | ✅ |
+| `backend/apps/assets/audiolib/manifest.py` | doory/commands_audio.go (embedded audio_library.json, track fields, licence/host/size rules) | ✅ |
+| `backend/apps/assets/audiolib/packs.py` | doory/commands_audio_packs.go (pinned zip verify, member size/SHA-256/container checks, directory + HTTPS sources, redirect allow-list) + unit tests; the pinned manifest lists no packs | 🟡 |
 
 ## `backend/apps/brand/`
 
@@ -272,24 +272,24 @@ behavioral verification).
 |---|---|---|
 | `backend/apps/elements/admin.py` |  | ⬜ |
 | `backend/apps/elements/apps.py` |  | ⬜ |
-| `backend/apps/elements/bulk.py` |  | ⬜ |
+| `backend/apps/elements/bulk.py` | doory/elements_import.go bulkImport (batched create/update/unchanged, per-key outcomes) | ✅ |
 | `backend/apps/elements/filters.py` | doory/elements.go (pack/kind/style/ordering validation with Django FORM messages; q+relevance pending with content seeding) | 🟡 |
-| `backend/apps/elements/generated.py` |  | ⬜ |
-| `backend/apps/elements/importer.py` |  | ⬜ |
-| `backend/apps/elements/management/` |  | ⬜ |
-| `backend/apps/elements/manifest.py` |  | ⬜ |
+| `backend/apps/elements/generated.py` | doory/elements_sources.go generatedFiles (pinned graphics output; D14) | 🟡 |
+| `backend/apps/elements/importer.py` | doory/elements_import.go (import_svg/import_directory equivalents + ensure_pack; stored bytes are the sanitised output) | ✅ |
+| `backend/apps/elements/management/` | doory/commands_elements.go + elements_import.go + elements_packsync.go + elements_manifest.go + elements_sources.go + elements_normalize.go + elements_readers.go + elements_tags.go (import_elements, sync_element_packs, seed_elements). Offline paths are scenario/unit proven; the npm/url network sources are implemented but only unit-tested (no network in CI). | 🟡 |
+| `backend/apps/elements/manifest.py` | doory/elements_manifest.go (full validation, licence allow-list, fingerprints) | ✅ |
 | `backend/apps/elements/migrations/` |  | ⬜ |
-| `backend/apps/elements/models.py` | doory/elements.go (row reads); bulk_create guard + write paths pending (sync commands) | 🟡 |
-| `backend/apps/elements/normalize.py` |  | ⬜ |
-| `backend/apps/elements/packsync.py` |  | ⬜ |
-| `backend/apps/elements/readers.py` |  | ⬜ |
-| `backend/apps/elements/search.py` |  | ⬜ |
-| `backend/apps/elements/seed.py` |  | ⬜ |
+| `backend/apps/elements/models.py` | doory/elements_import.go + doory/elements.go (Element/ElementPack rows, ingest rules) | 🟡 |
+| `backend/apps/elements/normalize.py` | doory/elements_normalize.go (conformance: probe 0017 fixtures, 48/48 byte-equal) | ✅ |
+| `backend/apps/elements/packsync.py` | doory/elements_packsync.go (plan/fingerprint/import/stale+logo handling) | ✅ |
+| `backend/apps/elements/readers.py` | doory/elements_readers.go (Iconify JSON expansion) | ✅ |
+| `backend/apps/elements/search.py` | doory/elements_tags.go (fold/search_name/search_tags/clean_tags) + doory/elements.go (existing query ranking) | ✅ |
+| `backend/apps/elements/seed.py` | doory/commands_elements.go runSeedElements (builtin packs + generated graphics; D14) | 🟡 |
 | `backend/apps/elements/serializers.py` | doory/elements.go (pack/item envelopes; preview_svg annotation pending with content) | 🟡 |
 | `backend/apps/elements/signals.py` |  | ⬜ |
-| `backend/apps/elements/sources.py` |  | ⬜ |
-| `backend/apps/elements/svgdata.py` |  | ⬜ |
-| `backend/apps/elements/tagdata.py` |  | ⬜ |
+| `backend/apps/elements/sources.py` | doory/elements_sources.go (npm tarball + integrity, url files + SHA-256, directory source, glob matcher, archive path rules) | ✅ |
+| `backend/apps/elements/svgdata.py` | doory/elements_import.go processSVG (sanitize + info + colours) | ✅ |
+| `backend/apps/elements/tagdata.py` | doory/elements_tags.go (json-map, tabler, iconify-categories, phosphor-js) | ✅ |
 | `backend/apps/elements/tests/` |  | ⬜ |
 | `backend/apps/elements/urls.py` |  | ⬜ |
 | `backend/apps/elements/views.py` | doory/elements.go (packs + list: public reads, filters, pagination 48, cache 300) | 🟡 |
@@ -332,7 +332,7 @@ behavioral verification).
 | `backend/apps/fonts/catalog.py` | — (catalogue data build — ops family content) | ⬜ |
 | `backend/apps/fonts/filters.py` | doory/fonts.go (q/category/script/ordering incl. the code-NULL script validator) | ✅ |
 | `backend/apps/fonts/inspector.py` | internal/fontparse/fontparse.go (sniff, family clean, FontInfo) | ✅ |
-| `backend/apps/fonts/management/` |  | ⬜ |
+| `backend/apps/fonts/management/` | doory/commands_fonts.go (sync_fonts --from-dir/--popular/--all, licence gate, curated catalogue + unicode ranges embedded, variant rows/files; Fontsource HTTP source implemented) | 🟡 |
 | `backend/apps/fonts/migrations/` |  | ⬜ |
 | `backend/apps/fonts/models.py` | doory/fonts.go + doory/fonts_upload.go (row ops, variant rows, path semantics); write-path guard (bulk) pending | 🟡 |
 | `backend/apps/fonts/probe_worker.py` | internal/fontparse (sfnt/WOFF/WOFF2 tables, cmap, weight/style/category/scripts — cross-proven vs probe_worker in fontparse_test.go) | ✅ |
@@ -354,7 +354,7 @@ behavioral verification).
 | `backend/apps/gallery/apps.py` |  | ⬜ |
 | `backend/apps/gallery/filters.py` | doory/gallery.go (category/q/orientation/preset/featured/ordering + total tie-breaks) | 🟡 |
 | `backend/apps/gallery/importer.py` | (seed_templates/import_template command — ops family content) | ⬜ |
-| `backend/apps/gallery/management/` | doory/commands_seed.go (seed_gallery only; seed_templates/import_template pending — templates content slice) | 🟡 |
+| `backend/apps/gallery/management/` | doory/commands_gallery.go + doory/gallery_import.go (seed_gallery, seed_templates [embedded data/templates, photos, thumbnails, font warning], import_template [paths --publish --create-categories]). Thumbnails: the oracle re-encodes WebP through Pillow; the port stores the validated WebP bytes (M7 encoder gap) and the cli-driver compares those files by dimensions. | 🟡 |
 | `backend/apps/gallery/migrations/` |  | ⬜ |
 | `backend/apps/gallery/models.py` | doory/gallery.go (row reads + orientation derivation); apply_document pending with import_template | 🟡 |
 | `backend/apps/gallery/serializers.py` | doory/gallery.go (category/summary/detail envelopes) | 🟡 |
@@ -432,21 +432,21 @@ behavioral verification).
 
 | upstream | go | status |
 |---|---|---|
-| `backend/data/audio_library.json` |  | ⬜ |
-| `backend/data/element_packs.json` |  | ⬜ |
-| `backend/data/generate_graphics.py` |  | ⬜ |
-| `backend/data/generate_shapes.py` |  | ⬜ |
-| `backend/data/ml_models.json` |  | ⬜ |
-| `backend/data/popular_fonts.json` |  | ⬜ |
-| `backend/data/size_presets.json` |  | ⬜ |
-| `backend/data/unicode_ranges.json` |  | ⬜ |
+| `backend/data/audio_library.json` | doory/data/audio_library.json (embedded byte-identically by doory/commands_audio.go; sha256 pinned in the probe notes) | ✅ |
+| `backend/data/element_packs.json` | doory/data/element_packs.json (embedded; doory/elements_manifest.go validates every field + licence rule; fingerprints match the oracle for all 25 packs) | ✅ |
+| `backend/data/generate_graphics.py` | doory/data/elements_generated/graphics/ (pinned generator OUTPUT embedded; D14) | 🟡 |
+| `backend/data/generate_shapes.py` | doory/data/elements_generated/<pack>/ (pinned generator OUTPUT embedded; D14) | 🟡 |
+| `backend/data/ml_models.json` | doory/data/ml_models.json (embedded; doory/mlmodels.go + commands_models.go) | ✅ |
+| `backend/data/popular_fonts.json` | doory/data/popular_fonts.json (embedded; doory/commands_fonts.go catalogue) | ✅ |
+| `backend/data/size_presets.json` | doory/data/size_presets.json (embedded byte-identically; doory/presets_import.go) | ✅ |
+| `backend/data/unicode_ranges.json` | doory/data/unicode_ranges.json (embedded; font subset ranges) | ✅ |
 
 ## `backend/data/element_pack_files/`
 
 | upstream | go | status |
 |---|---|---|
-| `backend/data/element_pack_files/open-doodles.json` |  | ⬜ |
-| `backend/data/element_pack_files/open-peeps.json` |  | ⬜ |
+| `backend/data/element_pack_files/open-doodles.json` | doory/data/element_pack_files/open-doodles.json (embedded; urls index with per-file SHA-256) | ✅ |
+| `backend/data/element_pack_files/open-peeps.json` | doory/data/element_pack_files/open-peeps.json (embedded; urls index with per-file SHA-256) | ✅ |
 
 ## `backend/data/graphics/`
 

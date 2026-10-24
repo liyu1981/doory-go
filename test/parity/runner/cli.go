@@ -11,19 +11,26 @@
 package runner
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
 	"fmt"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"io/fs"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
 	"time"
 
+	_ "golang.org/x/image/webp"
 	_ "modernc.org/sqlite"
 )
 
@@ -67,7 +74,7 @@ func runCommandStep(i int, oracle, goSide *Side, sc *Scenario, step StepCommand)
 	if diff := compareDatabaseDigests(i, oracle, goSide); len(diff) > 0 {
 		problems = append(problems, diff...)
 	}
-	if diff := compareMediaTrees(i, oracle, goSide); len(diff) > 0 {
+	if diff := compareMediaTrees(i, oracle, goSide, sc.MediaStructural); len(diff) > 0 {
 		problems = append(problems, diff...)
 	}
 	return problems
@@ -140,6 +147,7 @@ func normalizeCLIOutput(text string, side *Side) string {
 	text = strings.ReplaceAll(text, side.MediaRoot, "<MEDIA_ROOT>")
 	text = strings.ReplaceAll(text, side.ExportRoot, "<EXPORT_STORAGE_ROOT>")
 	text = strings.ReplaceAll(text, side.WorkDir, "<WORKDIR>")
+	text = cliTiming.ReplaceAllString(text, "in <N>s") // wall-clock timings are not behavior
 	return normalizeUsageBlock(text)
 }
 
@@ -324,11 +332,10 @@ func normalizeDBValue(column string, value any) string {
 		if tsValue.MatchString(v) {
 			return "<ts>"
 		}
-		if strings.Contains(v, "\"id\":\"") || strings.Contains(v, "\"id\": \"") {
-			// JSON documents carry uuids/timestamps inside; normalize them.
-			return uuidInText.ReplaceAllString(tsInText.ReplaceAllString(v, "<ts>"), "<uuid>")
-		}
-		return v
+		v = storageSuffix.ReplaceAllString(v, "_<suffix>$1")
+		// Storage paths and JSON documents carry per-side uuids and timestamps
+		// inside the string; normalize them wherever they appear.
+		return uuidInText.ReplaceAllString(tsInText.ReplaceAllString(v, "<ts>"), "<uuid>")
 	}
 	return fmt.Sprintf("%v", value)
 }
@@ -336,6 +343,11 @@ func normalizeDBValue(column string, value any) string {
 var (
 	uuidInText = regexp.MustCompile(`[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
 	tsInText   = regexp.MustCompile(`\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(\.\d+)?(Z|\+00:00)?`)
+	// Django's storage appends "_" + 7 random characters when a name is taken
+	// (FileSystemStorage.get_available_name); the suffix itself is random.
+	storageSuffix = regexp.MustCompile(`_[A-Za-z0-9]{7}(\.[A-Za-z0-9]+)$`)
+	// "in 0.2s" / "in 12.3s": a command's own elapsed-time report (never behavior).
+	cliTiming = regexp.MustCompile(`in \d+\.\d+s`)
 )
 
 // compareDatabaseDigests reports tables whose normalized state differs, and
@@ -366,7 +378,7 @@ func compareDatabaseDigests(i int, oracle, goSide *Side) []string {
 			continue
 		}
 		if oLine != gLine {
-			detail := firstRowDelta(oracleRows[table], goRows[table])
+			detail := firstRowDelta(oracleRows[table], goRows[table], table)
 			problems = append(problems, fmt.Sprintf("step %02d: db table %q differs (oracle rows=%d go rows=%d)%s",
 				i+1, table, oracleCounts[table], goCounts[table], detail))
 		}
@@ -400,6 +412,18 @@ func compareDatabaseDigests(i int, oracle, goSide *Side) []string {
 	return problems
 }
 
+// structuralImage reports a file that sits DIRECTLY inside one of the
+// declared derived-image directories.
+func structuralImage(rel string, dirs []string) bool {
+	parent := path.Dir(rel)
+	for _, dir := range dirs {
+		if strings.TrimSuffix(dir, "/") == parent {
+			return true
+		}
+	}
+	return false
+}
+
 // sqlitePath turns sqlite:///<path> into the file path the driver opens.
 func sqlitePath(dsn string) string {
 	return strings.TrimPrefix(dsn, "sqlite:///")
@@ -416,7 +440,7 @@ func sideDatabaseDigest(side *Side) ([]string, map[string]int, map[string][]stri
 
 // firstRowDelta names the first row present on only one side (or the first
 // pair that differs), so a digest mismatch is debuggable from the report.
-func firstRowDelta(oracle, goRows []string) string {
+func firstRowDelta(oracle, goRows []string, table string) string {
 	oSet := map[string]bool{}
 	gSet := map[string]bool{}
 	for _, row := range oracle {
@@ -427,7 +451,20 @@ func firstRowDelta(oracle, goRows []string) string {
 	}
 	for _, row := range oracle {
 		if !gSet[row] {
-			return fmt.Sprintf("\n      first oracle-only row: %s", row)
+			out := fmt.Sprintf("\n      first oracle-only row: %s", row)
+			// Point at the go row with the same first cell (the primary key or
+			// slug), so the differing columns are visible side by side.
+			prefix := row
+			if i := strings.IndexByte(row, '|'); i >= 0 {
+				prefix = row[:i]
+			}
+			for _, candidate := range goRows {
+				if strings.HasPrefix(candidate, prefix+"|") {
+					out += fmt.Sprintf("\n      go row for %s: %s", table, candidate)
+					break
+				}
+			}
+			return out
 		}
 	}
 	for _, row := range goRows {
@@ -443,7 +480,7 @@ func firstRowDelta(oracle, goRows []string) string {
 // mediaTreeDigest lists every stored file (relative path with uuids
 // normalized, plus its sha256), so a seed/import command's file writes are
 // compared as well as its rows.
-func mediaTreeDigest(root string) ([]string, error) {
+func mediaTreeDigest(root string, structuralDirs []string) ([]string, error) {
 	if root == "" {
 		return nil, nil
 	}
@@ -463,16 +500,26 @@ func mediaTreeDigest(root string) ([]string, error) {
 		if readErr != nil {
 			return nil
 		}
+		normalized := uuidInText.ReplaceAllString(filepath.ToSlash(rel), "<uuid>")
+		normalized = storageSuffix.ReplaceAllString(normalized, "_<suffix>$1")
+		if structuralImage(filepath.ToSlash(rel), structuralDirs) {
+			cfg, _, derr := image.DecodeConfig(bytes.NewReader(content))
+			if derr != nil {
+				entries = append(entries, fmt.Sprintf("%s image=undecodable size=%d", normalized, len(content)))
+				return nil
+			}
+			entries = append(entries, fmt.Sprintf("%s image=%dx%d", normalized, cfg.Width, cfg.Height))
+			return nil
+		}
 		sum := sha256.Sum256(content)
-		entries = append(entries, fmt.Sprintf("%s sha=%s", uuidInText.ReplaceAllString(rel, "<uuid>"),
-			hex.EncodeToString(sum[:8])))
+		entries = append(entries, fmt.Sprintf("%s sha=%s", normalized, hex.EncodeToString(sum[:8])))
 		return nil
 	})
 	sort.Strings(entries)
 	return entries, err
 }
 
-func compareMediaTrees(i int, oracle, goSide *Side) []string {
+func compareMediaTrees(i int, oracle, goSide *Side, structuralDirs []string) []string {
 	var problems []string
 	for _, pair := range []struct {
 		label string
@@ -481,17 +528,59 @@ func compareMediaTrees(i int, oracle, goSide *Side) []string {
 		{"media", oracle.MediaRoot, goSide.MediaRoot},
 		{"exports", oracle.ExportRoot, goSide.ExportRoot},
 	} {
-		oEntries := mustMediaDigest(pair.o)
-		gEntries := mustMediaDigest(pair.g)
+		oEntries := mediaDigest(pair.o, structuralDirs)
+		gEntries := mediaDigest(pair.g, structuralDirs)
 		if strings.Join(oEntries, "\n") != strings.Join(gEntries, "\n") {
-			problems = append(problems, fmt.Sprintf("step %02d: %s tree differs:\n      oracle: %v\n      go:     %v",
-				i+1, pair.label, oEntries, gEntries))
+			problems = append(problems, fmt.Sprintf("step %02d: %s tree differs:%s",
+				i+1, pair.label, describeTreeDelta(oEntries, gEntries)))
 		}
 	}
 	return problems
 }
 
-func mustMediaDigest(root string) []string {
-	entries, _ := mediaTreeDigest(root)
+// describeTreeDelta names the entries that are only on one side (bounded: a
+// 100-file storage tree must not flood the report).
+func describeTreeDelta(oracle, goEntries []string) string {
+	oSet := map[string]bool{}
+	gSet := map[string]bool{}
+	for _, entry := range oracle {
+		oSet[entry] = true
+	}
+	for _, entry := range goEntries {
+		gSet[entry] = true
+	}
+	var out strings.Builder
+	shown := 0
+	for _, entry := range oracle {
+		if !gSet[entry] {
+			if shown == 8 {
+				out.WriteString("\n      … more oracle-only entries")
+				break
+			}
+			out.WriteString("\n      oracle-only: " + entry)
+			shown++
+		}
+	}
+	for _, entry := range goEntries {
+		if !oSet[entry] {
+			if shown == 8 {
+				out.WriteString("\n      … more go-only entries")
+				break
+			}
+			out.WriteString("\n      go-only:     " + entry)
+			shown++
+		}
+	}
+	if out.Len() == 0 {
+		out.WriteString("\n      (same entries, different order?)")
+	}
+	return out.String()
+}
+
+// mediaDigest renders a tree, comparing files directly inside a
+// `media_structural` directory by decoded image dimensions (derived images are
+// re-encoded per side) and everything else by content hash.
+func mediaDigest(root string, structuralDirs []string) []string {
+	entries, _ := mediaTreeDigest(root, structuralDirs)
 	return entries
 }

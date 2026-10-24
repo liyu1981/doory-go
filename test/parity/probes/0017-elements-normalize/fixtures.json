@@ -1,0 +1,290 @@
+[
+ {
+  "input": "currentcolor",
+  "spec": "mono24",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" width=\"24\" height=\"24\"><path d=\"M4 4l16 16\" fill=\"none\" stroke=\"#7a64e0\" stroke-width=\"2\" stroke-linecap=\"round\" /><circle cx=\"12\" cy=\"12\" r=\"3\" fill=\"none\" stroke=\"#7a64e0\" stroke-width=\"2\" stroke-linecap=\"round\" /></svg>"
+ },
+ {
+  "input": "currentcolor",
+  "spec": "mono24frame",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" width=\"24\" height=\"24\"><rect x=\"0\" y=\"0\" width=\"24\" height=\"24\" fill=\"none\" /><path d=\"M4 4l16 16\" fill=\"none\" stroke=\"#7a64e0\" stroke-width=\"2\" stroke-linecap=\"round\" /><circle cx=\"12\" cy=\"12\" r=\"3\" fill=\"none\" stroke=\"#7a64e0\" stroke-width=\"2\" stroke-linecap=\"round\" /></svg>"
+ },
+ {
+  "input": "currentcolor",
+  "spec": "colour-keep",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" width=\"24\" height=\"24\"><path d=\"M4 4l16 16\" fill=\"none\" stroke=\"#7a64e0\" stroke-width=\"2\" stroke-linecap=\"round\" /><circle cx=\"12\" cy=\"12\" r=\"3\" fill=\"none\" stroke=\"#7a64e0\" stroke-width=\"2\" stroke-linecap=\"round\" /></svg>"
+ },
+ {
+  "input": "currentcolor",
+  "spec": "mono-custom",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" width=\"32\" height=\"32\"><path d=\"M4 4l16 16\" fill=\"none\" stroke=\"#112233\" stroke-width=\"2\" stroke-linecap=\"round\" /><circle cx=\"12\" cy=\"12\" r=\"3\" fill=\"none\" stroke=\"#112233\" stroke-width=\"2\" stroke-linecap=\"round\" /></svg>"
+ },
+ {
+  "input": "named-and-rgb",
+  "spec": "mono24",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 10 10\" width=\"24\" height=\"24\"><rect width=\"10\" height=\"10\" fill=\"#7a64e0\" /><rect x=\"1\" y=\"1\" width=\"4\" height=\"4\" fill=\"#7a64e0\" /><rect x=\"5\" y=\"5\" width=\"4\" height=\"4\" opacity=\"0.5\" fill=\"#7a64e0\" /></svg>"
+ },
+ {
+  "input": "named-and-rgb",
+  "spec": "mono24frame",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 10 10\" width=\"24\" height=\"24\"><rect x=\"0\" y=\"0\" width=\"10\" height=\"10\" fill=\"none\" /><rect width=\"10\" height=\"10\" fill=\"#7a64e0\" /><rect x=\"1\" y=\"1\" width=\"4\" height=\"4\" fill=\"#7a64e0\" /><rect x=\"5\" y=\"5\" width=\"4\" height=\"4\" opacity=\"0.5\" fill=\"#7a64e0\" /></svg>"
+ },
+ {
+  "input": "named-and-rgb",
+  "spec": "colour-keep",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 10 10\" width=\"10\" height=\"10\"><rect width=\"10\" height=\"10\" fill=\"#663399\" /><rect x=\"1\" y=\"1\" width=\"4\" height=\"4\" fill=\"#ff0000\" /><rect x=\"5\" y=\"5\" width=\"4\" height=\"4\" opacity=\"0.5\" fill=\"#00ff00\" /></svg>"
+ },
+ {
+  "input": "named-and-rgb",
+  "spec": "mono-custom",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 10 10\" width=\"32\" height=\"32\"><rect width=\"10\" height=\"10\" fill=\"#112233\" /><rect x=\"1\" y=\"1\" width=\"4\" height=\"4\" fill=\"#112233\" /><rect x=\"5\" y=\"5\" width=\"4\" height=\"4\" opacity=\"0.5\" fill=\"#112233\" /></svg>"
+ },
+ {
+  "input": "inline-style",
+  "spec": "mono24",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 8 8\" width=\"24\" height=\"24\"><g><path d=\"M1 1L7 7\" fill=\"none\" stroke=\"#7a64e0\" stroke-width=\"3\" /></g></svg>"
+ },
+ {
+  "input": "inline-style",
+  "spec": "mono24frame",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 8 8\" width=\"24\" height=\"24\"><rect x=\"0\" y=\"0\" width=\"8\" height=\"8\" fill=\"none\" /><g><path d=\"M1 1L7 7\" fill=\"none\" stroke=\"#7a64e0\" stroke-width=\"3\" /></g></svg>"
+ },
+ {
+  "input": "inline-style",
+  "spec": "colour-keep",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 8 8\" width=\"8\" height=\"8\"><g><path d=\"M1 1L7 7\" fill=\"none\" stroke=\"#000000\" stroke-width=\"3\" /></g></svg>"
+ },
+ {
+  "input": "inline-style",
+  "spec": "mono-custom",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 8 8\" width=\"32\" height=\"32\"><g><path d=\"M1 1L7 7\" fill=\"none\" stroke=\"#112233\" stroke-width=\"3\" /></g></svg>"
+ },
+ {
+  "input": "hidden-helper",
+  "spec": "mono24",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 12 12\" width=\"24\" height=\"24\"><path d=\"M2 2h8v8H2z\" fill=\"#7a64e0\" /><g display=\"none\"><path d=\"M0 0\" fill=\"#7a64e0\" /></g></svg>"
+ },
+ {
+  "input": "hidden-helper",
+  "spec": "mono24frame",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 12 12\" width=\"24\" height=\"24\"><rect x=\"0\" y=\"0\" width=\"12\" height=\"12\" fill=\"none\" /><path d=\"M2 2h8v8H2z\" fill=\"#7a64e0\" /><g display=\"none\"><path d=\"M0 0\" fill=\"#7a64e0\" /></g></svg>"
+ },
+ {
+  "input": "hidden-helper",
+  "spec": "colour-keep",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 12 12\" width=\"12\" height=\"12\"><path d=\"M2 2h8v8H2z\" fill=\"#123456\" /><g display=\"none\"><path d=\"M0 0\" fill=\"#ff0000\" /></g></svg>"
+ },
+ {
+  "input": "hidden-helper",
+  "spec": "mono-custom",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 12 12\" width=\"32\" height=\"32\"><path d=\"M2 2h8v8H2z\" fill=\"#112233\" /><g display=\"none\"><path d=\"M0 0\" fill=\"#112233\" /></g></svg>"
+ },
+ {
+  "input": "use-ref",
+  "spec": "mono24",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\" fill=\"#7a64e0\" width=\"24\" height=\"24\"><defs><path id=\"dot\" d=\"M0 0h4v4H0z\" fill=\"#ff0000\" /></defs><use xlink:href=\"#dot\" x=\"2\" y=\"2\" /><use href=\"#dot\" x=\"12\" y=\"12\" fill=\"#0000ff\" /></svg>"
+ },
+ {
+  "input": "use-ref",
+  "spec": "mono24frame",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\" fill=\"#7a64e0\" width=\"24\" height=\"24\"><rect x=\"0\" y=\"0\" width=\"24\" height=\"24\" fill=\"none\" /><defs><path id=\"dot\" d=\"M0 0h4v4H0z\" fill=\"#ff0000\" /></defs><use xlink:href=\"#dot\" x=\"2\" y=\"2\" /><use href=\"#dot\" x=\"12\" y=\"12\" fill=\"#0000ff\" /></svg>"
+ },
+ {
+  "input": "use-ref",
+  "spec": "colour-keep",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\" fill=\"#7a64e0\" width=\"24\" height=\"24\"><defs><path id=\"dot\" d=\"M0 0h4v4H0z\" fill=\"#ff0000\" /></defs><use xlink:href=\"#dot\" x=\"2\" y=\"2\" /><use href=\"#dot\" x=\"12\" y=\"12\" fill=\"#0000ff\" /></svg>"
+ },
+ {
+  "input": "use-ref",
+  "spec": "mono-custom",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\" fill=\"#112233\" width=\"32\" height=\"32\"><defs><path id=\"dot\" d=\"M0 0h4v4H0z\" fill=\"#ff0000\" /></defs><use xlink:href=\"#dot\" x=\"2\" y=\"2\" /><use href=\"#dot\" x=\"12\" y=\"12\" fill=\"#0000ff\" /></svg>"
+ },
+ {
+  "input": "width-height-only",
+  "spec": "mono24",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"12\" viewBox=\"0 0 36 18\"><rect width=\"36\" height=\"18\" fill=\"#7a64e0\" /></svg>"
+ },
+ {
+  "input": "width-height-only",
+  "spec": "mono24frame",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"12\" viewBox=\"0 0 36 18\"><rect x=\"0\" y=\"0\" width=\"36\" height=\"18\" fill=\"none\" /><rect width=\"36\" height=\"18\" fill=\"#7a64e0\" /></svg>"
+ },
+ {
+  "input": "width-height-only",
+  "spec": "colour-keep",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"36\" height=\"18\" viewBox=\"0 0 36 18\"><rect width=\"36\" height=\"18\" fill=\"#abcdef\" /></svg>"
+ },
+ {
+  "input": "width-height-only",
+  "spec": "mono-custom",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32\" height=\"16\" viewBox=\"0 0 36 18\"><rect width=\"36\" height=\"18\" fill=\"#112233\" /></svg>"
+ },
+ {
+  "input": "title-desc-ids",
+  "spec": "mono24",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\" width=\"24\" height=\"24\"><g><rect width=\"16\" height=\"16\" fill=\"#7a64e0\" /></g><defs><linearGradient id=\"g1\"><stop offset=\"0\" stop-color=\"#111111\" /><stop offset=\"1\" stop-color=\"#eeeeee\" /></linearGradient></defs><rect width=\"8\" height=\"8\" fill=\"url(#g1)\" /></svg>"
+ },
+ {
+  "input": "title-desc-ids",
+  "spec": "mono24frame",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\" width=\"24\" height=\"24\"><rect x=\"0\" y=\"0\" width=\"16\" height=\"16\" fill=\"none\" /><g><rect width=\"16\" height=\"16\" fill=\"#7a64e0\" /></g><defs><linearGradient id=\"g1\"><stop offset=\"0\" stop-color=\"#111111\" /><stop offset=\"1\" stop-color=\"#eeeeee\" /></linearGradient></defs><rect width=\"8\" height=\"8\" fill=\"url(#g1)\" /></svg>"
+ },
+ {
+  "input": "title-desc-ids",
+  "spec": "colour-keep",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\" width=\"16\" height=\"16\"><g><rect width=\"16\" height=\"16\" fill=\"#222222\" /></g><defs><linearGradient id=\"g1\"><stop offset=\"0\" stop-color=\"#111111\" /><stop offset=\"1\" stop-color=\"#eeeeee\" /></linearGradient></defs><rect width=\"8\" height=\"8\" fill=\"url(#g1)\" /></svg>"
+ },
+ {
+  "input": "title-desc-ids",
+  "spec": "mono-custom",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\" width=\"32\" height=\"32\"><g><rect width=\"16\" height=\"16\" fill=\"#112233\" /></g><defs><linearGradient id=\"g1\"><stop offset=\"0\" stop-color=\"#111111\" /><stop offset=\"1\" stop-color=\"#eeeeee\" /></linearGradient></defs><rect width=\"8\" height=\"8\" fill=\"url(#g1)\" /></svg>"
+ },
+ {
+  "input": "text-preserved",
+  "spec": "mono24",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 40 20\" width=\"24\" height=\"12\"><text x=\"2\" y=\"16\" fill=\"#7a64e0\">Hi <tspan fill=\"#ff0000\">there</tspan> </text><g><rect width=\"2\" height=\"2\" fill=\"#7a64e0\" /></g></svg>"
+ },
+ {
+  "input": "text-preserved",
+  "spec": "mono24frame",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 40 20\" width=\"24\" height=\"12\"><rect x=\"0\" y=\"0\" width=\"40\" height=\"20\" fill=\"none\" /><text x=\"2\" y=\"16\" fill=\"#7a64e0\">Hi <tspan fill=\"#ff0000\">there</tspan> </text><g><rect width=\"2\" height=\"2\" fill=\"#7a64e0\" /></g></svg>"
+ },
+ {
+  "input": "text-preserved",
+  "spec": "colour-keep",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 40 20\" width=\"40\" height=\"20\"><text x=\"2\" y=\"16\" fill=\"#333333\">Hi <tspan fill=\"#ff0000\">there</tspan> </text><g><rect width=\"2\" height=\"2\" fill=\"#00ff00\" /></g></svg>"
+ },
+ {
+  "input": "text-preserved",
+  "spec": "mono-custom",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 40 20\" width=\"32\" height=\"16\"><text x=\"2\" y=\"16\" fill=\"#112233\">Hi <tspan fill=\"#ff0000\">there</tspan> </text><g><rect width=\"2\" height=\"2\" fill=\"#112233\" /></g></svg>"
+ },
+ {
+  "input": "opacity-alpha",
+  "spec": "mono24",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 4 4\" width=\"24\" height=\"24\"><rect width=\"4\" height=\"4\" fill=\"#7a64e0\" fill-opacity=\"0.25\" /><rect width=\"2\" height=\"2\" fill=\"#7a64e0\" fill-opacity=\"0.5\" /></svg>"
+ },
+ {
+  "input": "opacity-alpha",
+  "spec": "mono24frame",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 4 4\" width=\"24\" height=\"24\"><rect x=\"0\" y=\"0\" width=\"4\" height=\"4\" fill=\"none\" /><rect width=\"4\" height=\"4\" fill=\"#7a64e0\" fill-opacity=\"0.25\" /><rect width=\"2\" height=\"2\" fill=\"#7a64e0\" fill-opacity=\"0.5\" /></svg>"
+ },
+ {
+  "input": "opacity-alpha",
+  "spec": "colour-keep",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 4 4\" width=\"4\" height=\"4\"><rect width=\"4\" height=\"4\" fill=\"#0000ff\" fill-opacity=\"0.25\" /><rect width=\"2\" height=\"2\" fill=\"#ff0000\" fill-opacity=\"0.5\" /></svg>"
+ },
+ {
+  "input": "opacity-alpha",
+  "spec": "mono-custom",
+  "ok": true,
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 4 4\" width=\"32\" height=\"32\"><rect width=\"4\" height=\"4\" fill=\"#112233\" fill-opacity=\"0.25\" /><rect width=\"2\" height=\"2\" fill=\"#112233\" fill-opacity=\"0.5\" /></svg>"
+ },
+ {
+  "input": "no-shapes",
+  "spec": "mono24",
+  "ok": false,
+  "error": "The SVG contains no visible shapes."
+ },
+ {
+  "input": "no-shapes",
+  "spec": "mono24frame",
+  "ok": false,
+  "error": "The SVG contains no visible shapes."
+ },
+ {
+  "input": "no-shapes",
+  "spec": "colour-keep",
+  "ok": false,
+  "error": "The SVG contains no visible shapes."
+ },
+ {
+  "input": "no-shapes",
+  "spec": "mono-custom",
+  "ok": false,
+  "error": "The SVG contains no visible shapes."
+ },
+ {
+  "input": "not-svg",
+  "spec": "mono24",
+  "ok": false,
+  "error": "Not an SVG document."
+ },
+ {
+  "input": "not-svg",
+  "spec": "mono24frame",
+  "ok": false,
+  "error": "Not an SVG document."
+ },
+ {
+  "input": "not-svg",
+  "spec": "colour-keep",
+  "ok": false,
+  "error": "Not an SVG document."
+ },
+ {
+  "input": "not-svg",
+  "spec": "mono-custom",
+  "ok": false,
+  "error": "Not an SVG document."
+ },
+ {
+  "input": "broken",
+  "spec": "mono24",
+  "ok": false,
+  "error": "Invalid or unsafe SVG."
+ },
+ {
+  "input": "broken",
+  "spec": "mono24frame",
+  "ok": false,
+  "error": "Invalid or unsafe SVG."
+ },
+ {
+  "input": "broken",
+  "spec": "colour-keep",
+  "ok": false,
+  "error": "Invalid or unsafe SVG."
+ },
+ {
+  "input": "broken",
+  "spec": "mono-custom",
+  "ok": false,
+  "error": "Invalid or unsafe SVG."
+ }
+]

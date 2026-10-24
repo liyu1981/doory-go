@@ -31,6 +31,12 @@ covers = [
   "backend/apps/collab/management/",
 ]
 
+# Thumbnails are derived images: the oracle re-encodes every one through
+# Pillow's WebP encoder (quality 82), and there is no pure-Go WebP encoder
+# (the M7 substitution). Files directly inside these directories compare by
+# decoded dimensions; every other file compares by content hash.
+media_structural = ["templates/"]
+
 [env]
 DJANGO_SECRET_KEY = "parity-oracle-secret-key-0123456789"
 SECURE_COOKIES = "false"
@@ -150,6 +156,160 @@ args = ["test/parity/testdata/ops/presets-extra.json", "--mode", "replace"]
 
 [[steps]]
 command = "seed_size_presets"
+
+# ---- gallery content: starter templates + operator import ----
+[[steps]]
+command = "seed_templates"
+
+[[steps]]
+command = "seed_templates"
+args = ["--update"]
+
+[[steps]]
+command = "import_template"
+args = ["test/parity/testdata/ops/template-custom.json"]
+
+[[steps]]
+command = "import_template"
+args = ["test/parity/testdata/ops/template-custom.json", "--create-categories"]
+
+[[steps]]
+command = "import_template"
+args = ["test/parity/testdata/ops/template-bad.json"]
+
+[[steps]]
+command = "import_template"
+args = ["test/parity/testdata/ops/template-custom.json", "--publish"]
+
+[[steps]]
+command = "import_template"
+args = ["/nope/template.json"]
+
+# ---- elements: generated artwork, pack sync (offline), operator import ----
+[[steps]]
+command = "seed_elements"
+
+[[steps]]
+command = "seed_elements"
+
+[[steps]]
+command = "sync_element_packs"
+args = ["--list"]
+
+[[steps]]
+command = "sync_element_packs"
+args = ["--pack", "backgrounds-patterns"]
+
+[[steps]]
+command = "sync_element_packs"
+args = ["--pack", "backgrounds-patterns"]
+
+[[steps]]
+command = "sync_element_packs"
+args = ["--pack", "backgrounds-patterns", "--force"]
+
+[[steps]]
+command = "sync_element_packs"
+args = ["--pack", "doodle-accents", "--dry-run"]
+
+[[steps]]
+command = "sync_element_packs"
+args = ["--pack", "charts", "--prune"]
+
+[[steps]]
+command = "sync_element_packs"
+args = ["--pack", "nope"]
+
+[[steps]]
+command = "import_elements"
+args = ["test/parity/testdata/ops/elements/shapes", "--pack", "parity-shapes", "--name", "Parity Shapes"]
+
+[[steps]]
+command = "import_elements"
+args = ["test/parity/testdata/ops/elements/shapes", "--pack", "parity-shapes"]
+
+[[steps]]
+command = "import_elements"
+args = ["test/parity/testdata/ops/elements/shapes", "--pack", "parity-icons", "--kind", "icon", "--license", "MIT"]
+
+[[steps]]
+command = "import_elements"
+args = ["test/parity/testdata/ops/elements/shapes", "--pack", "parity-new"]
+
+[[steps]]
+command = "import_elements"
+args = ["/nope/elements", "--pack", "parity-shapes"]
+
+# ---- fonts: offline import, validation, selection errors ----
+[[steps]]
+command = "sync_fonts"
+args = ["--from-dir", "test/parity/testdata/ops/fonts"]
+
+[[steps]]
+command = "sync_fonts"
+args = ["--from-dir", "test/parity/testdata/ops/fonts/inter"]
+
+[[steps]]
+command = "sync_fonts"
+args = ["--from-dir", "test/parity/testdata/ops/fonts", "--license", "Apache-2.0"]
+
+[[steps]]
+command = "sync_fonts"
+
+[[steps]]
+command = "sync_fonts"
+args = ["--popular", "0"]
+
+[[steps]]
+command = "sync_fonts"
+args = ["--weights", "450", "Inter"]
+
+[[steps]]
+command = "sync_fonts"
+args = ["--styles", "heavy", "Inter"]
+
+[[steps]]
+command = "sync_fonts"
+args = ["--subsets", "", "Inter"]
+
+[[steps]]
+command = "sync_fonts"
+args = ["--from-dir", "/nope/fonts"]
+
+# ---- audio library (bundled content, catalogue, pruning, integrity) ----
+[[steps]]
+command = "sync_audio"
+args = ["--list"]
+
+[[steps]]
+command = "sync_audio"
+args = ["--dry-run"]
+
+[[steps]]
+command = "sync_audio"
+
+[[steps]]
+command = "sync_audio"
+
+[[steps]]
+command = "sync_audio"
+args = ["--list"]
+
+[[steps]]
+command = "sync_audio"
+args = ["--force"]
+
+[[steps]]
+command = "sync_audio"
+args = ["--pack", "nope"]
+
+[[steps]]
+command = "sync_audio"
+args = ["--from-dir", "test/parity/testdata/ops/audio"]
+
+[[steps]]
+command = "sync_audio"
+args = ["--from-dir", "/nope/audio"]
 
 # ---- machine-learning models (offline paths) ----
 [[steps]]

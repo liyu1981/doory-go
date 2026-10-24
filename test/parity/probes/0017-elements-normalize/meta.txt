@@ -1,0 +1,5 @@
+probe=0017-elements-normalize
+source=apps/elements/normalize.py via the pinned oracle venv (Pillow ImageColor for names)
+note=48 cases: 12 SVG inputs x 4 NormalizeSpecs (mono/colour/size/frame/custom colour);
+     parser: internal elements_normalize_test.go reproduces every accept byte-exactly and
+     every SvgError message. never edit; regenerate with the oracle.

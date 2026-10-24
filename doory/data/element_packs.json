@@ -1,0 +1,764 @@
+{
+  "schema": 1,
+  "packs": [
+    {
+      "id": "backgrounds-patterns",
+      "name": "Backgrounds & Patterns",
+      "kind": "graphic",
+      "style": "",
+      "description": "Dots, stripes, checks, waves, zigzags, topographic lines, grids, confetti, Memphis shapes, blobs and soft gradient meshes: ready-made backgrounds in the Doory palette.",
+      "sort_order": 50,
+      "source": {
+        "type": "generated",
+        "generator": "graphics",
+        "set": "backgrounds-patterns"
+      },
+      "license": {
+        "spdx": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/"
+      },
+      "attribution": ""
+    },
+    {
+      "id": "frames-badges",
+      "name": "Frames & Badges",
+      "kind": "frame",
+      "style": "",
+      "description": "Decorative frames, label plates, seals, stamps and ribbons.",
+      "sort_order": 60,
+      "source": {
+        "type": "generated",
+        "generator": "graphics",
+        "set": "frames-badges"
+      },
+      "license": {
+        "spdx": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/"
+      },
+      "attribution": ""
+    },
+    {
+      "id": "dividers-borders",
+      "name": "Dividers & Borders",
+      "kind": "line",
+      "style": "",
+      "description": "Ornamental dividers, rules, corner pieces and border strips.",
+      "sort_order": 70,
+      "source": {
+        "type": "generated",
+        "generator": "graphics",
+        "set": "dividers-borders"
+      },
+      "license": {
+        "spdx": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/"
+      },
+      "attribution": ""
+    },
+    {
+      "id": "speech-bubbles",
+      "name": "Speech Bubbles & Callouts",
+      "kind": "shape",
+      "style": "",
+      "description": "Speech and thought bubbles, call-out boxes and pointers.",
+      "sort_order": 80,
+      "source": {
+        "type": "generated",
+        "generator": "graphics",
+        "set": "speech-bubbles"
+      },
+      "license": {
+        "spdx": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/"
+      },
+      "attribution": ""
+    },
+    {
+      "id": "social-media",
+      "name": "Social Media",
+      "kind": "icon",
+      "style": "filled",
+      "description": "Generic like, comment, share and profile glyphs and post frames. Original drawings, no brand logos.",
+      "sort_order": 90,
+      "source": {
+        "type": "generated",
+        "generator": "graphics",
+        "set": "social-media"
+      },
+      "license": {
+        "spdx": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/"
+      },
+      "attribution": ""
+    },
+    {
+      "id": "sale-promo",
+      "name": "Sale & Promo",
+      "kind": "graphic",
+      "style": "",
+      "description": "Sale, discount and promo badges, price tags, ribbons and coupons.",
+      "sort_order": 100,
+      "source": {
+        "type": "generated",
+        "generator": "graphics",
+        "set": "sale-promo"
+      },
+      "license": {
+        "spdx": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/"
+      },
+      "attribution": ""
+    },
+    {
+      "id": "charts",
+      "name": "Charts",
+      "kind": "graphic",
+      "style": "",
+      "description": "Bar, line, area, pie, donut and gauge starter graphics.",
+      "sort_order": 110,
+      "source": {
+        "type": "generated",
+        "generator": "graphics",
+        "set": "charts"
+      },
+      "license": {
+        "spdx": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/"
+      },
+      "attribution": ""
+    },
+    {
+      "id": "doodle-accents",
+      "name": "Doodle Accents",
+      "kind": "graphic",
+      "style": "outline",
+      "description": "Hand-drawn underlines, arrows, circles, stars, sparkles and scribbles.",
+      "sort_order": 120,
+      "source": {
+        "type": "generated",
+        "generator": "graphics",
+        "set": "doodle-accents"
+      },
+      "license": {
+        "spdx": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/"
+      },
+      "attribution": ""
+    },
+    {
+      "id": "lucide",
+      "name": "Lucide",
+      "kind": "icon",
+      "style": "outline",
+      "description": "Clean, consistent outline icons.",
+      "homepage": "https://lucide.dev",
+      "sort_order": 200,
+      "source": {
+        "type": "npm",
+        "package": "lucide-static",
+        "version": "1.52.0",
+        "integrity": "sha512-0zZYihAze4ZmUCcyNa9OkWYqn/Y5f9AdTh02AZIxMtP5ravcTTfoSIAnUPBH6ZvKxt+ZW28JB0ldzLRyD82fcw=="
+      },
+      "files": {
+        "include": [
+          "icons/*.svg"
+        ]
+      },
+      "license": {
+        "spdx": "ISC AND MIT",
+        "url": "https://cdn.jsdelivr.net/npm/lucide-static@1.52.0/LICENSE",
+        "file": "LICENSE",
+        "match": "(?s)ISC License.*The MIT License \\(MIT\\)"
+      },
+      "attribution": "Lucide: Copyright (c) 2026 Lucide Icons and Contributors (ISC). Icons derived from Feather: Copyright (c) 2013-present Cole Bemis (MIT).",
+      "normalize": {
+        "mode": "mono",
+        "size": 24,
+        "frame": true
+      },
+      "tags": {
+        "format": "json-map",
+        "file": "tags.json"
+      }
+    },
+    {
+      "id": "tabler-outline",
+      "name": "Tabler Outline",
+      "kind": "icon",
+      "style": "outline",
+      "description": "Over 5,000 pixel-perfect outline icons.",
+      "homepage": "https://tabler.io/icons",
+      "sort_order": 210,
+      "source": {
+        "type": "npm",
+        "package": "@tabler/icons",
+        "version": "3.48.0",
+        "integrity": "sha512-lQk06gVHNVBnJp0UOgtth54mcZBJM7rdYKsAxKOProj1bbSAx+/xiuOWfHlyvgdL3M+Y+I0HINrjHa3ygp8eXQ=="
+      },
+      "files": {
+        "include": [
+          "icons/outline/*.svg"
+        ]
+      },
+      "license": {
+        "spdx": "MIT",
+        "url": "https://cdn.jsdelivr.net/npm/@tabler/icons@3.48.0/LICENSE",
+        "file": "LICENSE",
+        "match": "MIT License"
+      },
+      "attribution": "Tabler Icons: Copyright (c) 2020-2026 Paweł Kuna (MIT).",
+      "normalize": {
+        "mode": "mono",
+        "size": 24,
+        "frame": true
+      },
+      "tags": {
+        "format": "tabler",
+        "file": "icons.json"
+      },
+      "naming": {
+        "brand": "^brand-"
+      }
+    },
+    {
+      "id": "tabler-filled",
+      "name": "Tabler Filled",
+      "kind": "icon",
+      "style": "filled",
+      "description": "Solid versions of the Tabler icons.",
+      "homepage": "https://tabler.io/icons",
+      "sort_order": 211,
+      "source": {
+        "type": "npm",
+        "package": "@tabler/icons",
+        "version": "3.48.0",
+        "integrity": "sha512-lQk06gVHNVBnJp0UOgtth54mcZBJM7rdYKsAxKOProj1bbSAx+/xiuOWfHlyvgdL3M+Y+I0HINrjHa3ygp8eXQ=="
+      },
+      "files": {
+        "include": [
+          "icons/filled/*.svg"
+        ]
+      },
+      "license": {
+        "spdx": "MIT",
+        "url": "https://cdn.jsdelivr.net/npm/@tabler/icons@3.48.0/LICENSE",
+        "file": "LICENSE",
+        "match": "MIT License"
+      },
+      "attribution": "Tabler Icons: Copyright (c) 2020-2026 Paweł Kuna (MIT).",
+      "normalize": {
+        "mode": "mono",
+        "size": 24,
+        "frame": true
+      },
+      "tags": {
+        "format": "tabler",
+        "file": "icons.json"
+      },
+      "naming": {
+        "brand": "^brand-"
+      }
+    },
+    {
+      "id": "phosphor-regular",
+      "name": "Phosphor Regular",
+      "kind": "icon",
+      "style": "outline",
+      "description": "A flexible icon family, regular weight.",
+      "homepage": "https://phosphoricons.com",
+      "sort_order": 220,
+      "source": {
+        "type": "npm",
+        "package": "@phosphor-icons/core",
+        "version": "2.1.1",
+        "integrity": "sha512-v4ARvrip4qBCImOE5rmPUylOEK4iiED9ZyKjcvzuezqMaiRASCHKcRIuvvxL/twvLpkfnEODCOJp5dM4eZilxQ=="
+      },
+      "files": {
+        "include": [
+          "assets/regular/*.svg"
+        ]
+      },
+      "license": {
+        "spdx": "MIT",
+        "url": "https://cdn.jsdelivr.net/npm/@phosphor-icons/core@2.1.1/LICENSE",
+        "file": "LICENSE",
+        "match": "MIT License"
+      },
+      "attribution": "Phosphor Icons: Copyright (c) 2023 Phosphor Icons (MIT).",
+      "normalize": {
+        "mode": "mono",
+        "size": 24,
+        "frame": true
+      },
+      "tags": {
+        "format": "phosphor-js",
+        "file": "dist/index.mjs"
+      },
+      "naming": {
+        "brand": "-logo(?:-simple)?$"
+      }
+    },
+    {
+      "id": "phosphor-bold",
+      "name": "Phosphor Bold",
+      "kind": "icon",
+      "style": "outline",
+      "description": "Phosphor icons in a bold weight.",
+      "homepage": "https://phosphoricons.com",
+      "sort_order": 221,
+      "source": {
+        "type": "npm",
+        "package": "@phosphor-icons/core",
+        "version": "2.1.1",
+        "integrity": "sha512-v4ARvrip4qBCImOE5rmPUylOEK4iiED9ZyKjcvzuezqMaiRASCHKcRIuvvxL/twvLpkfnEODCOJp5dM4eZilxQ=="
+      },
+      "files": {
+        "include": [
+          "assets/bold/*-bold.svg"
+        ]
+      },
+      "license": {
+        "spdx": "MIT",
+        "url": "https://cdn.jsdelivr.net/npm/@phosphor-icons/core@2.1.1/LICENSE",
+        "file": "LICENSE",
+        "match": "MIT License"
+      },
+      "attribution": "Phosphor Icons: Copyright (c) 2023 Phosphor Icons (MIT).",
+      "normalize": {
+        "mode": "mono",
+        "size": 24,
+        "frame": true
+      },
+      "naming": {
+        "strip_suffix": "-bold",
+        "brand": "-logo(?:-simple)?$"
+      },
+      "tags": {
+        "format": "phosphor-js",
+        "file": "dist/index.mjs"
+      }
+    },
+    {
+      "id": "phosphor-fill",
+      "name": "Phosphor Fill",
+      "kind": "icon",
+      "style": "filled",
+      "description": "Solid Phosphor icons.",
+      "homepage": "https://phosphoricons.com",
+      "sort_order": 222,
+      "source": {
+        "type": "npm",
+        "package": "@phosphor-icons/core",
+        "version": "2.1.1",
+        "integrity": "sha512-v4ARvrip4qBCImOE5rmPUylOEK4iiED9ZyKjcvzuezqMaiRASCHKcRIuvvxL/twvLpkfnEODCOJp5dM4eZilxQ=="
+      },
+      "files": {
+        "include": [
+          "assets/fill/*-fill.svg"
+        ]
+      },
+      "license": {
+        "spdx": "MIT",
+        "url": "https://cdn.jsdelivr.net/npm/@phosphor-icons/core@2.1.1/LICENSE",
+        "file": "LICENSE",
+        "match": "MIT License"
+      },
+      "attribution": "Phosphor Icons: Copyright (c) 2023 Phosphor Icons (MIT).",
+      "normalize": {
+        "mode": "mono",
+        "size": 24,
+        "frame": true
+      },
+      "naming": {
+        "strip_suffix": "-fill",
+        "brand": "-logo(?:-simple)?$"
+      },
+      "tags": {
+        "format": "phosphor-js",
+        "file": "dist/index.mjs"
+      }
+    },
+    {
+      "id": "phosphor-duotone",
+      "name": "Phosphor Duotone",
+      "kind": "icon",
+      "style": "duotone",
+      "description": "Two-tone Phosphor icons: a soft shade behind the outline.",
+      "homepage": "https://phosphoricons.com",
+      "sort_order": 223,
+      "source": {
+        "type": "npm",
+        "package": "@phosphor-icons/core",
+        "version": "2.1.1",
+        "integrity": "sha512-v4ARvrip4qBCImOE5rmPUylOEK4iiED9ZyKjcvzuezqMaiRASCHKcRIuvvxL/twvLpkfnEODCOJp5dM4eZilxQ=="
+      },
+      "files": {
+        "include": [
+          "assets/duotone/*-duotone.svg"
+        ]
+      },
+      "license": {
+        "spdx": "MIT",
+        "url": "https://cdn.jsdelivr.net/npm/@phosphor-icons/core@2.1.1/LICENSE",
+        "file": "LICENSE",
+        "match": "MIT License"
+      },
+      "attribution": "Phosphor Icons: Copyright (c) 2023 Phosphor Icons (MIT).",
+      "normalize": {
+        "mode": "mono",
+        "size": 24,
+        "frame": true
+      },
+      "naming": {
+        "strip_suffix": "-duotone",
+        "brand": "-logo(?:-simple)?$"
+      },
+      "tags": {
+        "format": "phosphor-js",
+        "file": "dist/index.mjs"
+      }
+    },
+    {
+      "id": "bootstrap-outline",
+      "name": "Bootstrap Icons",
+      "kind": "icon",
+      "style": "outline",
+      "description": "Over 1,300 general-purpose outline icons from Bootstrap.",
+      "homepage": "https://icons.getbootstrap.com",
+      "sort_order": 225,
+      "source": {
+        "type": "npm",
+        "package": "bootstrap-icons",
+        "version": "1.13.2",
+        "integrity": "sha512-fAU1Ly3dH7hwRg+CB8EZ0Vl0fF80zgXHeUVJyfUOKzoURr+TbwISbCW5tKUoQLERaWYG2emTCybcPbD96hdD1A=="
+      },
+      "files": {
+        "include": [
+          "icons/*.svg"
+        ],
+        "exclude": [
+          "icons/*-fill.svg"
+        ]
+      },
+      "license": {
+        "spdx": "MIT",
+        "url": "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.2/LICENSE",
+        "file": "LICENSE",
+        "match": "The MIT License \\(MIT\\)"
+      },
+      "attribution": "Bootstrap Icons: Copyright (c) 2019-2024 The Bootstrap Authors (MIT).",
+      "normalize": {
+        "mode": "mono",
+        "size": 24,
+        "frame": true
+      },
+      "naming": {
+        "brand": "^(?:alexa|alipay|amazon|amd|android2?|anthropic|apple(?:-music)?|behance|bing|bluesky|bootstrap(?:-reboot)?|browser-(?:chrome|edge|firefox|safari)|claude|discord|dribbble|dropbox|facebook|git|github|gitlab|google(?:-play)?|instagram|javascript|line|linkedin|mastodon|medium|messenger|meta|microsoft(?:-teams)?|nintendo-switch|nvidia|openai|opencollective|paypal|perplexity|pinterest|playstation|quora|reddit|signal|sina-weibo|skype|slack|snapchat|sourceforge|spotify|stack-overflow|steam|strava|stripe|substack|telegram|tencent-qq|threads|tiktok|trello|twitch|twitter(?:-x)?|ubuntu|unity|vimeo|wechat|whatsapp|wikipedia|windows|wordpress|xbox|yelp|youtube)$"
+      }
+    },
+    {
+      "id": "bootstrap-fill",
+      "name": "Bootstrap Icons Fill",
+      "kind": "icon",
+      "style": "filled",
+      "description": "Solid versions of the Bootstrap icons.",
+      "homepage": "https://icons.getbootstrap.com",
+      "sort_order": 226,
+      "source": {
+        "type": "npm",
+        "package": "bootstrap-icons",
+        "version": "1.13.2",
+        "integrity": "sha512-fAU1Ly3dH7hwRg+CB8EZ0Vl0fF80zgXHeUVJyfUOKzoURr+TbwISbCW5tKUoQLERaWYG2emTCybcPbD96hdD1A=="
+      },
+      "files": {
+        "include": [
+          "icons/*-fill.svg"
+        ]
+      },
+      "license": {
+        "spdx": "MIT",
+        "url": "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.2/LICENSE",
+        "file": "LICENSE",
+        "match": "The MIT License \\(MIT\\)"
+      },
+      "attribution": "Bootstrap Icons: Copyright (c) 2019-2024 The Bootstrap Authors (MIT).",
+      "normalize": {
+        "mode": "mono",
+        "size": 24,
+        "frame": true
+      },
+      "naming": {
+        "strip_suffix": "-fill",
+        "brand": "^(?:alexa|alipay|amazon|amd|android2?|anthropic|apple(?:-music)?|behance|bing|bluesky|bootstrap(?:-reboot)?|browser-(?:chrome|edge|firefox|safari)|claude|discord|dribbble|dropbox|facebook|git|github|gitlab|google(?:-play)?|instagram|javascript|line|linkedin|mastodon|medium|messenger|meta|microsoft(?:-teams)?|nintendo-switch|nvidia|openai|opencollective|paypal|perplexity|pinterest|playstation|quora|reddit|signal|sina-weibo|skype|slack|snapchat|sourceforge|spotify|stack-overflow|steam|strava|stripe|substack|telegram|tencent-qq|threads|tiktok|trello|twitch|twitter(?:-x)?|ubuntu|unity|vimeo|wechat|whatsapp|wikipedia|windows|wordpress|xbox|yelp|youtube)$"
+      }
+    },
+    {
+      "id": "heroicons-outline",
+      "name": "Heroicons Outline",
+      "kind": "icon",
+      "style": "outline",
+      "description": "Hand-crafted outline UI icons.",
+      "homepage": "https://heroicons.com",
+      "sort_order": 230,
+      "source": {
+        "type": "npm",
+        "package": "heroicons",
+        "version": "2.2.0",
+        "integrity": "sha512-yOwvztmNiBWqR946t+JdgZmyzEmnRMC2nxvHFC90bF1SUttwB6yJKYeme1JeEcBfobdOs827nCyiWBS2z/brog=="
+      },
+      "files": {
+        "include": [
+          "24/outline/*.svg"
+        ]
+      },
+      "license": {
+        "spdx": "MIT",
+        "url": "https://cdn.jsdelivr.net/npm/heroicons@2.2.0/LICENSE",
+        "file": "LICENSE",
+        "match": "MIT License"
+      },
+      "attribution": "Heroicons: Copyright (c) Tailwind Labs, Inc. (MIT).",
+      "normalize": {
+        "mode": "mono",
+        "size": 24,
+        "frame": true
+      }
+    },
+    {
+      "id": "heroicons-solid",
+      "name": "Heroicons Solid",
+      "kind": "icon",
+      "style": "filled",
+      "description": "Hand-crafted solid UI icons.",
+      "homepage": "https://heroicons.com",
+      "sort_order": 231,
+      "source": {
+        "type": "npm",
+        "package": "heroicons",
+        "version": "2.2.0",
+        "integrity": "sha512-yOwvztmNiBWqR946t+JdgZmyzEmnRMC2nxvHFC90bF1SUttwB6yJKYeme1JeEcBfobdOs827nCyiWBS2z/brog=="
+      },
+      "files": {
+        "include": [
+          "24/solid/*.svg"
+        ]
+      },
+      "license": {
+        "spdx": "MIT",
+        "url": "https://cdn.jsdelivr.net/npm/heroicons@2.2.0/LICENSE",
+        "file": "LICENSE",
+        "match": "MIT License"
+      },
+      "attribution": "Heroicons: Copyright (c) Tailwind Labs, Inc. (MIT).",
+      "normalize": {
+        "mode": "mono",
+        "size": 24,
+        "frame": true
+      }
+    },
+    {
+      "id": "material-outlined",
+      "name": "Material Outlined",
+      "kind": "icon",
+      "style": "outline",
+      "description": "Google's Material Symbols, outlined style.",
+      "homepage": "https://fonts.google.com/icons",
+      "sort_order": 240,
+      "source": {
+        "type": "npm",
+        "package": "@material-symbols/svg-400",
+        "version": "0.47.6",
+        "integrity": "sha512-lXYsZWNXXu6gTVTAS/aRtOuKrjYhbyl1Y/t1JELXku3GZe0DLPfQ8O8UcbHGs1H22s32kGJVilkTKO2OkGzPXA=="
+      },
+      "files": {
+        "include": [
+          "outlined/*.svg"
+        ],
+        "exclude": [
+          "outlined/*-fill.svg"
+        ]
+      },
+      "license": {
+        "spdx": "Apache-2.0",
+        "url": "https://cdn.jsdelivr.net/npm/@material-symbols/svg-400@0.47.6/LICENSE",
+        "file": "LICENSE",
+        "match": "Apache License\\s+Version 2\\.0"
+      },
+      "attribution": "Material Symbols: Copyright Google LLC (Apache-2.0).",
+      "normalize": {
+        "mode": "mono",
+        "size": 24,
+        "frame": true
+      },
+      "naming": {
+        "brand": "^(?:nest_|mfg_nest|google_|chromecast|stadia_|youtube_)|^(?:android|duo)$"
+      }
+    },
+    {
+      "id": "material-filled",
+      "name": "Material Filled",
+      "kind": "icon",
+      "style": "filled",
+      "description": "Google's Material Symbols, filled style.",
+      "homepage": "https://fonts.google.com/icons",
+      "sort_order": 241,
+      "source": {
+        "type": "npm",
+        "package": "@material-symbols/svg-400",
+        "version": "0.47.6",
+        "integrity": "sha512-lXYsZWNXXu6gTVTAS/aRtOuKrjYhbyl1Y/t1JELXku3GZe0DLPfQ8O8UcbHGs1H22s32kGJVilkTKO2OkGzPXA=="
+      },
+      "files": {
+        "include": [
+          "outlined/*-fill.svg"
+        ]
+      },
+      "license": {
+        "spdx": "Apache-2.0",
+        "url": "https://cdn.jsdelivr.net/npm/@material-symbols/svg-400@0.47.6/LICENSE",
+        "file": "LICENSE",
+        "match": "Apache License\\s+Version 2\\.0"
+      },
+      "attribution": "Material Symbols: Copyright Google LLC (Apache-2.0).",
+      "normalize": {
+        "mode": "mono",
+        "size": 24,
+        "frame": true
+      },
+      "naming": {
+        "strip_suffix": "-fill",
+        "brand": "^(?:nest_|mfg_nest|google_|chromecast|stadia_|youtube_)|^(?:android|duo)$"
+      }
+    },
+    {
+      "id": "noto-emoji",
+      "name": "Noto Emoji",
+      "kind": "sticker",
+      "style": "colour",
+      "description": "Google's colourful Noto emoji (default skin tone).",
+      "homepage": "https://github.com/googlefonts/noto-emoji",
+      "sort_order": 300,
+      "source": {
+        "type": "npm",
+        "package": "@iconify-json/noto",
+        "version": "1.2.9",
+        "integrity": "sha512-DQiuXENbun41ch+XPSV55H9FaWKpHTyz46YIKtSaKYD4fIDDzL1tR6H4np/T38jfrTAeI3rcKF0mqHYeZVAuaw=="
+      },
+      "files": {
+        "include": [
+          "icons.json"
+        ],
+        "reader": "iconify-json"
+      },
+      "naming": {
+        "skip": "-(?:light|medium-light|medium|medium-dark|dark)-skin-tone"
+      },
+      "tags": {
+        "format": "iconify-categories",
+        "file": "metadata.json"
+      },
+      "normalize": {
+        "mode": "colour",
+        "size": 128
+      },
+      "license": {
+        "spdx": "Apache-2.0",
+        "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/v2.047/svg/LICENSE",
+        "file": "info.json",
+        "match": "\"spdx\":\\s*\"Apache-2.0\""
+      },
+      "attribution": "Noto Emoji: Copyright 2013 Google, Inc. (Apache-2.0). Artwork packaged by Iconify."
+    },
+    {
+      "id": "fluent-emoji",
+      "name": "Fluent Emoji",
+      "kind": "sticker",
+      "style": "colour",
+      "description": "Microsoft's flat Fluent emoji (default skin tone).",
+      "homepage": "https://github.com/microsoft/fluentui-emoji",
+      "sort_order": 310,
+      "source": {
+        "type": "npm",
+        "package": "@iconify-json/fluent-emoji-flat",
+        "version": "1.2.6",
+        "integrity": "sha512-RY47RgPb47fYUiyrA64sIOL0+UU02s29sXpNBbIQRBUlPlfNFTKUmZDERGuxDs/7yNGWqQYvuaSYM1M4fRXlUw=="
+      },
+      "files": {
+        "include": [
+          "icons.json"
+        ],
+        "reader": "iconify-json"
+      },
+      "naming": {
+        "skip": "(?<!traffic)-(?:light|medium-light|medium|medium-dark|dark)(?:-skin-tone)?$"
+      },
+      "tags": {
+        "format": "iconify-categories",
+        "file": "metadata.json"
+      },
+      "normalize": {
+        "mode": "colour",
+        "size": 128
+      },
+      "license": {
+        "spdx": "MIT",
+        "url": "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/LICENSE",
+        "file": "info.json",
+        "match": "\"spdx\":\\s*\"MIT\""
+      },
+      "attribution": "Fluent Emoji: Copyright (c) Microsoft Corporation (MIT). Artwork packaged by Iconify."
+    },
+    {
+      "id": "open-doodles",
+      "name": "Open Doodles",
+      "kind": "illustration",
+      "style": "colour",
+      "description": "Playful hand-drawn people by Pablo Stanley, in black, white and Doory red.",
+      "homepage": "https://www.opendoodles.com/",
+      "sort_order": 400,
+      "source": {
+        "type": "urls",
+        "index": "open-doodles.json"
+      },
+      "files": {
+        "include": [
+          "*.svg"
+        ]
+      },
+      "normalize": {
+        "mode": "colour"
+      },
+      "license": {
+        "spdx": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/"
+      },
+      "attribution": "Open Doodles by Pablo Stanley (CC0 1.0; credit is not required)."
+    },
+    {
+      "id": "open-peeps",
+      "name": "Open Peeps",
+      "kind": "illustration",
+      "style": "colour",
+      "description": "Hand-drawn people by Pablo Stanley: busts, standing and sitting figures.",
+      "homepage": "https://www.openpeeps.com/",
+      "sort_order": 410,
+      "source": {
+        "type": "urls",
+        "index": "open-peeps.json"
+      },
+      "files": {
+        "include": [
+          "*.svg"
+        ]
+      },
+      "normalize": {
+        "mode": "colour"
+      },
+      "license": {
+        "spdx": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/"
+      },
+      "attribution": "Open Peeps by Pablo Stanley (CC0 1.0; credit is not required)."
+    }
+  ]
+}

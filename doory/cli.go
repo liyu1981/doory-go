@@ -67,8 +67,15 @@ var cliCommands = []cliCommand{
 	{name: "purge_trash", usage: "purge_trash [-h] [--days DAYS]", run: runPurgeTrash},
 	{name: "reencrypt_ai_secrets", usage: "reencrypt_ai_secrets [-h] [--dry-run]", run: runReencryptAISecrets},
 	{name: "seed_gallery", usage: "seed_gallery [-h] [--update]", run: runSeedGallery},
+	{name: "seed_templates", usage: "seed_templates [-h] [--update] [--dir DATA_DIR]", run: runSeedTemplates},
+	{name: "import_template", usage: "import_template [-h] [--publish] [--create-categories] paths [paths ...]", run: runImportTemplate},
 	{name: "seed_size_presets", usage: "seed_size_presets [-h] [--update]", run: runSeedSizePresets},
 	{name: "sync_models", usage: "sync_models [-h] [--model ID [ID ...]] [--all] [--list] [--dry-run] [--force] [--from-dir DIR]", run: runSyncModels},
+	{name: "import_elements", usage: "import_elements [-h] --pack PACK [--name NAME] [--kind {shape,line,icon,sticker,illustration,frame,graphic}] [--license LICENSE] [--source-url SOURCE_URL] directory", run: runImportElements},
+	{name: "seed_elements", usage: "seed_elements [-h]", run: runSeedElements},
+	{name: "sync_element_packs", usage: "sync_element_packs [-h] [--pack ID [ID ...]] [--list] [--dry-run] [--force] [--prune] [--brand-logos | --no-brand-logos] [--concurrency N] [--from-dir DIR]", run: runSyncElementPacks},
+	{name: "sync_audio", usage: "sync_audio [-h] [--from-dir DIR] [--pack ID [ID ...]] [--all-packs] [--list] [--dry-run] [--force] [--prune]", run: runSyncAudio},
+	{name: "sync_fonts", usage: "sync_fonts [-h] [--all | --popular N | --from-dir DIR] [--subsets SUBSETS] [--weights WEIGHTS] [--styles STYLES] [--concurrency N] [--license LICENSE] [families ...]", run: runSyncFonts},
 }
 
 // RunCLI dispatches one command line; returns the process exit code.

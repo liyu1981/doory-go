@@ -130,6 +130,10 @@ func cssIsSafe(css string) bool {
 }
 
 // SafeLink ports safe_link.
+// AttrAllowed reports whether an attribute name survives sanitisation (the
+// allow-list the normaliser moves inline style declarations into).
+func AttrAllowed(name string) bool { return allowedAttributes[name] }
+
 func SafeLink(value string) (string, bool) {
 	link := strings.TrimSpace(value)
 	if link == "" || len(link) > maxLinkLength {
@@ -392,6 +396,13 @@ func writeChildren(b *bytes.Buffer, n *node) {
 		b.WriteByte('<')
 		b.WriteString(c.name)
 		writeAttrs(b, c)
+		// Python's ElementTree self-closes an element with no children and no
+		// text ("<path ... />"): the stored element bytes and their hash depend
+		// on it.
+		if len(c.children) == 0 && c.text == "" {
+			b.WriteString(" />")
+			continue
+		}
 		b.WriteByte('>')
 		b.WriteString(escapeText(c.text))
 		writeChildren(b, c)
@@ -554,12 +565,14 @@ func svgInfoFromRoot(root *node) SvgInfo {
 			}
 		}
 	}
-	width, height := round2(w), round2(h)
-	if !hasW {
-		width = 300
+	// Python's `round(w or 300, 2)`: the fallback applies only when nothing
+	// (neither width nor viewBox) produced a size.
+	width, height := 300.0, 150.0
+	if hasW || w != 0 {
+		width = round2(w)
 	}
-	if !hasH {
-		height = 150
+	if hasH || h != 0 {
+		height = round2(h)
 	}
 	return SvgInfo{Width: width, Height: height}
 }
@@ -571,6 +584,39 @@ func Info(sanitized []byte) (SvgInfo, error) {
 		return SvgInfo{}, err
 	}
 	return svgInfoFromRoot(root), nil
+}
+
+var svgColorRe = regexp.MustCompile(`#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?\b`)
+
+// Colors ports svg_colors: distinct hex colours used in fill/stroke/stop-color,
+// normalised to #rrggbb (lower-case), in document order.
+func Colors(sanitized []byte) ([]string, error) {
+	root, err := parseTree(sanitized)
+	if err != nil {
+		return nil, err
+	}
+	seen := map[string]bool{}
+	var out []string
+	var walk func(n *node)
+	walk = func(n *node) {
+		for _, key := range []string{"fill", "stroke", "stop-color"} {
+			for _, match := range svgColorRe.FindAllString(getAttr(n, key), -1) {
+				color := strings.ToLower(match)
+				if len(color) == 4 {
+					color = "#" + color[1:2] + color[1:2] + color[2:3] + color[2:3] + color[3:4] + color[3:4]
+				}
+				if !seen[color] {
+					seen[color] = true
+					out = append(out, color)
+				}
+			}
+		}
+		for _, child := range n.children {
+			walk(child)
+		}
+	}
+	walk(root)
+	return out, nil
 }
 
 // WithIntrinsicSize ports with_intrinsic_size: root width/height set; a

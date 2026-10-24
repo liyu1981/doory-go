@@ -199,3 +199,43 @@ Rules (PiG §6):
   driver's normalization entry goes away with it.
 - evidence: PLAN.md §5 #13 and the M13 logs, scenario 22-ops-commands,
   doory/cli.go + cli_args.go + entrypoint.go.
+
+## D14 — code generators → pinned generated artwork (seed_elements)
+
+- SCRUTINIZED: approved
+- status: active
+- summary: `seed_elements` upstream RUNS the Python artwork generators
+  (`backend/data/generate_shapes.py`, `backend/data/graphics/*.py`, ~5.3k lines
+  producing SVG strings) and imports what they write. The Go port imports the
+  same artwork from the generators' pinned output, embedded byte-identically in
+  `doory/data/elements_generated/` — the repository already treats generated
+  seed content this way (the presets seed rows are a verbatim dump, PLAN §2).
+  Observable result is identical: scenario 22-ops-commands seeds both sides and
+  compares every `elements_element`/`elements_elementpack` column (name, kind,
+  style, tags, search columns, content hash, width/height/colours) and the
+  stored SVG bytes for all 572 elements, plus the eight generated graphics
+  packs — all equal.
+- remove-when: the generators are ported to Go (or the seed path stops being
+  part of the release). The artwork bytes are what parity needs; regenerating
+  them at runtime buys nothing.
+- evidence: PLAN.md M13 log, scenario 22-ops-commands (seed_elements /
+  sync_element_packs), probe 0017-elements-normalize, PORT_MAP `backend/data/`
+  rows.
+
+## D15 — derived images (template thumbnails) compared structurally
+
+- SCRUTINIZED: approved
+- status: active
+- summary: `seed_templates`/`import_template` pass every thumbnail through
+  Pillow (`process_image_upload` + `make_thumbnail`: decode, EXIF-strip, LANCZOS
+  resize to 720 px, WebP quality 82). There is no pure-Go WebP ENCODER (the M7
+  finding); the port validates the raster, bounds it, and stores the source
+  bytes when they already are WebP. File name/URL and decoded dimensions match,
+  the bytes do not. The cli-driver therefore compares files directly inside
+  `templates/` by decoded dimensions (`media_structural` in scenario 22) and
+  everything else in the tree by content hash.
+- remove-when: a Go WebP encoder is adopted (or the thumbnails ship
+  pre-generated and the command copies them), then the structural rule and this
+  record go away.
+- evidence: PLAN.md M13 log, scenario 22-ops-commands (seed_templates),
+  doory/commands_gallery.go.

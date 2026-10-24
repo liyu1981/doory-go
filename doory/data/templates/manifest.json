@@ -1,0 +1,214 @@
+{
+  "version": 1,
+  "templates": [
+    {
+      "slug": "bold-sale-announcement",
+      "title": "Bold sale announcement",
+      "category": "social-media",
+      "tags": [
+        "sale",
+        "instagram",
+        "promo",
+        "discount",
+        "shop",
+        "fashion"
+      ],
+      "description": "A bold sale post: a shopper in an orange shape, a script \"Super offer\" over a heavy headline, a discount badge and a dark band with your contact line and a Shop now button.",
+      "preset": "instagram-post",
+      "is_featured": true,
+      "fonts": [
+        "Great Vibes",
+        "Poppins"
+      ]
+    },
+    {
+      "slug": "serif-quote-card",
+      "title": "Serif quote card",
+      "category": "social-media",
+      "tags": [
+        "quote",
+        "instagram",
+        "minimal",
+        "black",
+        "typography",
+        "inspiration"
+      ],
+      "description": "A minimalist quote post: black, a centred serif quote with one word in capitals and one in italics, and a small handle at the foot.",
+      "preset": "instagram-post",
+      "is_featured": false,
+      "fonts": [
+        "Crimson Text"
+      ]
+    },
+    {
+      "slug": "rooftop-event-story",
+      "title": "Rooftop event story",
+      "category": "social-media",
+      "tags": [
+        "story",
+        "event",
+        "instagram",
+        "party",
+        "music",
+        "sunset",
+        "minimal"
+      ],
+      "description": "A full-bleed photo story: tiny labels at the top, a big lowercase title with the time and a line of text, a strip of dates with the day picked out.",
+      "preset": "instagram-story",
+      "is_featured": true,
+      "fonts": [
+        "Manrope"
+      ]
+    },
+    {
+      "slug": "modern-pitch-deck",
+      "title": "Modern pitch deck",
+      "category": "presentations",
+      "tags": [
+        "presentation",
+        "pitch",
+        "startup",
+        "deck",
+        "business",
+        "investor",
+        "series a"
+      ],
+      "description": "A clean investor deck in white, ink and one blue: a cover with a photo panel, the problem as three cards and the market as nested circles.",
+      "preset": "presentation",
+      "is_featured": true,
+      "fonts": [
+        "Inter"
+      ]
+    },
+    {
+      "slug": "night-bloom-concert-poster",
+      "title": "Night Bloom concert poster",
+      "category": "posters",
+      "tags": [
+        "poster",
+        "concert",
+        "tour",
+        "festival",
+        "music",
+        "gig",
+        "event",
+        "print"
+      ],
+      "description": "A tour poster for 18 x 24 in print: the act in huge gradient type between two outlined words, the city, venue and date on a warm band, and the special guest below.",
+      "preset": "",
+      "is_featured": true,
+      "fonts": [
+        "Archivo",
+        "Great Vibes",
+        "Oswald"
+      ]
+    },
+    {
+      "slug": "grand-opening-flyer",
+      "title": "Grand opening flyer",
+      "category": "flyers",
+      "tags": [
+        "flyer",
+        "opening",
+        "invitation",
+        "cafe",
+        "boutique",
+        "shop",
+        "print",
+        "minimal",
+        "elegant"
+      ],
+      "description": "An elegant grand opening flyer for US Letter: a sweeping script \"Grand\" over a spaced serif \"Opening\", and the time, day and place in three columns.",
+      "preset": "letter",
+      "is_featured": false,
+      "fonts": [
+        "Crimson Text",
+        "Great Vibes",
+        "Pinyon Script"
+      ]
+    },
+    {
+      "slug": "botanical-celebration-invitation",
+      "title": "Botanical celebration invitation",
+      "category": "invitations",
+      "tags": [
+        "wedding",
+        "invitation",
+        "botanical",
+        "elegant",
+        "minimal",
+        "black and white"
+      ],
+      "description": "A minimalist 5 x 7 in wedding invitation: a fine line-drawn sprig, the names in spaced serif capitals with a script \"and\", and the date in a row split by hairlines.",
+      "preset": "",
+      "is_featured": false,
+      "fonts": [
+        "Crimson Text",
+        "Great Vibes",
+        "Playfair Display"
+      ]
+    },
+    {
+      "slug": "modern-resume",
+      "title": "Modern resume",
+      "category": "resumes",
+      "tags": [
+        "resume",
+        "cv",
+        "job",
+        "career",
+        "a4",
+        "photo",
+        "minimal",
+        "two column"
+      ],
+      "description": "An elegant two-column A4 resume with a round photo: the name in spaced capitals, contacts with icons, and experience along a fine timeline.",
+      "preset": "a4",
+      "is_featured": false,
+      "fonts": [
+        "Inter",
+        "Josefin Sans"
+      ]
+    },
+    {
+      "slug": "bold-youtube-thumbnail",
+      "title": "Bold YouTube thumbnail",
+      "category": "youtube",
+      "tags": [
+        "youtube",
+        "thumbnail",
+        "video",
+        "challenge",
+        "vlog"
+      ],
+      "description": "A bold challenge thumbnail: deep blue to violet with streaks of light, a face on the right, a huge yellow \"30 days\" and a red pill.",
+      "preset": "youtube-thumbnail",
+      "is_featured": false,
+      "fonts": [
+        "Anton"
+      ]
+    },
+    {
+      "slug": "clean-business-card",
+      "title": "Clean business card",
+      "category": "business",
+      "tags": [
+        "business card",
+        "contact",
+        "print",
+        "elegant",
+        "luxury",
+        "black",
+        "qr code"
+      ],
+      "description": "An elegant two-sided business card: a charcoal front with a faint script name behind your name in spaced capitals, and a back with your contacts and a QR code.",
+      "preset": "business-card",
+      "is_featured": false,
+      "fonts": [
+        "Crimson Text",
+        "Great Vibes",
+        "Inter"
+      ]
+    }
+  ]
+}

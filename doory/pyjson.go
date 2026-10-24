@@ -9,6 +9,7 @@ package doory
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -303,4 +304,67 @@ func pythonStoredJSON(raw []byte) []byte {
 		return []byte(raw)
 	}
 	return []byte(pyDumpsASCII(node))
+}
+
+// pythonSortedJSON renders a decoded JSON value the way Python's
+// json.dumps(value, sort_keys=True) does for a fingerprint payload: sorted
+// keys, default separators (", ", ": "), ensure_ascii escaping.
+func pythonSortedJSON(value any) []byte {
+	var b strings.Builder
+	writePySortedJSON(&b, value)
+	return []byte(b.String())
+}
+
+func writePySortedJSON(b *strings.Builder, value any) {
+	switch v := value.(type) {
+	case nil:
+		b.WriteString("null")
+	case map[string]any:
+		keys := make([]string, 0, len(v))
+		for key := range v {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		b.WriteByte('{')
+		for i, key := range keys {
+			if i > 0 {
+				b.WriteString(", ")
+			}
+			b.WriteString(pyJSONStringASCII(key))
+			b.WriteString(": ")
+			writePySortedJSON(b, v[key])
+		}
+		b.WriteByte('}')
+	case []any:
+		b.WriteByte('[')
+		for i, item := range v {
+			if i > 0 {
+				b.WriteString(", ")
+			}
+			writePySortedJSON(b, item)
+		}
+		b.WriteByte(']')
+	case string:
+		b.WriteString(pyJSONStringASCII(v))
+	case bool:
+		if v {
+			b.WriteString("true")
+		} else {
+			b.WriteString("false")
+		}
+	case json.Number:
+		b.WriteString(v.String())
+	case float64:
+		if v == float64(int64(v)) {
+			fmt.Fprintf(b, "%d", int64(v))
+			return
+		}
+		b.WriteString(strconv.FormatFloat(v, 'g', -1, 64))
+	case int:
+		fmt.Fprintf(b, "%d", v)
+	case int64:
+		fmt.Fprintf(b, "%d", v)
+	default:
+		b.WriteString("null")
+	}
 }

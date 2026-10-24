@@ -1268,13 +1268,54 @@ M13 progress log (this session — cli foundation + deterministic commands):
      SQLite typeof() and any JSON function treat them differently.
   4. Django's login signal stores last_login; the Go session flow did not.
   5. `import_size_presets` merges multiple files and rolls a --dry-run back.
-- ⬜ M13 remaining (named build order): (a) gallery content: seed_templates +
-  import_template (manifest/document validation, category resolve,
-  thumbnails — WebP re-encode is the documented M7 encoder gap, so thumbnail
-  COMPARISON is path+dimension until a Go WebP encoder lands), (b) fonts:
-  sync_fonts (catalog/sources/from-dir, licence filter, variant naming),
-  (c) assets: sync_audio (library + freesound vocabulary), (d) elements:
-  import_elements, sync_element_packs, seed_elements (importer/normalize/
-  svgdata/tagdata/packsync/manifest + data/graphics generators — the largest
-  slice), (e) backend/data fixtures as embedded copies with digest rows,
-  (f) PORT_MAP/dispositions for the remaining command modules + final sweep.
+- ✅ Second M13 stretch (content commands): gallery seed_templates +
+  import_template (embedded `data/templates` tree, manifest/document
+  validation, category resolve, photos copied byte-identically, thumbnails
+  bounded and stored as WebP with Django's storage-suffix behaviour — the
+  Pillow WebP re-encode is the M7 encoder gap, so the cli-driver compares
+  files directly inside `templates/` by decoded dimensions via the new
+  `media_structural` scenario option), fonts sync_fonts (curated catalogue +
+  unicode ranges embedded, --from-dir import with per-family counts and
+  rejections, --popular/--all ids, licence/size/magic checks, Fontsource HTTP
+  source), audio sync_audio (embedded 6.9 MB library, SHA-256-verified
+  install, index.json catalogue byte-compared, prune, --list/--dry-run/--
+  force/--pack/--from-dir). Scenario 22 is now 58 steps green.
+- ✅ Loop-caught in this stretch: Django's storage appends `_<7 random>` when a
+  thumbnail name is taken (the driver normalizes the suffix and the port
+  mimics get_available_name); `marshal`-of-a-map lost the document key order
+  (template documents now keep the file's order via the ordered JSON node);
+  audio `lufs` must render as a Python float (`-16.0`); media-tree diffs are
+  bounded in the report (a 112-file tree used to flood it).
+- ✅ Third M13 stretch (elements + audio packs, M13 complete): the elements
+  family's write pipeline is ported end to end — manifest (all 25 packs
+  validated, licence allow-list, fingerprints), sources (npm tarball with
+  integrity check, pinned url files with SHA-256, directory source, glob
+  matcher with Python `re.match` anchoring, archive path rules), Iconify JSON
+  reader, normaliser (probe 0017: 48/48 byte-equal), tag parsers, batched
+  import (per-key outcomes), packsync (fingerprints, stale/logo handling) and
+  the three commands. `seed_elements` reproduces the oracle exactly: 572
+  elements across 12 packs, every column (name/kind/style/tags/search
+  columns/content_hash/width/height/colours/sort_order) and the stored SVG
+  bytes equal. D14 records the generated-artwork substitution (pinned
+  generator output embedded instead of running the Python generators).
+  `sync_audio` gained its third-party pack path (pinned zip verify, member
+  size/SHA-256/container checks, redirect allow-list) with offline unit
+  evidence; the pinned manifest lists no packs. Scenario 22-ops-commands is now
+  72 steps green; new unit evidence: elements_manifest_test (25 fingerprints
+  equal), elements_sources_test (globs/archives/reader), audio pack archive
+  tests.
+- ✅ Loop-caught in this stretch: the SVG serialiser emitted `<rect></rect>`
+  where ElementTree writes `<rect />` (element content_hash and stored bytes
+  depended on it); `svgInfoFromRoot` overrode a viewBox-derived size with the
+  300x150 fallback; the pack fingerprint payload needed Python's
+  `json.dumps(sort_keys=True)` text (my `sortStrings` helper returns a copy);
+  `bulkImport` never marked new rows as new (silent no-op inserts); generated
+  packs seed with `sort_order = index * 10` (import_directory) while packsync
+  leaves 0; the digest needed embedded-uuid normalisation for storage paths.
+- ⬜ M13 remaining (named, all content-gated rather than behavioral): (a) the
+  npm/url element packs over the NETWORK (implemented; directory/unit tested —
+  CI has no network), brand-logo sync against a real pack, --from-dir with a
+  real npm tarball; (b) template thumbnails stay dimension-compared until a Go
+  WebP encoder lands (D15); (c) the deep audio metadata parse (duration/
+  channels) belongs to the assets upload pipeline, still pending there;
+  (d) `sync_audio --pack` has no manifest entry to exercise (unit-tested).

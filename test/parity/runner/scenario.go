@@ -21,7 +21,12 @@ type Scenario struct {
 	Covers      []string          `toml:"covers"`
 	Dialects    []string          `toml:"dialects"`
 	Env         map[string]string `toml:"env"` // applied to BOTH sides
-	Steps       []Step            `toml:"steps"`
+	// MediaStructural lists storage directories whose files are DERIVED IMAGES
+	// (re-encoded by the oracle's Pillow pipeline): those compare by decoded
+	// dimensions instead of bytes (the documented WebP-encoder gap). Files in
+	// subdirectories still compare by hash.
+	MediaStructural []string `toml:"media_structural"`
+	Steps           []Step   `toml:"steps"`
 	// Ws is the scenario-level WebSocket interaction (dial/send/expect/
 	// close) when the scenario is not an HTTP replay.
 	Ws          *WsStep           `toml:"ws"`

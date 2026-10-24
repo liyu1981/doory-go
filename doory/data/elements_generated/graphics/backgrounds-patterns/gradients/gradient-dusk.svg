@@ -1,0 +1,1 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600"><title>Gradient Dusk</title><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#18181b"/><stop offset="0.6" stop-color="#881337"/><stop offset="1" stop-color="#e11d48"/></linearGradient></defs><rect x="0" y="0" width="600" height="600" fill="url(#g)"/></svg>

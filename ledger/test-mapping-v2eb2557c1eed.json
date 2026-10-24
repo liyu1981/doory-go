@@ -315,10 +315,15 @@
         ]
       },
       "backend/apps/elements/tests/test_command.py": {
-        "disposition": "pending",
-        "evidence": [],
+        "disposition": "partial",
+        "evidence": [
+          "parity:ops/22-ops-commands seed_elements (twice: created then unchanged), sync_element_packs --list/--pack/--force/--dry-run/--prune/unknown pack",
+          "all 572 elements and 12 packs compare column-for-column with the oracle (including content_hash, search columns, sort_order)"
+        ],
         "missing": [
-          "seed_elements command (ops content)"
+          "npm/url packs over the network (sources unit-tested only)",
+          "brand-logo toggle against a real pack",
+          "--from-dir with a real npm tarball"
         ]
       },
       "backend/apps/elements/tests/test_graphics.py": {
@@ -329,10 +334,14 @@
         ]
       },
       "backend/apps/elements/tests/test_import.py": {
-        "disposition": "pending",
-        "evidence": [],
+        "disposition": "partial",
+        "evidence": [
+          "parity:ops/22-ops-commands import_elements (5 files incl. an unsafe SVG, per-file created lines, repeated run) with row + file comparison",
+          "doory unit tests for element_key/element_name/element_tags paths (scenario labels)"
+        ],
         "missing": [
-          "import_elements (ops content)"
+          "admin bulk upload (D2)",
+          "duplicate-key handling in one directory"
         ]
       },
       "backend/apps/elements/tests/test_manifest.py": {
@@ -411,6 +420,30 @@
         "missing": [
           "pytest scaffolding — no Go port planned"
         ]
+      },
+      "backend/apps/elements/tests/test_units.py": {
+        "disposition": "partial",
+        "evidence": [
+          "probe 0017-elements-normalize: 48/48 normaliser cases byte-equal",
+          "doory/elements_sources_test.go: glob matcher, archive path rules, tarball/directory reading, iconify reader",
+          "doory/elements_manifest_test.go: all 25 pack fingerprints match the oracle"
+        ],
+        "missing": [
+          "search relevance SQL cases (ranking lives in the read path)",
+          "tag-file parsers for tabler/phosphor (unit shapes only)"
+        ]
+      },
+      "backend/apps/elements/tests/test_sync.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:ops/22-ops-commands sync_element_packs over the 8 generated packs (import, up-to-date, --force re-import, --dry-run)",
+          "unit: tarball integrity refusal, url SHA-256 refusal, glob semantics"
+        ],
+        "missing": [
+          "real npm releases (network)",
+          "licence-file mismatch handling against a real archive",
+          "brand logos on"
+        ]
       }
     },
     "gallery": {
@@ -446,17 +479,25 @@
         ]
       },
       "backend/apps/gallery/tests/test_commands.py": {
-        "disposition": "pending",
-        "evidence": [],
+        "disposition": "partial",
+        "evidence": [
+          "parity:ops/22-ops-commands seed_gallery (twice, --update) compares stdout, rows and media"
+        ],
         "missing": [
-          "template content paths — seed_templates pending (ops content)"
+          "category conflict/limit cases",
+          "thumbnail re-render paths (WebP encoder pending, M7 gap)"
         ]
       },
       "backend/apps/gallery/tests/test_seed_templates.py": {
-        "disposition": "pending",
-        "evidence": [],
+        "disposition": "partial",
+        "evidence": [
+          "parity:ops/22-ops-commands seed_templates + seed_templates --update (10 templates, photos copied, thumbnail names via Django's storage suffix, DB rows compared)",
+          "import_template with a custom file, a bad document and --publish/--create-categories"
+        ],
         "missing": [
-          "template content paths — seed_templates pending (ops content)"
+          "missing-photo failures (fixture has all shipped photos)",
+          "stale thumbnail cleanup on update",
+          "template fonts warning with an installed family"
         ]
       },
       "backend/apps/gallery/tests/test_sitemap.py": {
@@ -564,10 +605,14 @@
         ]
       },
       "backend/apps/fonts/tests/test_sync.py": {
-        "disposition": "pending",
-        "evidence": [],
+        "disposition": "partial",
+        "evidence": [
+          "parity:ops/22-ops-commands sync_fonts --from-dir (imported/already stored/rejected), --license, --weights/--styles/--subsets validation, missing dir"
+        ],
         "missing": [
-          "sync_fonts (ops content)"
+          "Fontsource HTTP source (network; shapes implemented, untested live)",
+          "unicode-range values for subsets",
+          "--popular/--all selection against a fake source"
         ]
       },
       "backend/apps/fonts/tests/test_usage.py": {
@@ -695,10 +740,14 @@
         ]
       },
       "backend/apps/assets/tests/test_sync_audio.py": {
-        "disposition": "pending",
-        "evidence": [],
+        "disposition": "partial",
+        "evidence": [
+          "parity:ops/22-ops-commands sync_audio (install, idempotent second run, --list, --dry-run, --force, --pack unknown, --from-dir with a hash-mismatched file, missing dir): catalogue index.json bytes + media tree compared"
+        ],
         "missing": [
-          "sync_audio command (ops family)"
+          "third-party packs (manifest lists none; archive reader pending)",
+          "prune of pack folders",
+          "deep audio metadata parse (only container validation ported)"
         ]
       },
       "backend/apps/assets/tests/test_uploads.py": {

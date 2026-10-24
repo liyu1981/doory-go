@@ -1,0 +1,23 @@
+{
+  "title": "Parity Custom",
+  "slug": "parity-custom",
+  "category": "parity-tests",
+  "description": "A template imported by the parity fixture.",
+  "tags": ["parity", "Smoke", "smoke"],
+  "preset": "instagram-post",
+  "is_featured": true,
+  "document": {
+    "schemaVersion": 1,
+    "width": 1080,
+    "height": 1080,
+    "unit": "px",
+    "pages": [
+      {
+        "id": "11111111-2222-3333-4444-555555555555",
+        "background": {"type": "solid", "color": "#ffffff"},
+        "objects": []
+      }
+    ]
+  },
+  "thumbnail": "custom-thumb.webp"
+}
