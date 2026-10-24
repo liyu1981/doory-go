@@ -34,8 +34,10 @@ func (a *App) health(w http.ResponseWriter, r *http.Request) {
 // (key order = JSON order: google_client_id, features, exports, limits,
 // assets, ai).
 type configResponse struct {
-	GoogleClientID string         `json:"google_client_id"`
-	Features       configFeatures `json:"features"`
+	GoogleClientID  string         `json:"google_client_id"`
+	OIDCButtonLabel string         `json:"oidc_button_label"`
+	OIDCButtonIcon  string         `json:"oidc_button_icon"`
+	Features        configFeatures `json:"features"`
 	Exports        configExports  `json:"exports"`
 	Limits         configLimits   `json:"limits"`
 	Assets         configAssets   `json:"assets"`
@@ -43,14 +45,32 @@ type configResponse struct {
 }
 
 type configFeatures struct {
-	StockPhotos       bool `json:"stock_photos"`
-	ServerPDF         bool `json:"server_pdf"`
-	GoogleLogin       bool `json:"google_login"`
-	EmailVerification bool `json:"email_verification"`
-	BackgroundRemoval bool `json:"background_removal"`
-	Realtime          bool `json:"realtime"`
-	MCP               bool `json:"mcp"`
-	AIProviders       bool `json:"ai_providers"`
+	StockPhotos       bool                `json:"stock_photos"`
+	ServerPDF         bool                `json:"server_pdf"`
+	GoogleLogin       bool                `json:"google_login"`
+	OIDCLogin         bool                `json:"oidc_login"`
+	EmailVerification bool                `json:"email_verification"`
+	BackgroundRemoval bool                `json:"background_removal"`
+	Realtime          bool                `json:"realtime"`
+	MCP               bool                `json:"mcp"`
+	AIProviders       bool                `json:"ai_providers"`
+	ImageOptimize     configImageOptimize `json:"image_optimize"`
+}
+
+// configImageOptimize ports core/views.image_optimize_config(): the formats
+// POST /exports/optimize/ converts a PNG to, the optimizers people may pick
+// (listed and ready) and the one `optimize: true` uses.
+type configImageOptimize struct {
+	Formats    []string              `json:"formats"`
+	Optimizers []configImageOptimizer `json:"optimizers"`
+	Default    *string               `json:"default"`
+}
+
+type configImageOptimizer struct {
+	ID           string   `json:"id"`
+	Name         string   `json:"name"`
+	Formats      []string `json:"formats"`
+	SendsOffsite bool     `json:"sends_offsite"`
 }
 
 type configExports struct {
@@ -153,16 +173,20 @@ func (a *App) config(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := configResponse{
-		GoogleClientID: s.GoogleClientID,
+		GoogleClientID:  s.GoogleClientID,
+		OIDCButtonLabel: s.oidcButtonLabel(),
+		OIDCButtonIcon:  s.oidcButtonIcon(),
 		Features: configFeatures{
 			StockPhotos:       s.StockPhotosConfigured(),
 			ServerPDF:         s.ServerPDFEnabled,
 			GoogleLogin:       s.GoogleClientID != "",
+			OIDCLogin:         s.oidcEnabled(),
 			EmailVerification: s.EmailDelivers(),
 			BackgroundRemoval: bg != nil,
 			Realtime:          s.RealtimeEnabled,
 			MCP:               s.MCPEnabled,
 			AIProviders:       aiProviders,
+			ImageOptimize:     a.imageOptimizeConfig(),
 		},
 		Exports: configExports{FilenameStyle: s.ExportFilenameStyle, FilenameTimestamp: s.ExportFilenameTS},
 		Limits: configLimits{

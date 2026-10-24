@@ -23,6 +23,7 @@ tags = []
 dialects = ["sqlite"]
 covers = [
   "backend/apps/designs/management/",
+  "backend/apps/exports/checks.py",
   "backend/apps/exports/management/",
   "backend/apps/gallery/management/",
   "backend/apps/presets/management/",

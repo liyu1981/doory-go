@@ -27,6 +27,7 @@ type UserRow struct {
 	IsActive        bool
 	IsStaff         bool
 	Password        string
+	OidcLinked      bool
 	LastLogin       sql.NullString
 	CreatedAt       string // Django sqlite datetime storage
 	UpdatedAt       string
@@ -37,21 +38,26 @@ type UserRow struct {
 func getUserByEmail(db *sql.DB, email string) (*UserRow, error) {
 	return scanUser(db.QueryRow(
 		`SELECT id, email, display_name, avatar, google_sub, is_email_verified, is_active,
-		        is_staff, password, last_login, created_at, updated_at
+		        is_staff, password,
+		        EXISTS(SELECT 1 FROM accounts_oidcidentity WHERE user_id = accounts_user.id),
+		        last_login, created_at, updated_at
 		 FROM accounts_user WHERE email = ?`, strings.ToLower(strings.TrimSpace(email))))
 }
 
 func getUserByID(db *sql.DB, id string) (*UserRow, error) {
 	return scanUser(db.QueryRow(
 		`SELECT id, email, display_name, avatar, google_sub, is_email_verified, is_active,
-		        is_staff, password, last_login, created_at, updated_at
+		        is_staff, password,
+		        EXISTS(SELECT 1 FROM accounts_oidcidentity WHERE user_id = accounts_user.id),
+		        last_login, created_at, updated_at
 		 FROM accounts_user WHERE id = ?`, id))
 }
 
 func scanUser(row *sql.Row) (*UserRow, error) {
 	var u UserRow
 	err := row.Scan(&u.ID, &u.Email, &u.DisplayName, &u.Avatar, &u.GoogleSub,
-		&u.IsEmailVerified, &u.IsActive, &u.IsStaff, &u.Password, &u.LastLogin, &u.CreatedAt, &u.UpdatedAt)
+		&u.IsEmailVerified, &u.IsActive, &u.IsStaff, &u.Password, &u.OidcLinked, &u.LastLogin,
+		&u.CreatedAt, &u.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -157,6 +163,7 @@ type userEnvelope struct {
 	IsEmailVerified bool    `json:"is_email_verified"`
 	HasPassword     bool    `json:"has_password"`
 	GoogleLinked    bool    `json:"google_linked"`
+	OidcLinked      bool    `json:"oidc_linked"`
 	CreatedAt       string  `json:"created_at"`
 }
 
@@ -180,6 +187,7 @@ func (u *UserRow) envelope() userEnvelope {
 		IsEmailVerified: u.IsEmailVerified,
 		HasPassword:     hasUsablePassword(u.Password),
 		GoogleLinked:    u.GoogleSub.Valid && u.GoogleSub.String != "",
+		OidcLinked:      u.OidcLinked,
 		CreatedAt:       renderDRFDatetime(u.CreatedAt),
 	}
 }

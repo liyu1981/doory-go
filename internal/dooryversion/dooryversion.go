@@ -10,11 +10,11 @@ const (
 
 	// UpstreamCommit is the sole pinned oracle commit. Every PORT_MAP row,
 	// ledger, and parity scenario describes behavior at this commit.
-	UpstreamCommit = "2eb2557c1eed3aa256a78f1874abfb5a1315849c"
+	UpstreamCommit = "2fb4d0297ec4c6e417b5225215502f8217c2a4dc"
 
 	// UpstreamReleaseLine records the human-readable describe of the pin.
-	UpstreamReleaseLine = "doory@2eb2557 (2026-10-20, High-contrast mode (#120))"
+	UpstreamReleaseLine = "doory@v0.2.0 (2fb4d02, 2026-10-23)"
 
 	// Version is this port's release line: <port-version>+<upstream-short>.
-	Version = "0.0.1+" + "2eb2557"
+	Version = "0.2.0+" + "2fb4d02"
 )

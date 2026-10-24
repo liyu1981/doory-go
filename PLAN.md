@@ -1434,3 +1434,78 @@ M14 progress log (this session — release candidate slices 1-4):
   (b) The paired dialect matrix (each scenario additionally on Postgres) is
   not wired into the runner; Postgres is covered by schema-parity + pg-smoke.
   (c) S3 media storage stays pending with the assets family (D7 note).
+
+## 11. 0.2.0 catch-up log (pin 2fb4d02)
+
+The pin moved from the v0.1.0-era commit to **doory@v0.2.0** (2fb4d02,
+2026-10-23). What the catch-up required, and where the port stands.
+
+Oracle/env:
+- ✅ `pnpm upstream-mirror` refreshed the mirror (55 commits; 92 backend files,
+  +31 493/−610; frontend 268 added/128 modified — SSO icons and the video
+  tool in the built bundle).
+- ✅ Oracle venv updated from `requirements-dev.txt` (Django 6.1.2, Pillow 13,
+  pycrdt 0.14.10, PyJWT 2.15.1). `pnpm oracle:setup` refuses an existing venv;
+  `uv pip install --python .oracle/venv/bin/python -r …` is the working path.
+- ✅ **Parity runs the oracle on SQLite** (`doory.settings.prod` with
+  `DATABASE_URL=sqlite:///…`, the same as the Go side) — no Postgres server is
+  needed for the scenario suite. Postgres stays an *opt-in* dialect lane
+  (`pnpm schema-parity` PG branch, `pnpm pg-smoke`), used only when the PG
+  migration/DDL changes.
+- ✅ SQLite + Postgres oracle databases recreated at the new pin and the three
+  generated migration artifacts regenerated, never hand-edited:
+  `pnpm schemagen` (146 statements, `accounts_oidcidentity` first),
+  `seedgen -tables presets_sizepresetgroup,presets_sizepreset` (1 749 rows;
+  `presets.0003_seed_more_presets` + `0004_size_choices`), and
+  `0001_initial.postgres.sql` from a `pg_dump --schema-only` of the migrated
+  parity database (now normalized the same way as before: SET/COMMENT/CREATE/
+  ALTER statements, blank-line separated, pg_dump banners dropped).
+  `pnpm schema-parity`: **37 tables, oracle == Go on SQLite AND Postgres**.
+
+Ported in this catch-up (parity restored, `pnpm parity` 21/21 green):
+- ✅ User envelope gained `oidc_linked` (the OIDC identity row is an `EXISTS`
+  subquery on both user lookups; `accounts/serializers.py`).
+- ✅ `/api/v1/config/`: `oidc_button_label`, `oidc_button_icon`,
+  `features.oidc_login` and `features.image_optimize`
+  (`{formats, optimizers, default}`) — `doory/checks.go` ports
+  `oidc.enabled/button_label/button_icon/configuration_problems` and the
+  optimizer registry's `listed()/available()/default_optimizer()`.
+- ✅ **Django system checks are back in the CLI**: every management command
+  prints the `System check identified some issues:` banner before its body
+  (`doory/checks.go`, buffered stderr in `RunCLI` so argparse errors stay
+  banner-free, as in Django). Ported: `exports.W001`–`W005`
+  (`IMAGE_OPTIMIZERS`, cjpeg/oxipng detection, provider keys, custom URL) and
+  `accounts.W001` (OIDC settings problems). This is why the ops scenario's
+  commands match again (the oracle's host has no mozjpeg/oxipng, so W002 fires
+  on both sides).
+- ✅ `assets` 0.2.0 shape: the five video columns (`poster`, `filmstrip`,
+  `audio`, `status`, `error`) in row/insert/scan, the serializer's
+  `status/error/poster_url/audio_url/video`, `url` empty while a video has no
+  file, `thumb_url` only for picture kinds, `duration_ms` read from
+  `meta[kind]`, `kind=video` accepted, and the default list filter is now the
+  picture kinds (`kind IN ('image','svg')`) instead of "not audio".
+- ✅ Embedded frontend rebuilt at the new pin (`pnpm frontend:build`, 21 MB);
+  `backend/data/size_presets.json` refreshed (the only seed fixture that
+  changed).
+
+Pending (0.2.0 features — unported routes answer 404, PORT_MAP rows are 🟡/⬜):
+- **OIDC sign-in**: `accounts/oidc.py` flows (discovery, PKCE, JWKS/JWT
+  verification, state/session storage), `oidc_identities` writes, the three
+  routes `/auth/oidc/{start,callback,connection}/`, `OidcConnectSerializer`,
+  `OIDC_TRUST_EMAIL`. Config surfacing only is ported.
+- **Video**: `assets/video.py`, `video_jobs.py`, `video_providers.py`,
+  `video_stock.py`, the `ingest_video_upload` path (202 processing, poster/
+  filmstrip/audio derivatives, ffmpeg/ffprobe availability), the three stock
+  video routes (`/stock/videos/{,import/,providers/}`), `sweep_video_jobs`,
+  and video export in `exports/`.
+- **Image optimizers**: the shrink pipeline (`base.py`/`builtin.py`/
+  `custom.py`/`http.py`/`kraken.py`/`tinypng.py`), `POST /exports/optimize/`,
+  `optimize` on image exports and the MCP export tool; only detection +
+  `/config/` + checks are ported.
+- **Size choices**: `presets.SizeChoices`, `GET/PATCH /size-presets/mine/`
+  (pinned/recent/collapsed) and the new `presets.0004` table writes.
+- **Exports delta**: multi-page `pages` ZIP exports, `EXPORT_IMAGE_TIMEOUT/
+  MAX_PAGES`, video export service, `filenames.py` changes, the MCP export
+  tool's new options; `accounts/services.py` OIDC sign-in/connect paths; the
+  new settings knobs the port doesn't read yet (VIDEO_*, STOCK_VIDEO_*,
+  EXPORT_VIDEO_*, OIDC_*, `REST_FRAMEWORK` throttle scopes).

@@ -19,6 +19,14 @@ import (
 type Settings struct {
 	// Env contract (base.py env reads).
 	GoogleClientID           string
+	Debug                    bool     // DJANGO_DEBUG (base.py env, default FALSE; dev.py sets it in-process)
+	OIDCIssuer               string   // OIDC_ISSUER (base.py env, default "")
+	OIDCClientID             string   // OIDC_CLIENT_ID
+	OIDCClientSecret         string   // OIDC_CLIENT_SECRET
+	OIDCButtonLabel          string   // OIDC_BUTTON_LABEL (default "Sign in with SSO")
+	OIDCButtonIcon           string   // OIDC_BUTTON_ICON (default "")
+	OIDCScopes               string   // OIDC_SCOPES (default "openid email profile")
+	OIDCTrustEmail           bool     // OIDC_TRUST_EMAIL (default false)
 	UnsplashAccessKey        string
 	PexelsAccessKey          string
 	PixabayAccessKey         string
@@ -60,6 +68,14 @@ type Settings struct {
 	ExportWorkDir            string   // EXPORT_WORK_DIR (default os temp)
 	ExportAllowedOrigins     []string // EXPORT_ALLOWED_ORIGINS (default site origin + :8000)
 	ExportStorageRoot        string   // EXPORT_STORAGE_ROOT (default ./exports)
+	ImageOptimizers          []string // IMAGE_OPTIMIZERS (base.py env.list, default ["builtin"])
+	ImageOptimizerDefault    string   // IMAGE_OPTIMIZER_DEFAULT (default "builtin")
+	TinyPngAPIKey            string   // TINYPNG_API_KEY
+	KrakenAPIKey             string   // KRAKEN_API_KEY
+	KrakenAPISecret          string   // KRAKEN_API_SECRET
+	ImageOptimizerCustomName string   // IMAGE_OPTIMIZER_CUSTOM_NAME (default "Custom")
+	ImageOptimizerCustomURL  string   // IMAGE_OPTIMIZER_CUSTOM_URL (default "")
+	ImageOptimizerCustomKey  string   // IMAGE_OPTIMIZER_CUSTOM_KEY (default "")
 	McpExportURLTTLSeconds   int      // MCP_EXPORT_URL_TTL_SECONDS (default 600)
 	McpCallsPerMinute         int      // MCP_CALLS_PER_MINUTE (default 120; 0 = unlimited)
 	McpMaxRequestBytes        int      // MCP_MAX_REQUEST_BYTES (default 4MB)
@@ -123,6 +139,14 @@ func (s *Settings) EmailDelivers() bool {
 func FromEnv() *Settings {
 	settings := &Settings{
 		GoogleClientID:           envStr("GOOGLE_CLIENT_ID", ""),
+		Debug:                    envBool("DJANGO_DEBUG", false),
+		OIDCIssuer:               envStr("OIDC_ISSUER", ""),
+		OIDCClientID:             envStr("OIDC_CLIENT_ID", ""),
+		OIDCClientSecret:         envStr("OIDC_CLIENT_SECRET", ""),
+		OIDCButtonLabel:          envStr("OIDC_BUTTON_LABEL", "Sign in with SSO"),
+		OIDCButtonIcon:           envStr("OIDC_BUTTON_ICON", ""),
+		OIDCScopes:               envStr("OIDC_SCOPES", "openid email profile"),
+		OIDCTrustEmail:           envBool("OIDC_TRUST_EMAIL", false),
 		UnsplashAccessKey:        envStr("UNSPLASH_ACCESS_KEY", ""),
 		PexelsAccessKey:          envStr("PEXELS_API_KEY", ""),
 		PixabayAccessKey:         envStr("PIXABAY_API_KEY", ""),
@@ -167,6 +191,14 @@ func FromEnv() *Settings {
 		ExportChromiumNoSandbox:  envBool("EXPORT_CHROMIUM_NO_SANDBOX", false),
 		ExportWorkDir:            envStr("EXPORT_WORK_DIR", ""),
 		ExportStorageRoot:        envStr("EXPORT_STORAGE_ROOT", defaultDataPath("exports")),
+		ImageOptimizers:          envList("IMAGE_OPTIMIZERS", []string{"builtin"}),
+		ImageOptimizerDefault:    envStr("IMAGE_OPTIMIZER_DEFAULT", "builtin"),
+		TinyPngAPIKey:            envStr("TINYPNG_API_KEY", ""),
+		KrakenAPIKey:             envStr("KRAKEN_API_KEY", ""),
+		KrakenAPISecret:          envStr("KRAKEN_API_SECRET", ""),
+		ImageOptimizerCustomName: envStr("IMAGE_OPTIMIZER_CUSTOM_NAME", "Custom"),
+		ImageOptimizerCustomURL:  envStr("IMAGE_OPTIMIZER_CUSTOM_URL", ""),
+		ImageOptimizerCustomKey:  envStr("IMAGE_OPTIMIZER_CUSTOM_KEY", ""),
 		McpExportURLTTLSeconds:   envInt("MCP_EXPORT_URL_TTL_SECONDS", 600),
 		McpCallsPerMinute:         envInt("MCP_CALLS_PER_MINUTE", 120),
 		McpMaxRequestBytes:        envInt("MCP_MAX_REQUEST_BYTES", 4*1024*1024),

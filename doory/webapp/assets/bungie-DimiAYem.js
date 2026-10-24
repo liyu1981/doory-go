@@ -1,0 +1,1 @@
+var e=`/assets/bungie-J-zky1CP.svg`;export{e as default};

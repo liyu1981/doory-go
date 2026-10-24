@@ -1,0 +1,1 @@
+var e=`data:image/svg+xml,%3csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3e%3ctitle%3eRoblox%3c/title%3e%3cpath%20d='M18.926%2023.998%200%2018.892%205.075.002%2024%205.108ZM15.348%2010.09l-5.282-1.453-1.414%205.273%205.282%201.453z'/%3e%3c/svg%3e`;export{e as default};

@@ -1,0 +1,1 @@
+var e=`/assets/salesforce-DE5S9gJJ.svg`;export{e as default};

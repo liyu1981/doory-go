@@ -1,0 +1,1 @@
+var e=`data:image/svg+xml,%3csvg%20xmlns='http://www.w3.org/2000/svg'%20fill='%23fc4c02'%20viewBox='0%200%2024%2024'%3e%3ctitle%3eStrava%3c/title%3e%3cpath%20d='m15.387%2017.944-2.089-4.116h-3.065L15.387%2024l5.15-10.172h-3.066m-7.008-5.599%202.836%205.598h4.172L10.463%200l-7%2013.828h4.169'/%3e%3c/svg%3e`;export{e as default};

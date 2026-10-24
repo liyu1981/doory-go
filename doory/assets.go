@@ -66,23 +66,32 @@ type assetRow struct {
 	Meta      string
 	File      string
 	Thumbnail string
+	// Video only (0.2.0, assets.video): a still for surfaces that can't play
+	// the clip, a strip of frames for the timeline, the clip's sound on its
+	// own, and the conversion state with its error.
+	Poster    string
+	Filmstrip string
+	Audio     string
+	Status    string
+	Error     string
 	CreatedAt string
 	UpdatedAt string
 }
 
 const assetCols = `id, owner_id, kind, name, width, height, size, mime, tags, meta,
-	file, thumbnail, created_at, updated_at`
+	file, thumbnail, poster, filmstrip, audio, status, error, created_at, updated_at`
 
 func scanAsset(s scanner) (assetRow, error) {
 	var a assetRow
 	err := s.Scan(&a.ID, &a.OwnerID, &a.Kind, &a.Name, &a.Width, &a.Height, &a.Size,
-		&a.Mime, &a.Tags, &a.Meta, &a.File, &a.Thumbnail, &a.CreatedAt, &a.UpdatedAt)
+		&a.Mime, &a.Tags, &a.Meta, &a.File, &a.Thumbnail, &a.Poster, &a.Filmstrip, &a.Audio,
+		&a.Status, &a.Error, &a.CreatedAt, &a.UpdatedAt)
 	return a, err
 }
 
 // assetEnvelope mirrors AssetSerializer field order (url/thumb from stored
-// paths; attribution/duration_ms are audio/stock meta — null for images,
-// probe0007 step10).
+// paths; attribution/duration_ms are audio/video/stock meta — null for
+// images, probe0007 step10).
 type assetEnvelope struct {
 	ID          string       `json:"id"`
 	Kind        string       `json:"kind"`
@@ -94,25 +103,102 @@ type assetEnvelope struct {
 	Size        int64        `json:"size"`
 	Mime        string       `json:"mime"`
 	Tags        rawCompacted `json:"tags"`
-	Attribution *any         `json:"attribution"`
-	DurationMS  *any         `json:"duration_ms"`
+	Attribution any          `json:"attribution"`
+	DurationMS  any          `json:"duration_ms"`
+	Status      string       `json:"status"`
+	Error       string       `json:"error"`
+	PosterURL   string       `json:"poster_url"`
+	AudioURL    string       `json:"audio_url"`
+	Video       any          `json:"video"`
 	CreatedAt   string       `json:"created_at"`
 }
 
+// pictureKinds mirrors Asset.PICTURE_KINDS: the kinds whose file is a picture
+// (the thumb fallback and the default list filter use it).
+var pictureKinds = map[string]bool{"image": true, "svg": true}
+
 func (a *assetRow) envelope() assetEnvelope {
+	url := ""
+	if a.File != "" { // a video being converted has no file yet
+		url = mediaURL + a.File
+	}
 	thumb := ""
 	if a.Thumbnail != "" {
 		thumb = mediaURL + a.Thumbnail
-	} else if a.Kind != "audio" {
+	} else if pictureKinds[a.Kind] && a.File != "" {
 		thumb = mediaURL + a.File // fallback: the file itself (probed)
+	}
+	duration := any(nil)
+	if meta := parseStoredMeta(a.Meta); meta != nil {
+		if info, ok := meta[a.Kind].(map[string]any); ok {
+			if value, ok := info["duration_ms"]; ok {
+				duration = value
+			}
+		}
+	}
+	var attribution any
+	if meta := parseStoredMeta(a.Meta); meta != nil {
+		if value, ok := meta["attribution"]; ok {
+			attribution = value
+		}
+	}
+	poster := ""
+	if a.Poster != "" {
+		poster = mediaURL + a.Poster
+	}
+	audio := ""
+	if a.Audio != "" {
+		audio = mediaURL + a.Audio
+	}
+	var video any
+	if a.Kind == "video" {
+		info := map[string]any{}
+		if meta := parseStoredMeta(a.Meta); meta != nil {
+			if value, ok := meta["video"].(map[string]any); ok {
+				info = value
+			}
+		}
+		var strip any
+		if value, ok := info["strip"].(map[string]any); ok && a.Filmstrip != "" {
+			strip = map[string]any{}
+			for key, value := range value {
+				strip.(map[string]any)[key] = value
+			}
+			strip.(map[string]any)["url"] = mediaURL + a.Filmstrip
+		}
+		fps := info["fps"]
+		if fps == nil {
+			fps = 0
+		}
+		video = map[string]any{
+			"fps":       fps,
+			"has_audio": a.Audio != "",
+			"filmstrip": strip,
+		}
 	}
 	return assetEnvelope{
 		ID: dashedUUID(a.ID), Kind: a.Kind, Name: a.Name,
-		URL: mediaURL + a.File, ThumbURL: thumb,
+		URL: url, ThumbURL: thumb,
 		Width: a.Width, Height: a.Height, Size: a.Size, Mime: a.Mime,
-		Tags:      rawCompacted(compactStoredJSON([]byte(a.Tags))),
+		Tags:        rawCompacted(compactStoredJSON([]byte(a.Tags))),
+		Attribution: attribution, DurationMS: duration,
+		Status: a.Status, Error: a.Error,
+		PosterURL: poster, AudioURL: audio, Video: video,
 		CreatedAt: renderDRFDatetime(a.CreatedAt),
 	}
+}
+
+// parseStoredMeta decodes meta/tags JSON into a map (nil when not an object,
+// like the serializer's isinstance(dict) guards).
+func parseStoredMeta(raw string) map[string]any {
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	var value map[string]any
+	if err := json.Unmarshal([]byte(raw), &value); err != nil {
+		return nil
+	}
+	return value
 }
 
 // assetsList ports AssetViewSet.list: kind (default excludes audio), q
@@ -130,7 +216,7 @@ func (a *App) assetsList(w http.ResponseWriter, r *http.Request) {
 	args := []any{u.ID}
 
 	if kind := q.Get("kind"); kind != "" {
-		if !choiceValid([]string{"image", "svg", "audio"}, kind) {
+		if !choiceValid([]string{"image", "svg", "audio", "video"}, kind) {
 			fields = append(fields, SimpleField("kind",
 				fmt.Sprintf("%q is not a valid choice.", kind), "invalid_choice"))
 		} else {
@@ -138,7 +224,9 @@ func (a *App) assetsList(w http.ResponseWriter, r *http.Request) {
 			args = append(args, kind)
 		}
 	} else {
-		where = append(where, `kind != 'audio'`)
+		// 0.2.0: the default list is the picture kinds (audio and video
+		// only by their own kind).
+		where = append(where, `kind IN ('image', 'svg')`)
 	}
 	if search := q.Get("q"); search != "" {
 		if len([]rune(search)) > 100 {
@@ -315,7 +403,7 @@ func (a *App) assetsCreate(w http.ResponseWriter, r *http.Request) {
 		ID: newUUID4Hex(), OwnerID: u.ID, Kind: "image", Name: name,
 		Width: int64(prepared.width), Height: int64(prepared.height),
 		Size: int64(len(prepared.data)), Mime: prepared.mime,
-		Tags: mustMarshalString(tags), Meta: "{}",
+		Tags: mustMarshalString(tags), Meta: "{}", Status: "ready",
 	}
 	// storage: upload_to uses uuid STRING values (probe0007 step10):
 	// assets/<owner-dashed>/<id-dashed>.<ext> + thumbs/<id>.webp
@@ -350,9 +438,10 @@ func (a *App) assetsCreate(w http.ResponseWriter, r *http.Request) {
 
 	now := formatDjangoDateTime(time.Now())
 	if _, err := a.DB.Exec(
-		"INSERT INTO assets_asset ("+assetCols+") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		"INSERT INTO assets_asset ("+assetCols+") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 		asset.ID, asset.OwnerID, asset.Kind, asset.Name, asset.Width, asset.Height, asset.Size,
-		asset.Mime, asset.Tags, asset.Meta, asset.File, asset.Thumbnail, now, now); err != nil {
+		asset.Mime, asset.Tags, asset.Meta, asset.File, asset.Thumbnail,
+		asset.Poster, asset.Filmstrip, asset.Audio, asset.Status, asset.Error, now, now); err != nil {
 		logerr(err, "assetsCreate.insert")
 		writeDRF(w, http.StatusInternalServerError, "server_error", "Something went wrong on our side.")
 		return

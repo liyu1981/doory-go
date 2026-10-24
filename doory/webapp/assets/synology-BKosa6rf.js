@@ -1,0 +1,1 @@
+var e=`/assets/synology-BuJpQU0o.svg`;export{e as default};

@@ -10,6 +10,7 @@
 package doory
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -94,7 +95,19 @@ func RunCLI(app *App, argv []string, stdout, stderr io.Writer) int {
 		if cmd.name != name {
 			continue
 		}
-		err := cmd.run(c, argv[1:])
+		// Django runs the system checks after argparse accepted the
+		// command line and before the command body, printing warnings to
+		// stderr (base.py check()). Buffer the command's stderr so a usage
+		// error (argparse exits first) never gets the banner.
+		var stderrBuf bytes.Buffer
+		buffered := &CLI{App: c.App, Stdout: c.Stdout, Stderr: &stderrBuf}
+		err := cmd.run(buffered, argv[1:])
+		if _, usage := err.(*usageError); !usage {
+			c.App.printSystemChecks(stderr)
+			_, _ = stderr.Write(stderrBuf.Bytes())
+		} else {
+			_, _ = stderr.Write(stderrBuf.Bytes())
+		}
 		if err == nil {
 			return 0
 		}

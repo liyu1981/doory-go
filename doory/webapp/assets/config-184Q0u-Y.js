@@ -1,1 +1,0 @@
-import{r as e}from"./client-CRc-NDY_.js";var t={google_client_id:``,features:{stock_photos:!1,server_pdf:!1,google_login:!1,email_verification:!1,background_removal:!1},limits:{max_upload_bytes:10485760,max_pages:100,max_document_bytes:12582912},assets:{background_removal_model:null}},n={get:t=>e.get(`/config/`,{signal:t})};export{n,t};

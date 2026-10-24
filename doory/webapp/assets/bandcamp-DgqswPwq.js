@@ -1,0 +1,1 @@
+var e=`data:image/svg+xml,%3csvg%20xmlns='http://www.w3.org/2000/svg'%20fill='%23408294'%20viewBox='0%200%2024%2024'%3e%3ctitle%3eBandcamp%3c/title%3e%3cpath%20d='m0%2018.75%207.437-13.5H24l-7.438%2013.5z'/%3e%3c/svg%3e`;export{e as default};

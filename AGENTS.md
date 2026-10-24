@@ -48,30 +48,33 @@ session-level rules.
 
 | family | rows | scenario-covered | reviewed | uncovered | test files (ported/partial/pending) |
 |---|---|---|---|---|---|
-| accounts | 17 | 4 | 4 | 13 | 0/7/4 |
+| accounts | 19 | 4 | 7 | 15 | 0/7/5 |
 | ai | 29 | 12 | 16 | 17 | 0/3/6 |
 | apitokens | 10 | 5 | 7 | 5 | 0/1/0 |
-| assets | 29 | 9 | 17 | 20 | 0/5/11 |
+| assets | 33 | 9 | 17 | 24 | 0/5/15 |
 | brand | 9 | 4 | 4 | 5 | 0/1/1 |
 | collab | 21 | 9 | 21 | 12 | 0/18/8 |
 | core | 19 | 9 | 13 | 10 | 0/0/0 |
 | designs | 26 | 8 | 13 | 18 | 0/7/9 |
 | elements | 24 | 3 | 17 | 21 | 0/5/18 |
-| exports | 18 | 11 | 14 | 7 | 0/6/6 |
+| exports | 25 | 12 | 19 | 13 | 0/6/10 |
 | fonts | 18 | 8 | 10 | 10 | 0/4/8 |
 | gallery | 15 | 6 | 6 | 9 | 0/4/4 |
 | kernel | 14 | 2 | 8 | 12 | 0/0/0 |
 | mcp | 21 | 0 | 0 | 21 | 0/0/0 |
 | ops | 34 | 10 | 13 | 24 | 0/0/0 |
-| presets | 10 | 1 | 8 | 9 | 0/0/0 |
+| presets | 10 | 1 | 8 | 9 | 0/1/1 |
 | sharing | 11 | 5 | 7 | 6 | 0/5/4 |
 
-**Totals:** 106 of 325 PORT_MAP rows (33%) are covered by at least one scenario; 72 reviewed rows have no scenario that covers them (review-only: they do NOT count as verified).
+**Totals:** 107 of 338 PORT_MAP rows (32%) are covered by at least one scenario; 79 reviewed rows have no scenario that covers them (review-only: they do NOT count as verified).
 
 Review-only rows (weak evidence, not counted as verified):
 
 - `backend/.env.example`
 - `backend/Dockerfile`
+- `backend/apps/accounts/checks.py`
+- `backend/apps/accounts/oidc.py`
+- `backend/apps/accounts/urls.py`
 - `backend/apps/ai/results.py`
 - `backend/apps/ai/styles/base.py`
 - `backend/apps/ai/tests/`
@@ -123,6 +126,10 @@ Review-only rows (weak evidence, not counted as verified):
 - `backend/apps/elements/svgdata.py`
 - `backend/apps/elements/tagdata.py`
 - `backend/apps/exports/fonts.py`
+- `backend/apps/exports/optimizers/builtin.py`
+- `backend/apps/exports/optimizers/custom.py`
+- `backend/apps/exports/optimizers/kraken.py`
+- `backend/apps/exports/optimizers/tinypng.py`
 - `backend/apps/exports/pdfmeta.py`
 - `backend/apps/exports/tests/`
 - `backend/apps/fonts/management/`

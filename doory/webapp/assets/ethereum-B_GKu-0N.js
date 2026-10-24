@@ -1,0 +1,1 @@
+var e=`data:image/svg+xml,%3csvg%20xmlns='http://www.w3.org/2000/svg'%20fill='%233c3c3d'%20viewBox='0%200%2024%2024'%3e%3ctitle%3eEthereum%3c/title%3e%3cpath%20d='M11.944%2017.97%204.58%2013.62%2011.943%2024l7.37-10.38-7.372%204.35zM12.056%200%204.69%2012.223l7.365%204.354%207.365-4.35z'/%3e%3c/svg%3e`;export{e as default};

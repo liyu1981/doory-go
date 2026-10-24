@@ -1,0 +1,1 @@
+var e=`data:image/svg+xml,%3csvg%20xmlns='http://www.w3.org/2000/svg'%20fill='%23050038'%20viewBox='0%200%2024%2024'%3e%3ctitle%3eMiro%3c/title%3e%3cpath%20d='M17.392%200H13.9L17%204.808%2010.444%200H6.949l3.102%206.3L3.494%200H0l3.05%208.131L0%2024h3.494L10.05%206.985%206.949%2024h3.494L17%205.494%2013.899%2024h3.493L24%203.672z'/%3e%3c/svg%3e`;export{e as default};

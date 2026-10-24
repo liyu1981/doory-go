@@ -1,0 +1,1 @@
+import{l as e}from"./catalogue-Ibg2U2Q4.js";function t(t,n=`Please try again.`){return e(t)?t.isNetwork?`You seem to be offline.`:t.message:n}export{t};

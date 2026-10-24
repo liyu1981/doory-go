@@ -1,0 +1,1120 @@
+{
+  "http": [
+    {
+      "callback": "UnfoldAdminSite.search",
+      "name": "search",
+      "route": "admin/search/"
+    },
+    {
+      "callback": "UnfoldAdminSite.index",
+      "name": "index",
+      "route": "admin/"
+    },
+    {
+      "callback": "AdminSite.login",
+      "name": "login",
+      "route": "admin/login/"
+    },
+    {
+      "callback": "AdminSite.logout",
+      "name": "logout",
+      "route": "admin/logout/"
+    },
+    {
+      "callback": "UnfoldAdminSite.password_change",
+      "name": "password_change",
+      "route": "admin/password_change/"
+    },
+    {
+      "callback": "AdminSite.password_change_done",
+      "name": "password_change_done",
+      "route": "admin/password_change/done/"
+    },
+    {
+      "callback": "AdminSite.autocomplete_view",
+      "name": "autocomplete",
+      "route": "admin/autocomplete/"
+    },
+    {
+      "callback": "AdminSite.i18n_javascript",
+      "name": "jsi18n",
+      "route": "admin/jsi18n/"
+    },
+    {
+      "callback": "shortcut",
+      "name": "view_on_site",
+      "route": "admin/r/<path:content_type_id>/<path:object_id>/"
+    },
+    {
+      "callback": "ModelAdmin.changelist_view",
+      "name": "auth_group_changelist",
+      "route": "admin/auth/group/"
+    },
+    {
+      "callback": "ModelAdmin.add_view",
+      "name": "auth_group_add",
+      "route": "admin/auth/group/add/"
+    },
+    {
+      "callback": "ModelAdmin.history_view",
+      "name": "auth_group_history",
+      "route": "admin/auth/group/<path:object_id>/history/"
+    },
+    {
+      "callback": "ModelAdmin.delete_view",
+      "name": "auth_group_delete",
+      "route": "admin/auth/group/<path:object_id>/delete/"
+    },
+    {
+      "callback": "ModelAdmin.change_view",
+      "name": "auth_group_change",
+      "route": "admin/auth/group/<path:object_id>/change/"
+    },
+    {
+      "callback": "django.views.generic.base.RedirectView",
+      "name": "",
+      "route": "admin/auth/group/<path:object_id>/"
+    },
+    {
+      "callback": "UserAdmin.user_change_password",
+      "name": "auth_user_password_change",
+      "route": "admin/accounts/user/<id>/password/"
+    },
+    {
+      "callback": "ModelAdmin.changelist_view",
+      "name": "accounts_user_changelist",
+      "route": "admin/accounts/user/"
+    },
+    {
+      "callback": "UserAdmin.add_view",
+      "name": "accounts_user_add",
+      "route": "admin/accounts/user/add/"
+    },
+    {
+      "callback": "ModelAdmin.history_view",
+      "name": "accounts_user_history",
+      "route": "admin/accounts/user/<path:object_id>/history/"
+    },
+    {
+      "callback": "ModelAdmin.delete_view",
+      "name": "accounts_user_delete",
+      "route": "admin/accounts/user/<path:object_id>/delete/"
+    },
+    {
+      "callback": "ModelAdmin.change_view",
+      "name": "accounts_user_change",
+      "route": "admin/accounts/user/<path:object_id>/change/"
+    },
+    {
+      "callback": "django.views.generic.base.RedirectView",
+      "name": "",
+      "route": "admin/accounts/user/<path:object_id>/"
+    },
+    {
+      "callback": "ModelAdmin.changelist_view",
+      "name": "designs_design_changelist",
+      "route": "admin/designs/design/"
+    },
+    {
+      "callback": "ModelAdmin.add_view",
+      "name": "designs_design_add",
+      "route": "admin/designs/design/add/"
+    },
+    {
+      "callback": "ModelAdmin.history_view",
+      "name": "designs_design_history",
+      "route": "admin/designs/design/<path:object_id>/history/"
+    },
+    {
+      "callback": "ModelAdmin.delete_view",
+      "name": "designs_design_delete",
+      "route": "admin/designs/design/<path:object_id>/delete/"
+    },
+    {
+      "callback": "ModelAdmin.change_view",
+      "name": "designs_design_change",
+      "route": "admin/designs/design/<path:object_id>/change/"
+    },
+    {
+      "callback": "django.views.generic.base.RedirectView",
+      "name": "",
+      "route": "admin/designs/design/<path:object_id>/"
+    },
+    {
+      "callback": "ModelAdmin.changelist_view",
+      "name": "designs_designversion_changelist",
+      "route": "admin/designs/designversion/"
+    },
+    {
+      "callback": "ModelAdmin.add_view",
+      "name": "designs_designversion_add",
+      "route": "admin/designs/designversion/add/"
+    },
+    {
+      "callback": "ModelAdmin.history_view",
+      "name": "designs_designversion_history",
+      "route": "admin/designs/designversion/<path:object_id>/history/"
+    },
+    {
+      "callback": "ModelAdmin.delete_view",
+      "name": "designs_designversion_delete",
+      "route": "admin/designs/designversion/<path:object_id>/delete/"
+    },
+    {
+      "callback": "ModelAdmin.change_view",
+      "name": "designs_designversion_change",
+      "route": "admin/designs/designversion/<path:object_id>/change/"
+    },
+    {
+      "callback": "django.views.generic.base.RedirectView",
+      "name": "",
+      "route": "admin/designs/designversion/<path:object_id>/"
+    },
+    {
+      "callback": "ModelAdmin.changelist_view",
+      "name": "designs_folder_changelist",
+      "route": "admin/designs/folder/"
+    },
+    {
+      "callback": "ModelAdmin.add_view",
+      "name": "designs_folder_add",
+      "route": "admin/designs/folder/add/"
+    },
+    {
+      "callback": "ModelAdmin.history_view",
+      "name": "designs_folder_history",
+      "route": "admin/designs/folder/<path:object_id>/history/"
+    },
+    {
+      "callback": "ModelAdmin.delete_view",
+      "name": "designs_folder_delete",
+      "route": "admin/designs/folder/<path:object_id>/delete/"
+    },
+    {
+      "callback": "ModelAdmin.change_view",
+      "name": "designs_folder_change",
+      "route": "admin/designs/folder/<path:object_id>/change/"
+    },
+    {
+      "callback": "django.views.generic.base.RedirectView",
+      "name": "",
+      "route": "admin/designs/folder/<path:object_id>/"
+    },
+    {
+      "callback": "ModelAdmin.changelist_view",
+      "name": "assets_asset_changelist",
+      "route": "admin/assets/asset/"
+    },
+    {
+      "callback": "ModelAdmin.add_view",
+      "name": "assets_asset_add",
+      "route": "admin/assets/asset/add/"
+    },
+    {
+      "callback": "ModelAdmin.history_view",
+      "name": "assets_asset_history",
+      "route": "admin/assets/asset/<path:object_id>/history/"
+    },
+    {
+      "callback": "ModelAdmin.delete_view",
+      "name": "assets_asset_delete",
+      "route": "admin/assets/asset/<path:object_id>/delete/"
+    },
+    {
+      "callback": "ModelAdmin.change_view",
+      "name": "assets_asset_change",
+      "route": "admin/assets/asset/<path:object_id>/change/"
+    },
+    {
+      "callback": "django.views.generic.base.RedirectView",
+      "name": "",
+      "route": "admin/assets/asset/<path:object_id>/"
+    },
+    {
+      "callback": "ModelAdmin.changelist_view",
+      "name": "gallery_templatecategory_changelist",
+      "route": "admin/gallery/templatecategory/"
+    },
+    {
+      "callback": "ModelAdmin.add_view",
+      "name": "gallery_templatecategory_add",
+      "route": "admin/gallery/templatecategory/add/"
+    },
+    {
+      "callback": "ModelAdmin.history_view",
+      "name": "gallery_templatecategory_history",
+      "route": "admin/gallery/templatecategory/<path:object_id>/history/"
+    },
+    {
+      "callback": "ModelAdmin.delete_view",
+      "name": "gallery_templatecategory_delete",
+      "route": "admin/gallery/templatecategory/<path:object_id>/delete/"
+    },
+    {
+      "callback": "ModelAdmin.change_view",
+      "name": "gallery_templatecategory_change",
+      "route": "admin/gallery/templatecategory/<path:object_id>/change/"
+    },
+    {
+      "callback": "django.views.generic.base.RedirectView",
+      "name": "",
+      "route": "admin/gallery/templatecategory/<path:object_id>/"
+    },
+    {
+      "callback": "TemplateAdmin.validate_document",
+      "name": "gallery_template_validate_document",
+      "route": "admin/gallery/template/<path:object_id>/validate/"
+    },
+    {
+      "callback": "TemplateAdmin.duplicate_template_detail",
+      "name": "gallery_template_duplicate_template_detail",
+      "route": "admin/gallery/template/<path:object_id>/duplicate/"
+    },
+    {
+      "callback": "ModelAdmin.changelist_view",
+      "name": "gallery_template_changelist",
+      "route": "admin/gallery/template/"
+    },
+    {
+      "callback": "ModelAdmin.add_view",
+      "name": "gallery_template_add",
+      "route": "admin/gallery/template/add/"
+    },
+    {
+      "callback": "ModelAdmin.history_view",
+      "name": "gallery_template_history",
+      "route": "admin/gallery/template/<path:object_id>/history/"
+    },
+    {
+      "callback": "ModelAdmin.delete_view",
+      "name": "gallery_template_delete",
+      "route": "admin/gallery/template/<path:object_id>/delete/"
+    },
+    {
+      "callback": "ModelAdmin.change_view",
+      "name": "gallery_template_change",
+      "route": "admin/gallery/template/<path:object_id>/change/"
+    },
+    {
+      "callback": "django.views.generic.base.RedirectView",
+      "name": "",
+      "route": "admin/gallery/template/<path:object_id>/"
+    },
+    {
+      "callback": "ElementPackAdmin.bulk_upload_view",
+      "name": "elements_elementpack_upload",
+      "route": "admin/elements/elementpack/<path:object_id>/upload/"
+    },
+    {
+      "callback": "ElementPackAdmin.upload_svgs",
+      "name": "elements_elementpack_upload_svgs",
+      "route": "admin/elements/elementpack/<path:object_id>/upload-svgs/"
+    },
+    {
+      "callback": "ModelAdmin.changelist_view",
+      "name": "elements_elementpack_changelist",
+      "route": "admin/elements/elementpack/"
+    },
+    {
+      "callback": "ModelAdmin.add_view",
+      "name": "elements_elementpack_add",
+      "route": "admin/elements/elementpack/add/"
+    },
+    {
+      "callback": "ModelAdmin.history_view",
+      "name": "elements_elementpack_history",
+      "route": "admin/elements/elementpack/<path:object_id>/history/"
+    },
+    {
+      "callback": "ModelAdmin.delete_view",
+      "name": "elements_elementpack_delete",
+      "route": "admin/elements/elementpack/<path:object_id>/delete/"
+    },
+    {
+      "callback": "ModelAdmin.change_view",
+      "name": "elements_elementpack_change",
+      "route": "admin/elements/elementpack/<path:object_id>/change/"
+    },
+    {
+      "callback": "django.views.generic.base.RedirectView",
+      "name": "",
+      "route": "admin/elements/elementpack/<path:object_id>/"
+    },
+    {
+      "callback": "ModelAdmin.changelist_view",
+      "name": "elements_element_changelist",
+      "route": "admin/elements/element/"
+    },
+    {
+      "callback": "ModelAdmin.add_view",
+      "name": "elements_element_add",
+      "route": "admin/elements/element/add/"
+    },
+    {
+      "callback": "ModelAdmin.history_view",
+      "name": "elements_element_history",
+      "route": "admin/elements/element/<path:object_id>/history/"
+    },
+    {
+      "callback": "ModelAdmin.delete_view",
+      "name": "elements_element_delete",
+      "route": "admin/elements/element/<path:object_id>/delete/"
+    },
+    {
+      "callback": "ModelAdmin.change_view",
+      "name": "elements_element_change",
+      "route": "admin/elements/element/<path:object_id>/change/"
+    },
+    {
+      "callback": "django.views.generic.base.RedirectView",
+      "name": "",
+      "route": "admin/elements/element/<path:object_id>/"
+    },
+    {
+      "callback": "ModelAdmin.changelist_view",
+      "name": "fonts_fontfamily_changelist",
+      "route": "admin/fonts/fontfamily/"
+    },
+    {
+      "callback": "ModelAdmin.add_view",
+      "name": "fonts_fontfamily_add",
+      "route": "admin/fonts/fontfamily/add/"
+    },
+    {
+      "callback": "ModelAdmin.history_view",
+      "name": "fonts_fontfamily_history",
+      "route": "admin/fonts/fontfamily/<path:object_id>/history/"
+    },
+    {
+      "callback": "ModelAdmin.delete_view",
+      "name": "fonts_fontfamily_delete",
+      "route": "admin/fonts/fontfamily/<path:object_id>/delete/"
+    },
+    {
+      "callback": "ModelAdmin.change_view",
+      "name": "fonts_fontfamily_change",
+      "route": "admin/fonts/fontfamily/<path:object_id>/change/"
+    },
+    {
+      "callback": "django.views.generic.base.RedirectView",
+      "name": "",
+      "route": "admin/fonts/fontfamily/<path:object_id>/"
+    },
+    {
+      "callback": "ModelAdmin.changelist_view",
+      "name": "brand_brandkit_changelist",
+      "route": "admin/brand/brandkit/"
+    },
+    {
+      "callback": "ModelAdmin.add_view",
+      "name": "brand_brandkit_add",
+      "route": "admin/brand/brandkit/add/"
+    },
+    {
+      "callback": "ModelAdmin.history_view",
+      "name": "brand_brandkit_history",
+      "route": "admin/brand/brandkit/<path:object_id>/history/"
+    },
+    {
+      "callback": "ModelAdmin.delete_view",
+      "name": "brand_brandkit_delete",
+      "route": "admin/brand/brandkit/<path:object_id>/delete/"
+    },
+    {
+      "callback": "ModelAdmin.change_view",
+      "name": "brand_brandkit_change",
+      "route": "admin/brand/brandkit/<path:object_id>/change/"
+    },
+    {
+      "callback": "django.views.generic.base.RedirectView",
+      "name": "",
+      "route": "admin/brand/brandkit/<path:object_id>/"
+    },
+    {
+      "callback": "ModelAdmin.changelist_view",
+      "name": "sharing_sharelink_changelist",
+      "route": "admin/sharing/sharelink/"
+    },
+    {
+      "callback": "ModelAdmin.add_view",
+      "name": "sharing_sharelink_add",
+      "route": "admin/sharing/sharelink/add/"
+    },
+    {
+      "callback": "ModelAdmin.history_view",
+      "name": "sharing_sharelink_history",
+      "route": "admin/sharing/sharelink/<path:object_id>/history/"
+    },
+    {
+      "callback": "ModelAdmin.delete_view",
+      "name": "sharing_sharelink_delete",
+      "route": "admin/sharing/sharelink/<path:object_id>/delete/"
+    },
+    {
+      "callback": "ModelAdmin.change_view",
+      "name": "sharing_sharelink_change",
+      "route": "admin/sharing/sharelink/<path:object_id>/change/"
+    },
+    {
+      "callback": "django.views.generic.base.RedirectView",
+      "name": "",
+      "route": "admin/sharing/sharelink/<path:object_id>/"
+    },
+    {
+      "callback": "ModelAdmin.changelist_view",
+      "name": "sharing_comment_changelist",
+      "route": "admin/sharing/comment/"
+    },
+    {
+      "callback": "ModelAdmin.add_view",
+      "name": "sharing_comment_add",
+      "route": "admin/sharing/comment/add/"
+    },
+    {
+      "callback": "ModelAdmin.history_view",
+      "name": "sharing_comment_history",
+      "route": "admin/sharing/comment/<path:object_id>/history/"
+    },
+    {
+      "callback": "ModelAdmin.delete_view",
+      "name": "sharing_comment_delete",
+      "route": "admin/sharing/comment/<path:object_id>/delete/"
+    },
+    {
+      "callback": "ModelAdmin.change_view",
+      "name": "sharing_comment_change",
+      "route": "admin/sharing/comment/<path:object_id>/change/"
+    },
+    {
+      "callback": "django.views.generic.base.RedirectView",
+      "name": "",
+      "route": "admin/sharing/comment/<path:object_id>/"
+    },
+    {
+      "callback": "ModelAdmin.changelist_view",
+      "name": "presets_sizepresetgroup_changelist",
+      "route": "admin/presets/sizepresetgroup/"
+    },
+    {
+      "callback": "ModelAdmin.add_view",
+      "name": "presets_sizepresetgroup_add",
+      "route": "admin/presets/sizepresetgroup/add/"
+    },
+    {
+      "callback": "ModelAdmin.history_view",
+      "name": "presets_sizepresetgroup_history",
+      "route": "admin/presets/sizepresetgroup/<path:object_id>/history/"
+    },
+    {
+      "callback": "ModelAdmin.delete_view",
+      "name": "presets_sizepresetgroup_delete",
+      "route": "admin/presets/sizepresetgroup/<path:object_id>/delete/"
+    },
+    {
+      "callback": "ModelAdmin.change_view",
+      "name": "presets_sizepresetgroup_change",
+      "route": "admin/presets/sizepresetgroup/<path:object_id>/change/"
+    },
+    {
+      "callback": "django.views.generic.base.RedirectView",
+      "name": "",
+      "route": "admin/presets/sizepresetgroup/<path:object_id>/"
+    },
+    {
+      "callback": "ModelAdmin.changelist_view",
+      "name": "presets_sizepreset_changelist",
+      "route": "admin/presets/sizepreset/"
+    },
+    {
+      "callback": "ModelAdmin.add_view",
+      "name": "presets_sizepreset_add",
+      "route": "admin/presets/sizepreset/add/"
+    },
+    {
+      "callback": "ModelAdmin.history_view",
+      "name": "presets_sizepreset_history",
+      "route": "admin/presets/sizepreset/<path:object_id>/history/"
+    },
+    {
+      "callback": "ModelAdmin.delete_view",
+      "name": "presets_sizepreset_delete",
+      "route": "admin/presets/sizepreset/<path:object_id>/delete/"
+    },
+    {
+      "callback": "ModelAdmin.change_view",
+      "name": "presets_sizepreset_change",
+      "route": "admin/presets/sizepreset/<path:object_id>/change/"
+    },
+    {
+      "callback": "django.views.generic.base.RedirectView",
+      "name": "",
+      "route": "admin/presets/sizepreset/<path:object_id>/"
+    },
+    {
+      "callback": "ModelAdmin.changelist_view",
+      "name": "apitokens_apitoken_changelist",
+      "route": "admin/apitokens/apitoken/"
+    },
+    {
+      "callback": "ModelAdmin.add_view",
+      "name": "apitokens_apitoken_add",
+      "route": "admin/apitokens/apitoken/add/"
+    },
+    {
+      "callback": "ModelAdmin.history_view",
+      "name": "apitokens_apitoken_history",
+      "route": "admin/apitokens/apitoken/<path:object_id>/history/"
+    },
+    {
+      "callback": "ModelAdmin.delete_view",
+      "name": "apitokens_apitoken_delete",
+      "route": "admin/apitokens/apitoken/<path:object_id>/delete/"
+    },
+    {
+      "callback": "ModelAdmin.change_view",
+      "name": "apitokens_apitoken_change",
+      "route": "admin/apitokens/apitoken/<path:object_id>/change/"
+    },
+    {
+      "callback": "django.views.generic.base.RedirectView",
+      "name": "",
+      "route": "admin/apitokens/apitoken/<path:object_id>/"
+    },
+    {
+      "callback": "ProviderAdmin.env_test_view",
+      "name": "ai_provider_env_test",
+      "route": "admin/ai/provider/env/<str:provider_id>/test/"
+    },
+    {
+      "callback": "ProviderAdmin.load_models",
+      "name": "ai_provider_load_models",
+      "route": "admin/ai/provider/<path:object_id>/load-models/"
+    },
+    {
+      "callback": "ProviderAdmin.test_connection",
+      "name": "ai_provider_test_connection",
+      "route": "admin/ai/provider/<path:object_id>/test/"
+    },
+    {
+      "callback": "ProviderAdmin.changelist_view",
+      "name": "ai_provider_changelist",
+      "route": "admin/ai/provider/"
+    },
+    {
+      "callback": "ModelAdmin.add_view",
+      "name": "ai_provider_add",
+      "route": "admin/ai/provider/add/"
+    },
+    {
+      "callback": "ModelAdmin.history_view",
+      "name": "ai_provider_history",
+      "route": "admin/ai/provider/<path:object_id>/history/"
+    },
+    {
+      "callback": "ModelAdmin.delete_view",
+      "name": "ai_provider_delete",
+      "route": "admin/ai/provider/<path:object_id>/delete/"
+    },
+    {
+      "callback": "ModelAdmin.change_view",
+      "name": "ai_provider_change",
+      "route": "admin/ai/provider/<path:object_id>/change/"
+    },
+    {
+      "callback": "django.views.generic.base.RedirectView",
+      "name": "",
+      "route": "admin/ai/provider/<path:object_id>/"
+    },
+    {
+      "callback": "ModelAdmin.changelist_view",
+      "name": "ai_userprovider_changelist",
+      "route": "admin/ai/userprovider/"
+    },
+    {
+      "callback": "ModelAdmin.add_view",
+      "name": "ai_userprovider_add",
+      "route": "admin/ai/userprovider/add/"
+    },
+    {
+      "callback": "ModelAdmin.history_view",
+      "name": "ai_userprovider_history",
+      "route": "admin/ai/userprovider/<path:object_id>/history/"
+    },
+    {
+      "callback": "ModelAdmin.delete_view",
+      "name": "ai_userprovider_delete",
+      "route": "admin/ai/userprovider/<path:object_id>/delete/"
+    },
+    {
+      "callback": "ModelAdmin.change_view",
+      "name": "ai_userprovider_change",
+      "route": "admin/ai/userprovider/<path:object_id>/change/"
+    },
+    {
+      "callback": "django.views.generic.base.RedirectView",
+      "name": "",
+      "route": "admin/ai/userprovider/<path:object_id>/"
+    },
+    {
+      "callback": "ModelAdmin.changelist_view",
+      "name": "ai_aicall_changelist",
+      "route": "admin/ai/aicall/"
+    },
+    {
+      "callback": "ModelAdmin.add_view",
+      "name": "ai_aicall_add",
+      "route": "admin/ai/aicall/add/"
+    },
+    {
+      "callback": "ModelAdmin.history_view",
+      "name": "ai_aicall_history",
+      "route": "admin/ai/aicall/<path:object_id>/history/"
+    },
+    {
+      "callback": "ModelAdmin.delete_view",
+      "name": "ai_aicall_delete",
+      "route": "admin/ai/aicall/<path:object_id>/delete/"
+    },
+    {
+      "callback": "ModelAdmin.change_view",
+      "name": "ai_aicall_change",
+      "route": "admin/ai/aicall/<path:object_id>/change/"
+    },
+    {
+      "callback": "django.views.generic.base.RedirectView",
+      "name": "",
+      "route": "admin/ai/aicall/<path:object_id>/"
+    },
+    {
+      "callback": "AdminSite.app_index",
+      "name": "app_list",
+      "route": "admin/^(?P<app_label>auth|accounts|designs|assets|gallery|elements|fonts|brand|sharing|presets|apitokens|ai)/$"
+    },
+    {
+      "callback": "AdminSite.catch_all_view",
+      "name": "",
+      "route": "admin/(?P<url>.*)$"
+    },
+    {
+      "callback": "sitemap",
+      "name": "sitemap",
+      "route": "sitemap.xml"
+    },
+    {
+      "callback": "apps.core.views.WrappedAPIView",
+      "name": "health",
+      "route": "api/v1/health/"
+    },
+    {
+      "callback": "apps.core.views.WrappedAPIView",
+      "name": "config",
+      "route": "api/v1/config/"
+    },
+    {
+      "callback": "drf_spectacular.views.SpectacularAPIView",
+      "name": "schema",
+      "route": "api/v1/schema/"
+    },
+    {
+      "callback": "drf_spectacular.views.SpectacularSwaggerView",
+      "name": "docs",
+      "route": "api/v1/docs/"
+    },
+    {
+      "callback": "apps.accounts.views.CsrfView",
+      "name": "auth-csrf",
+      "route": "api/v1/auth/csrf/"
+    },
+    {
+      "callback": "apps.accounts.views.RegisterView",
+      "name": "auth-register",
+      "route": "api/v1/auth/register/"
+    },
+    {
+      "callback": "apps.accounts.views.LoginView",
+      "name": "auth-login",
+      "route": "api/v1/auth/login/"
+    },
+    {
+      "callback": "apps.accounts.views.LogoutView",
+      "name": "auth-logout",
+      "route": "api/v1/auth/logout/"
+    },
+    {
+      "callback": "apps.accounts.views.MeView",
+      "name": "auth-me",
+      "route": "api/v1/auth/me/"
+    },
+    {
+      "callback": "apps.accounts.views.PasswordChangeView",
+      "name": "auth-password-change",
+      "route": "api/v1/auth/password/change/"
+    },
+    {
+      "callback": "apps.accounts.views.PasswordResetView",
+      "name": "auth-password-reset",
+      "route": "api/v1/auth/password/reset/"
+    },
+    {
+      "callback": "apps.accounts.views.PasswordResetConfirmView",
+      "name": "auth-password-reset-confirm",
+      "route": "api/v1/auth/password/reset/confirm/"
+    },
+    {
+      "callback": "apps.accounts.views.EmailVerifyView",
+      "name": "auth-email-verify",
+      "route": "api/v1/auth/email/verify/"
+    },
+    {
+      "callback": "apps.accounts.views.EmailResendView",
+      "name": "auth-email-resend",
+      "route": "api/v1/auth/email/resend/"
+    },
+    {
+      "callback": "apps.accounts.views.GoogleLoginView",
+      "name": "auth-google",
+      "route": "api/v1/auth/google/"
+    },
+    {
+      "callback": "apps.accounts.views.OidcStartView",
+      "name": "auth-oidc-start",
+      "route": "api/v1/auth/oidc/start/"
+    },
+    {
+      "callback": "apps.accounts.views.OidcCallbackView",
+      "name": "auth-oidc-callback",
+      "route": "api/v1/auth/oidc/callback/"
+    },
+    {
+      "callback": "apps.accounts.views.OidcConnectionView",
+      "name": "auth-oidc-connection",
+      "route": "api/v1/auth/oidc/connection/"
+    },
+    {
+      "callback": "apps.designs.views.DesignVersionListView",
+      "name": "design-versions",
+      "route": "api/v1/designs/<uuid:design_pk>/versions/"
+    },
+    {
+      "callback": "apps.designs.views.DesignVersionDetailView",
+      "name": "design-version-detail",
+      "route": "api/v1/designs/<uuid:design_pk>/versions/<uuid:version_pk>/"
+    },
+    {
+      "callback": "apps.designs.views.DesignVersionRestoreView",
+      "name": "design-version-restore",
+      "route": "api/v1/designs/<uuid:design_pk>/versions/<uuid:version_pk>/restore/"
+    },
+    {
+      "callback": "DesignViewSet",
+      "name": "design-list",
+      "route": "api/v1/^designs/$"
+    },
+    {
+      "callback": "DesignViewSet",
+      "name": "design-bulk",
+      "route": "api/v1/^designs/bulk/$"
+    },
+    {
+      "callback": "DesignViewSet",
+      "name": "design-trash",
+      "route": "api/v1/^designs/trash/$"
+    },
+    {
+      "callback": "DesignViewSet",
+      "name": "design-detail",
+      "route": "api/v1/^designs/(?P<pk>[0-9a-fA-F-]{36})/$"
+    },
+    {
+      "callback": "DesignViewSet",
+      "name": "design-bulk-fill",
+      "route": "api/v1/^designs/(?P<pk>[0-9a-fA-F-]{36})/bulk-fill/$"
+    },
+    {
+      "callback": "DesignViewSet",
+      "name": "design-duplicate",
+      "route": "api/v1/^designs/(?P<pk>[0-9a-fA-F-]{36})/duplicate/$"
+    },
+    {
+      "callback": "DesignViewSet",
+      "name": "design-fields",
+      "route": "api/v1/^designs/(?P<pk>[0-9a-fA-F-]{36})/fields/$"
+    },
+    {
+      "callback": "DesignViewSet",
+      "name": "design-fill",
+      "route": "api/v1/^designs/(?P<pk>[0-9a-fA-F-]{36})/fill/$"
+    },
+    {
+      "callback": "DesignViewSet",
+      "name": "design-restore",
+      "route": "api/v1/^designs/(?P<pk>[0-9a-fA-F-]{36})/restore/$"
+    },
+    {
+      "callback": "DesignViewSet",
+      "name": "design-thumbnail",
+      "route": "api/v1/^designs/(?P<pk>[0-9a-fA-F-]{36})/thumbnail/$"
+    },
+    {
+      "callback": "FolderViewSet",
+      "name": "folder-list",
+      "route": "api/v1/^folders/$"
+    },
+    {
+      "callback": "FolderViewSet",
+      "name": "folder-detail",
+      "route": "api/v1/^folders/(?P<pk>[0-9a-fA-F-]{36})/$"
+    },
+    {
+      "callback": "AssetViewSet",
+      "name": "asset-list",
+      "route": "api/v1/^assets/$"
+    },
+    {
+      "callback": "AssetViewSet",
+      "name": "asset-usage",
+      "route": "api/v1/^assets/usage/$"
+    },
+    {
+      "callback": "AssetViewSet",
+      "name": "asset-detail",
+      "route": "api/v1/^assets/(?P<pk>[0-9a-fA-F-]{36})/$"
+    },
+    {
+      "callback": "apps.assets.stock.StockSearchView",
+      "name": "stock-photos",
+      "route": "api/v1/stock/photos/"
+    },
+    {
+      "callback": "apps.assets.stock.StockProvidersView",
+      "name": "stock-providers",
+      "route": "api/v1/stock/providers/"
+    },
+    {
+      "callback": "apps.assets.stock.StockImportView",
+      "name": "stock-photo-import",
+      "route": "api/v1/stock/photos/import/"
+    },
+    {
+      "callback": "apps.assets.video_stock.StockVideoSearchView",
+      "name": "stock-videos",
+      "route": "api/v1/stock/videos/"
+    },
+    {
+      "callback": "apps.assets.video_stock.StockVideoProvidersView",
+      "name": "stock-video-providers",
+      "route": "api/v1/stock/videos/providers/"
+    },
+    {
+      "callback": "apps.assets.video_stock.StockVideoImportView",
+      "name": "stock-video-import",
+      "route": "api/v1/stock/videos/import/"
+    },
+    {
+      "callback": "apps.assets.audio_stock.AudioStockSearchView",
+      "name": "stock-audio",
+      "route": "api/v1/stock/audio/"
+    },
+    {
+      "callback": "apps.assets.audio_stock.AudioStockInfoView",
+      "name": "stock-audio-info",
+      "route": "api/v1/stock/audio/info/"
+    },
+    {
+      "callback": "apps.assets.audio_stock.AudioStockImportView",
+      "name": "stock-audio-import",
+      "route": "api/v1/stock/audio/import/"
+    },
+    {
+      "callback": "apps.assets.audio_stock.AudioStockPreviewView",
+      "name": "stock-audio-preview",
+      "route": "api/v1/stock/audio/<str:sound_id>/preview/"
+    },
+    {
+      "callback": "apps.gallery.views.TemplateCategoryListView",
+      "name": "template-category-list",
+      "route": "api/v1/template-categories/"
+    },
+    {
+      "callback": "apps.gallery.views.TemplateListView",
+      "name": "template-list",
+      "route": "api/v1/templates/"
+    },
+    {
+      "callback": "apps.gallery.views.TemplateDetailView",
+      "name": "template-detail",
+      "route": "api/v1/templates/<slug:slug>/"
+    },
+    {
+      "callback": "apps.gallery.views.TemplateUseView",
+      "name": "template-use",
+      "route": "api/v1/templates/<slug:slug>/use/"
+    },
+    {
+      "callback": "apps.elements.views.ElementPackListView",
+      "name": "element-pack-list",
+      "route": "api/v1/elements/packs/"
+    },
+    {
+      "callback": "apps.elements.views.ElementListView",
+      "name": "element-list",
+      "route": "api/v1/elements/"
+    },
+    {
+      "callback": "apps.fonts.views.PublicFontList",
+      "name": "font-list",
+      "route": "api/v1/fonts/"
+    },
+    {
+      "callback": "apps.fonts.views.UserFontListCreate",
+      "name": "font-mine",
+      "route": "api/v1/fonts/mine/"
+    },
+    {
+      "callback": "apps.fonts.views.UserFontDelete",
+      "name": "font-mine-detail",
+      "route": "api/v1/fonts/mine/<uuid:pk>/"
+    },
+    {
+      "callback": "BrandKitViewSet",
+      "name": "brand-kit-list",
+      "route": "api/v1/^brand-kits/$"
+    },
+    {
+      "callback": "BrandKitViewSet",
+      "name": "brand-kit-detail",
+      "route": "api/v1/^brand-kits/(?P<pk>[0-9a-fA-F-]{36})/$"
+    },
+    {
+      "callback": "apps.sharing.views.ShareLinkListCreateView",
+      "name": "share-link-list",
+      "route": "api/v1/designs/<uuid:design_id>/share-links/"
+    },
+    {
+      "callback": "apps.sharing.views.ShareLinkDetailView",
+      "name": "share-link-detail",
+      "route": "api/v1/designs/<uuid:design_id>/share-links/<uuid:pk>/"
+    },
+    {
+      "callback": "apps.sharing.views.DesignCommentListCreateView",
+      "name": "design-comment-list",
+      "route": "api/v1/designs/<uuid:design_id>/comments/"
+    },
+    {
+      "callback": "apps.sharing.views.DesignCommentDetailView",
+      "name": "design-comment-detail",
+      "route": "api/v1/designs/<uuid:design_id>/comments/<uuid:pk>/"
+    },
+    {
+      "callback": "apps.sharing.views.SharedDesignView",
+      "name": "shared-design",
+      "route": "api/v1/shared/<str:token>/"
+    },
+    {
+      "callback": "apps.sharing.views.SharedCommentListCreateView",
+      "name": "shared-comment-list",
+      "route": "api/v1/shared/<str:token>/comments/"
+    },
+    {
+      "callback": "apps.sharing.views.SharedCommentDetailView",
+      "name": "shared-comment-detail",
+      "route": "api/v1/shared/<str:token>/comments/<uuid:pk>/"
+    },
+    {
+      "callback": "apps.exports.views.PdfExportView",
+      "name": "export-pdf",
+      "route": "api/v1/exports/pdf/"
+    },
+    {
+      "callback": "apps.exports.views.ImageOptimizeView",
+      "name": "export-optimize",
+      "route": "api/v1/exports/optimize/"
+    },
+    {
+      "callback": "apps.exports.views.ImageExportView",
+      "name": "export-image",
+      "route": "api/v1/designs/<uuid:pk>/export/image/"
+    },
+    {
+      "callback": "apps.exports.views.ImageDownloadView",
+      "name": "export-image-download",
+      "route": "api/v1/exports/image/<str:token>/"
+    },
+    {
+      "callback": "apps.collab.views.WrappedAPIView",
+      "name": "collab-stats",
+      "route": "api/v1/collab/stats/"
+    },
+    {
+      "callback": "apps.presets.views.WrappedAPIView",
+      "name": "size-presets",
+      "route": "api/v1/size-presets/"
+    },
+    {
+      "callback": "apps.presets.views.WrappedAPIView",
+      "name": "size-presets-mine",
+      "route": "api/v1/size-presets/mine/"
+    },
+    {
+      "callback": "apps.apitokens.views.ApiTokenListView",
+      "name": "api-token-list",
+      "route": "api/v1/auth/tokens/"
+    },
+    {
+      "callback": "apps.apitokens.views.ApiTokenScopesView",
+      "name": "api-token-scopes",
+      "route": "api/v1/auth/tokens/scopes/"
+    },
+    {
+      "callback": "apps.apitokens.views.ApiTokenDetailView",
+      "name": "api-token-detail",
+      "route": "api/v1/auth/tokens/<uuid:pk>/"
+    },
+    {
+      "callback": "apps.ai.views.ModelListView",
+      "name": "ai-models",
+      "route": "api/v1/ai/models/"
+    },
+    {
+      "callback": "apps.ai.views.ContractView",
+      "name": "ai-contract",
+      "route": "api/v1/ai/contract.yaml"
+    },
+    {
+      "callback": "apps.ai.views.ProviderListView",
+      "name": "ai-providers",
+      "route": "api/v1/ai/providers/"
+    },
+    {
+      "callback": "apps.ai.views.ProviderDetailView",
+      "name": "ai-provider",
+      "route": "api/v1/ai/providers/<uuid:pk>/"
+    },
+    {
+      "callback": "apps.ai.views.ProviderModelsView",
+      "name": "ai-provider-models",
+      "route": "api/v1/ai/providers/<uuid:pk>/models/"
+    },
+    {
+      "callback": "apps.ai.views.ProviderLoadModelsView",
+      "name": "ai-provider-load",
+      "route": "api/v1/ai/providers/<uuid:pk>/load-models/"
+    },
+    {
+      "callback": "apps.ai.views.ProviderTestView",
+      "name": "ai-provider-test",
+      "route": "api/v1/ai/providers/<uuid:pk>/test/"
+    },
+    {
+      "callback": "apps.ai.views.TaskView",
+      "name": "ai-task",
+      "route": "api/v1/ai/<slug:task>/"
+    }
+  ],
+  "websocket": [
+    {
+      "consumer": "apps.collab.consumers.CollabConsumer",
+      "route": "ws/designs/<uuid:design_id>/"
+    }
+  ]
+}
