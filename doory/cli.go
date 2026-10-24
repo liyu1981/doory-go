@@ -82,12 +82,12 @@ var cliCommands = []cliCommand{
 func RunCLI(app *App, argv []string, stdout, stderr io.Writer) int {
 	c := &CLI{App: app, Stdout: stdout, Stderr: stderr}
 	if len(argv) == 0 {
-		fmt.Fprintln(stderr, "Type 'doory help' for usage.")
-		return 1
+		PrintCLIHelp(stdout)
+		return 0
 	}
 	name := argv[0]
 	if name == "help" || name == "--help" || name == "-h" {
-		printCLIHelp(stdout)
+		PrintCLIHelp(stdout)
 		return 0
 	}
 	for _, cmd := range cliCommands {
@@ -136,10 +136,22 @@ func asCommandError(err error, target **commandError) bool {
 	return ok
 }
 
-func printCLIHelp(w io.Writer) {
-	fmt.Fprintln(w, "Type 'doory help <subcommand>' for help on a specific subcommand.")
+// PrintCLIHelp writes the command overview: the built-in subcommands and the
+// ported management commands. `doory` with no arguments and `doory help` both
+// print this (Django's manage.py does the same).
+func PrintCLIHelp(w io.Writer) {
+	fmt.Fprintln(w, "usage: doory <command> [options]")
 	fmt.Fprintln(w)
-	fmt.Fprintln(w, "Available subcommands:")
+	fmt.Fprintln(w, "Built-in commands:")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "    serve         HTTP + WebSockets + MCP + the embedded frontend (default port :8000)")
+	fmt.Fprintln(w, "    entrypoint    wait for the database, migrate, optional content bootstraps, then serve")
+	fmt.Fprintln(w, "    migrate       apply the embedded schema for the DATABASE_URL dialect")
+	fmt.Fprintln(w, "    healthcheck   probe /api/v1/health/ (HEALTH_PORT, HEALTH_PATH); exit 0 on 200")
+	fmt.Fprintln(w, "    version       print the port version and its upstream pin")
+	fmt.Fprintln(w, "    help          this text (also `doory help <command>`)")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Management commands (Django's manage.py equivalents):")
 	fmt.Fprintln(w)
 	names := make([]string, 0, len(cliCommands))
 	for _, cmd := range cliCommands {
@@ -149,8 +161,6 @@ func printCLIHelp(w io.Writer) {
 	for _, name := range names {
 		fmt.Fprintln(w, "    "+name)
 	}
-	fmt.Fprintln(w)
-	fmt.Fprintln(w, "serve, migrate and version are built in (not management commands).")
 }
 
 // RunCLIFromEnv is the cmd/doory entry point: it opens the database from the

@@ -28,12 +28,13 @@ import (
 )
 
 func main() {
-	cmd := "serve"
-	if len(os.Args) > 1 {
-		cmd = os.Args[1]
+	cmd, args := splitArgs(os.Args[1:])
+	if cmd == "" {
+		// A bare binary prints the command overview (like manage.py) instead of
+		// guessing what to run.
+		doory.PrintCLIHelp(os.Stdout)
+		return
 	}
-	args := os.Args[2:]
-
 	switch cmd {
 	case "render-worker":
 		// Hidden: the per-render subprocess (renderer.py's worker model).
@@ -145,4 +146,15 @@ func specReportPath(specPath string) string {
 		return ""
 	}
 	return spec.ReportPath
+}
+
+// splitArgs splits the command line after the program name into the
+// subcommand and its arguments; "" means no subcommand was given (main then
+// prints the usage text). Kept separate from main so the no-argument case is
+// testable: slicing os.Args[2:] on a bare invocation panicked.
+func splitArgs(argv []string) (string, []string) {
+	if len(argv) == 0 {
+		return "", nil
+	}
+	return argv[0], argv[1:]
 }

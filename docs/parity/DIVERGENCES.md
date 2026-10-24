@@ -283,3 +283,23 @@ Rules (PiG §6):
 - evidence: PLAN.md M14 log, doory/pgq_test.go (rewrite cases), scenario-free
   `pnpm pg-smoke` (test/pgsmoke: API flow + error paths on Postgres),
   `pnpm schema-parity` (both dialects).
+
+## D18 — no container image: the binary is the release artifact
+
+- SCRUTINIZED: approved (owner decision, 2026-10-25)
+- status: active
+- summary: upstream deploys four services (api/gunicorn, realtime/uvicorn,
+  mcp/uvicorn, web/nginx) as images behind `docker-compose.yml`. This port
+  ships ONE executable that serves the API, the realtime WebSockets, MCP and
+  the embedded frontend on one listener, reads its configuration from the
+  environment and keeps all state in one data directory (`DOORY_DATA_DIR`:
+  SQLite database, media, exports). There is deliberately **no Dockerfile and
+  no compose file**: deployment is "install the binary" — `deploy/doory.service`
+  is the systemd unit, `doory entrypoint` migrates and runs the optional
+  content bootstraps, `doory healthcheck` is the liveness probe.
+- remove-when: n/a (permanent owner decision). If the owner reverses it, the
+  image returns as an additive packaging artifact — the binary stays the unit
+  of parity. Test infrastructure (a local Postgres container for the dialect
+  lane) is test tooling and not affected by this record.
+- evidence: PLAN.md §5 #14 and §8 M14, the M14 log, README "Deploying it (no
+  containers)", `deploy/doory.service`, `.env.example`.

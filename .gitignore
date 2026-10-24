@@ -13,9 +13,11 @@ media/
 __pycache__/
 .venv/
 
-# Build output.
+# Build output and the binary's default data directory (D4: DOORY_DATA_DIR
+# defaults to ./data — SQLite database, media, exports).
 node_modules/
 /dist/
+/data/
 
 # Oracle scratch: venv, probe DBs, media (must stay outside the mirror).
 

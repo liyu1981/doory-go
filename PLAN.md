@@ -216,7 +216,7 @@ Families are declared in `test/parity/families.toml` **first**, in dependency or
 | 11 | collab | consumer handshake/auth/limits, room registry, engine (`yrs` isolation), store (YState/YUpdate/compaction), presence/notify, channel layer (Redis), `collab_maintenance`, `RealtimeGuard` | Y engine in Go (S0); compaction invariants (`version`, `flushed_version`, `base_revision`); reconnect/sync semantics |
 | 12 | mcp | server, tools/*, resources, prompts, bearer auth, resolver | JSON-RPC framing over HTTP; token scope enforcement |
 | 13 | commands + content | all 15 management commands, `backend/data/*.json` fixtures, docker entrypoint, healthcheck | seeded-content byte digests |
-| 14 | single-binary release | `embed.FS` frontend (`index.html`, `presenter-view.html`, `render.html`, hashed assets), `/static` (precompressed, whitenoise-manifest equivalent), `/media` local or S3, dev-mode proxy parity with `frontend/vite.config.ts`, `docker` image replacing api+realtime+mcp+mcp services, docs updates | `render.html` export path must hit the embedded origin; CORS not needed same-origin but must still behave |
+| 14 | single-binary release | `embed.FS` frontend (`index.html`, `presenter-view.html`, `render.html`, hashed assets), `/static` (precompressed, whitenoise-manifest equivalent), `/media` local or S3, dev-mode proxy parity with `frontend/vite.config.ts`, **no container image** (D18: the binary is the release artifact), docs updates | `render.html` export path must hit the embedded origin; CORS not needed same-origin but must still behave |
 
 Admin site: see D2 — a gated sub-phase inside #14.
 
@@ -296,9 +296,9 @@ Admin site: see D2 — a gated sub-phase inside #14.
   config at all** (embedded SQLite default, D4) and also against a Postgres
   `DATABASE_URL` from the same binary; embedded frontend serves the
   editor, WS collab works between two browsers, MCP works from an assistant client,
-  export renders PNG/PDF, docker-compose replacement image runs the full stack,
-  `pnpm parity` green, coverage report embedded in AGENTS.md with no weak-only routes
-  counted as verified.
+  export renders PNG/PDF, the binary itself runs the full stack (no container
+  image, D18), `pnpm parity` green, coverage report embedded in AGENTS.md with
+  no weak-only routes counted as verified.
 
 ## 9. Acceptance ladder (what "faithful" means, in strength order)
 
@@ -1355,16 +1355,21 @@ M14 scoping (single-binary release — sources read, semantics derived):
 - **Coverage report**: `pnpm coverage` is a stub; M14 replaces it with a
   generator that reads scenarios + PORT_MAP dispositions and writes the table
   embedded in AGENTS.md (weak-only routes must not count as verified).
-- **Docker**: one image (Go binary + optional Chromium) replacing api,
-  realtime, mcp and the web nginx from `docker-compose.yml`; volumes
-  media/exports, healthcheck via the binary, `/app/data` for the SQLite
-  default.
+- **No containers (D18, owner decision 2026-10-25)**: the deployable is the
+  binary. Upstream ships api + realtime + mcp + nginx web as four images
+  behind compose; the port builds one executable with the frontend embedded,
+  reads its configuration from the environment and keeps its state in one
+  data directory. Deployment docs describe a systemd unit (`deploy/
+  doory.service`) instead of compose; `doory entrypoint`/`healthcheck` keep
+  the upstream supervisor contract. Test infrastructure may still start a
+  Postgres container to run the dialect lane (that is test tooling, not a
+  deployment target).
 
 M14 build order: (1) webapp embedding + static/media/SPA serving + dev proxy +
 tests derived from the nginx config (D7 update); (2) data-dir default +
-no-config smoke + PG dialect run; (3) Dockerfile/compose replacement + docs;
-(4) coverage generator; (5) D2 admin inventory + minimal admin, or an explicit
-owner decision to defer (recorded).
+no-config smoke + PG dialect run; (3) deployment docs for the binary (systemd
+unit; no container image, D18); (4) coverage generator; (5) D2 admin inventory
++ minimal admin, or an explicit owner decision to defer (recorded).
 
 M14 progress log (this session — release candidate slices 1-4):
 
@@ -1397,11 +1402,16 @@ M14 progress log (this session — release candidate slices 1-4):
   `created_at DESC`. New `test/pgsmoke` walks the API on Postgres (register,
   login, designs, share links, comments, folders, versions, catalogs,
   trash/restore/purge, duplicate email, revision conflict) — green.
-- ✅ Docker: `Dockerfile` (multi-stage Go build, optional Chromium, non-root,
-  `/app/data` volume, `doory healthcheck`) and `docker-compose.yml` replacing
-  upstream's api + realtime + mcp + web with one service (+ optional
-  `postgres` profile). Built and smoke-tested: container serves API, SPA,
-  render.html, MCP health and media 404s; healthcheck exits 0.
+- ✅ Deployment without containers (D18): the owner rejected the container
+  path — the `Dockerfile`/`docker-compose.yml` drafted earlier were removed,
+  and the release story is now "install the binary, run it under systemd".
+  `deploy/doory.service` is the unit (EnvironmentFile, WorkingDirectory =
+  data dir, `doory entrypoint :8080`, hardening notes for the Chromium child);
+  a bare `doory` prints the command overview and exits 0 (manage.py's
+  behaviour), `pnpm build` produces `dist/doory` (the `doory/` package directory
+  would collide with `-o doory`);
+  `.env.example` documents the same knobs for that file. The binary needs no
+  configuration at all: SQLite + media + exports under one data directory.
 - ✅ Coverage report (`pnpm coverage`, automation/ci/coveragereport): families
   with PORT_MAP rows reviewed vs. scenario-covered, test-file dispositions,
   and the review-only rows named — written between markers in AGENTS.md.
@@ -1409,7 +1419,8 @@ M14 progress log (this session — release candidate slices 1-4):
   dominate the weak list, matching the open M12/M13 items).
 - ✅ `.env.example` for the single binary (same variable names as upstream,
   plus DOORY_DATA_DIR / DOORY_DEV_PROXY) and a README "Running the single
-  binary" section (no-config, Postgres, Docker, the path map).
+  binary" + "Deploying it (no containers)" section (no-config, Postgres,
+  systemd, the path map).
 - ⬜ M14 remaining: (a) D2 admin — the S3 inventory is 19 registered models
   (User, Provider/UserProvider/AICall, ApiToken, Asset, BrandKit,
   Design/DesignVersion/Folder, ElementPack/Element, FontFamily,

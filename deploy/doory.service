@@ -1,0 +1,45 @@
+# systemd unit for the single Doory binary (D1/D4/D18): one process serves the
+# API, the realtime WebSockets, MCP and the embedded frontend.
+#
+#   sudo useradd --system --home /var/lib/doory doory
+#   sudo install -d -o doory -g doory /var/lib/doory
+#   sudo install -m 0755 doory /usr/local/bin/doory
+#   sudo install -d /etc/doory && sudo cp .env.example /etc/doory/doory.env
+#   sudo cp deploy/doory.service /etc/systemd/system/ && sudo systemctl daemon-reload
+#   sudo systemctl enable --now doory
+#
+# The environment file holds DJANGO_SECRET_KEY, SITE_URL (required outside
+# localhost), CSRF_TRUSTED_ORIGINS and any optional knobs. WorkingDirectory is
+# the data directory (DOORY_DATA_DIR): doory.sqlite3, media/ and exports/.
+[Unit]
+Description=Doory (single binary: API, realtime co-editing, MCP, frontend)
+Documentation=https://github.com/shaongitbd/doory
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=doory
+Group=doory
+WorkingDirectory=/var/lib/doory
+EnvironmentFile=/etc/doory/doory.env
+# entrypoint: wait for the database, migrate, run the optional content
+# bootstraps (DOORY_SYNC_*), then serve on :8080.
+ExecStart=/usr/local/bin/doory entrypoint :8080
+Restart=on-failure
+RestartSec=2s
+# The healthcheck subcommand exits 0 only when /api/v1/health/ answers 200.
+ExecReload=/bin/true
+
+# Hardening: the process needs its data directory and outbound network
+# (content syncs, AI providers, stock APIs). Server-side PDF export spawns
+# Chromium, which needs its own sandbox or EXPORT_CHROMIUM_NO_SANDBOX=true;
+# NoNewPrivileges stays off by default for that reason.
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/doory
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

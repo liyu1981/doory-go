@@ -27,9 +27,9 @@ behavioral verification).
 | upstream | go | status |
 |---|---|---|
 | `backend/.env.example` | `.env.example` (the single binary's knobs, same variable names; D4 data dir) | ✅ |
-| `backend/Dockerfile` | `Dockerfile` (multi-stage Go build + runtime; replaces api/realtime/mcp/web; optional Chromium) | ✅ |
+| `backend/Dockerfile` | deferred: no container image (D18) — the binary is the release artifact; `deploy/doory.service` replaces the compose service | 🟡 |
 | `backend/conftest.py` | test/parity (paired scenarios replace the pytest harness; ledger dispositions) | 🟡 |
-| `backend/docker-entrypoint.sh` | doory/entrypoint.go (`doory entrypoint`: DB wait, migrate, env-gated bootstraps, never fatal) | ✅ |
+| `backend/docker-entrypoint.sh` | doory/entrypoint.go (`doory entrypoint`: DB wait, migrate, env-gated bootstraps, never fatal) — behaviour kept for supervisors without containers | ✅ |
 | `backend/healthcheck.py` | doory/entrypoint.go (`doory healthcheck`: HEALTH_PORT/HEALTH_PATH, ALLOWED_HOSTS host, 4 s) | ✅ |
 | `backend/manage.py` | cmd/doory/main.go + doory/cli.go (`doory <command>`; D13) | ✅ |
 | `backend/requirements-dev.txt` | (n/a: Go toolchain + pnpm gate ladder; see package.json) | ✅ |
