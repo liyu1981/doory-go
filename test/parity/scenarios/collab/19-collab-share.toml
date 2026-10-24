@@ -1,0 +1,108 @@
+# Behavior family: collab (family 15, PLAN.md M11) — the LOGIN half of the
+# WebSocket contract: share-link grants, password gates and the pending-login
+# timeout. A socket needs a SESSION before auth frames are read at all
+# (probe0014 L1: an anonymous dial is refused 4401), so every connection here
+# belongs to a logged-in guest who does not own the design.
+#
+# Probe lineage: probes/0014-collab-share
+#   L1 edit link (no password)   -> ready role=edit canWrite=true
+#   L2 view link                 -> ready role=view canWrite=false
+#   L3 password link, no password-> {"type":"error","code":"password_required"}
+#   L3c password link, right pw  -> ready role=edit
+#   L4 forged token              -> close 4403 forbidden
+#   L5 non-owner, no auth frame  -> close 4408 auth_timeout
+
+name = "19-collab-share"
+description = "Realtime collab share-link logins: edit/view roles, password gate, forged token, pending auth timeout."
+driver = "ws"
+family = "collab"
+tags = []
+dialects = ["sqlite"]
+covers = [
+  "backend/apps/collab/access.py",
+  "backend/apps/collab/consumers.py",
+]
+
+[env]
+DJANGO_SECRET_KEY = "parity-oracle-secret-key-0123456789"
+SECURE_COOKIES = "false"
+REALTIME_ENABLED = "true"
+REALTIME_AUTH_TIMEOUT_SECONDS = "2"
+SITE_URL = "http://localhost:5173"
+
+# ---- owner: design + three links ----
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/csrf/"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/register/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"owner19@example.com","password":"Tr0ub4dor&3xkcd9"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"title":"Shared WS"}'
+capture = { did = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/{{capture:did}}/share-links/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"role":"edit"}'
+capture = { tok_e = "\"token\":\"([A-Za-z0-9_-]{32})\"" }
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/{{capture:did}}/share-links/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"role":"view"}'
+capture = { tok_v = "\"token\":\"([A-Za-z0-9_-]{32})\"" }
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/{{capture:did}}/share-links/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"role":"edit","password":"s3cret-pass"}'
+capture = { tok_p = "\"token\":\"([A-Za-z0-9_-]{32})\"" }
+
+# ---- guest: a second logged-in account (separate jar) ----
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/csrf/"
+jar = "guest"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/register/"
+jar = "guest"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"guest19@example.com","password":"Tr0ub4dor&3xkcd9"}'
+
+# ---- link logins (probe0014 L1/L2/L3/L4) ----
+# edit link: nothing arrives before the auth frame, then ready + welcome sync.
+[[steps]]
+ws = { action = "expect", design_id = "{{capture:did}}", jar = "guest", send = '{"type":"auth","token":"{{capture:tok_e}}"}', expect_after = "ready", expect_after_role = "edit", expect_after_can_write = true, close_code = 1000, close_reason = "bye" }
+
+# view link: ready with canWrite false (the room relays but never accepts edits).
+[[steps]]
+ws = { action = "expect", design_id = "{{capture:did}}", jar = "guest", send = '{"type":"auth","token":"{{capture:tok_v}}"}', expect_after = "ready", expect_after_role = "view", expect_after_can_write = false, close_code = 1000, close_reason = "bye" }
+
+# password link without the password: the error frame, no ready.
+[[steps]]
+ws = { action = "expect", design_id = "{{capture:did}}", jar = "guest", send = '{"type":"auth","token":"{{capture:tok_p}}"}', expect_after = "error", expect_after_code = "password_required", close_code = 1000, close_reason = "bye" }
+
+# password link WITH the password: ready role=edit.
+[[steps]]
+ws = { action = "expect", design_id = "{{capture:did}}", jar = "guest", send = '{"type":"auth","token":"{{capture:tok_p}}","password":"s3cret-pass"}', expect_after = "ready", expect_after_role = "edit", expect_after_can_write = true, close_code = 1000, close_reason = "bye" }
+
+# a forged token is refused like any other forbidden link (4403).
+[[steps]]
+ws = { action = "expect", design_id = "{{capture:did}}", jar = "guest", send = '{"type":"auth","token":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}', expect_close_code = 4403, expect_close_reason = "forbidden" }
+
+# a non-owner that never sends an auth frame: the pending timer closes 4408.
+[[steps]]
+ws = { action = "expect", design_id = "{{capture:did}}", jar = "guest", expect_close_code = 4408, expect_close_reason = "auth_timeout" }

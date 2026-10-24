@@ -2,6 +2,7 @@
 // idle/awareness expiry, access re-checks, replacement/resync, flush,
 // repair, compaction and the fail/shutdown paths.
 
+// Ports backend/apps/collab/room.py
 package doory
 
 import (

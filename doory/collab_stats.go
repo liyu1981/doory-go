@@ -1,6 +1,8 @@
 // GET /api/v1/collab/stats/ — staff-only observability of the real-time
 // servers (apps/collab/views.py stats, IsAdminUser).
 
+// Ports backend/apps/collab/views.py
+// Ports backend/apps/collab/urls.py
 package doory
 
 import (

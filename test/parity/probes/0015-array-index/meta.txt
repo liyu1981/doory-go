@@ -1,0 +1,4 @@
+probe=0015-array-index
+upstream_commit=2eb2557c1eed3aa256a78f1874abfb5a1315849c
+engine=pycrdt (yrs) 0.14.10
+note=array Insert/Delete over decoded multi-value ContentAny batches; never edit

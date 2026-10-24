@@ -1,0 +1,53 @@
+# Behavior family: collab (family 15, PLAN.md M11) — the WebSocket LIMITS:
+# the frame-size cap and the message token bucket. Both are settings-driven, so
+# the scenario boots the pair with tiny budgets (64-byte frames, 1 message per
+# second, burst 1) and drives the two close codes.
+#
+# Probe lineage: probes/0014-collab-share
+#   L8 oversize binary frame -> close 4413 frame_too_large
+#   L9 six pings, burst 1    -> close 4429 rate_limited
+
+name = "20-collab-limits"
+description = "Realtime collab limits: oversize frame 4413 and message rate 4429 close codes."
+driver = "ws"
+family = "collab"
+tags = []
+dialects = ["sqlite"]
+covers = [
+  "backend/apps/collab/limits.py",
+  "backend/apps/collab/consumers.py",
+]
+
+[env]
+DJANGO_SECRET_KEY = "parity-oracle-secret-key-0123456789"
+SECURE_COOKIES = "false"
+REALTIME_ENABLED = "true"
+REALTIME_MAX_FRAME_BYTES = "64"
+REALTIME_RATE_MESSAGES_PER_SECOND = "1"
+REALTIME_RATE_BURST = "1"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/csrf/"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/register/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"limits20@example.com","password":"Tr0ub4dor&3xkcd9"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"title":"Limits WS"}'
+capture = { did = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
+
+# A 200-byte binary frame is over the 64-byte cap: close 4413.
+[[steps]]
+ws = { action = "expect", design_id = "{{capture:did}}", expect = "ready", send = "78787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878", expect_close_code = 4413, expect_close_reason = "frame_too_large" }
+
+# Four pings at 60ms apart: the second frame exceeds the 1-per-second bucket
+# (burst 1) and the server closes 4429.
+[[steps]]
+ws = { action = "expect", design_id = "{{capture:did}}", expect = "ready", expect_binary_kind = "sync/step1", sends = ['{"type":"ping"}', '{"type":"ping"}', '{"type":"ping"}', '{"type":"ping"}'], expect_close_code = 4429, expect_close_reason = "rate_limited" }

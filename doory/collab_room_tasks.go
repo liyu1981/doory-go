@@ -1,6 +1,7 @@
 // Room processing: the inbox batch loop, welcome/frame handling, the update
 // commit path and awareness (apps/collab/room.py _process.._announce_gone).
 
+// Ports backend/apps/collab/room.py
 package doory
 
 import (
@@ -15,7 +16,15 @@ import (
 func (room *collabRoom) process(items []roomItem) bool {
 	var pending []pendingUpdate
 	for _, item := range items {
-		if item.kind == "frame" && item.frame != nil && item.frame.Kind != yproto.SyncStep1 {
+		// Only SYNC frames (step2/update) are batched as document updates —
+		// upstream's guard is `isinstance(payload, protocol.SyncFrame) and
+		// payload.kind != SYNC_STEP1`. An awareness frame has no sync kind
+		// (Go: Frame.Kind == -1): treating it as an update applied awareness
+		// bytes to the engine and skipped the presence relay (scenario
+		// 21-collab-peers caught it: the peer received nothing).
+		if item.kind == "frame" && item.frame != nil &&
+			item.frame.Kind >= yproto.SyncStep1 && item.frame.Kind <= yproto.SyncUpdate &&
+			item.frame.Kind != yproto.SyncStep1 {
 			member := item.member
 			if member == nil || member.closing {
 				continue

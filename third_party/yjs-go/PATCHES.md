@@ -58,15 +58,27 @@ pycrdt fixtures" at the site).
     count VALUES (an insert batch is one item holding N values).
 11. **Map view walk** (`map.go`): `Get/Keys` walk past a deleted slot head
     to the first live item (remote replaces insert after the head).
+12. **Array index ops count values, batch splits** (`array.go`): `Insert`,
+    `Delete` and the index search are value-based; a position strictly
+    inside a decoded ContentAny batch splits it (`Item.splitItem`: a new
+    struct at `clock+diff`, content sliced, origins re-pointed, registered
+    in the sorted store — splitting consumes no clock). Fixtures:
+    `test/parity/probes/0015-array-index/` (9 oracle cases: insert/delete
+    inside, at the start/end of, and across batches) reproduced by
+    `internal/crdt/array_index_test.go` (values, Len, clock accounting,
+    snapshot round trip).
+13. **OriginRight on local array inserts** (`array.go`): an insert between
+    two items carries the right neighbour's ID; without it the integrator
+    could only place the value after its left origin, so a decoded snapshot
+    appended an interior insert instead of placing it (0015 round trip).
 
 ## Known gaps (candidates for upstreaming + follow-ups)
 
 - `transport` package fetches its own module dependency (`nhooyr.io/websocket`)
   and is not part of the main module build; tests for the core and
   protocol packages run green via `go test github.com/CivNode/yjs-go/...`.
-- Array index operations (`Insert/Delete/findItemAtIndex`) still count
-  ITEMS, not values, when a decoded multi-value batch is present — the Go
-  collab port must either patch these or go through value-based paths
-  (scenario coverage will catch it).
+- Array index operations over decoded multi-value batches are value-based
+  (patch 12); what remains upstream of that is `to_py`-style re-slicing of
+  items with `Length > 1` in observers (unused here).
 - No out-of-order delivery across separate updates for items whose parent
   is missing forever (stranded items stay pending; nothing times them out).

@@ -2,6 +2,7 @@
 // auth frames, and text/binary dispatch to the room (consumers.receive /
 // _authenticate / _text).
 
+// Ports backend/apps/collab/consumers.py
 package doory
 
 import (

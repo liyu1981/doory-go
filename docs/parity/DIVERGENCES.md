@@ -24,7 +24,13 @@ Rules (PiG §6):
   HTTP + WS + MCP on a single listener.
 - remove-when: upstream changes its topology. `--ws-addr` / `--mcp-addr` flags
   restore the three-listener nginx topology and stay scenario-tested.
-- evidence: PLAN.md §6 (D1), family ops.
+- evidence: PLAN.md §6 (D1), family ops. The collab channel layer follows from
+  this: upstream's group_send/notify_design reaches rooms in other processes
+  through Redis, while the single-process port calls its in-process
+  RoomRegistry directly (doory/collab_room.go notify, doory/collab_signals.go).
+  The observable behaviour is identical — the HTTP-written title reaches a
+  joined socket as `{"type":"title",...}` (scenario 17-collab) and access
+  changes re-check open rooms; only the transport differs.
 
 ## D2 — Django admin not ported as Django HTML
 
@@ -49,7 +55,13 @@ Rules (PiG §6):
   Update blob BYTES are never compared (CRDTs converge regardless).
 - remove-when: n/a (permanent engine substitution); every collab scenario
   asserts frames + document JSON on both sides.
-- evidence: PLAN.md §6 (D3), spike S0, family collab.
+- evidence: PLAN.md §6 (D3), spike S0, family collab. Conformance is
+  fixture-driven in both directions: probes/0011-collab-crdt (snapshots, state
+  vectors, 12-batch edit stream, concurrent convergence, oracle-applied Go
+  witness) and probes/0015-array-index (array Insert/Delete over decoded
+  multi-value batches — the two patches it forced are PATCHES.md 12/13). The
+  wire document itself is compared in scenario 17-collab: the sync/step2 each
+  server returns decodes to the same document on both sides.
 
 ## D4 — swappable database (SQLite default)
 

@@ -10,6 +10,7 @@
 // Builder discipline (third_party/yjs-go/PATCHES.md): a nested node is
 // inserted into its parent BEFORE it is populated, so children follow the
 // type item in clock order.
+// Ports backend/apps/collab/schema.py
 package yschema
 
 import (

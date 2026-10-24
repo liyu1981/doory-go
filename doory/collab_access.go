@@ -2,6 +2,7 @@
 // (apps/collab/access.py). Synchronous; the connection flow calls these
 // before admitting a member.
 
+// Ports backend/apps/collab/access.py
 package doory
 
 import (

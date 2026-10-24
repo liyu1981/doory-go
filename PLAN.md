@@ -1114,3 +1114,88 @@ M12 final log (this session — transport + registry slice, sweep green):
 - ⬜ M12 remaining build: tool bodies, design resolver, rate-limit
   enforcement (mcp_callwindow), resources/prompts dispatch, MCP driver +
   scenario 19-mcp; item 5 boundary reached (final log + sweep + commit).
+
+M11 final log (this session — WS runtime + scenarios green, sweep green):
+
+- ✅ Scenario 17-collab GREEN on both sides (14 steps): owner ready frame
+  (role/canWrite asserted), welcome sync/step1, ping->pong, client
+  sync/step1 -> sync/step2 whose decoded document is EQUAL across sides
+  (page uuids normalized), HTTP title PATCH -> live `title` frame, unknown
+  text/binary frame 4400 bad_frame, no-session 4401 not_authenticated,
+  foreign Origin HTTP403 at the handshake, trashed design 4404
+  design_trashed.
+- ✅ Scenario 18-collab-guard GREEN (8 steps): designs PATCH document with a
+  live room -> 409 both sides; stats 403 permission_denied (non-staff) and
+  401 (no session) with the DRF `Allow: GET, OPTIONS`.
+- ✅ Scenario 19-collab-share NEW and green (14): edit-link login -> ready
+  role=edit canWrite=true, view-link -> canWrite=false, password link ->
+  error password_required then ready with the password, forged token ->
+  4403 forbidden, pending non-owner -> 4408 auth_timeout.
+- ✅ Scenario 20-collab-limits NEW and green (5): REALTIME_MAX_FRAME_BYTES=64
+  -> 4413 frame_too_large; REALTIME_RATE_MESSAGES_PER_SECOND=1/BURST=1 ->
+  4429 rate_limited.
+- ✅ Scenario 21-collab-peers NEW and green (12): TWO named sockets in one
+  room (owner A + edit-link guest B), B's awareness update relayed to A, B's
+  leave relayed as the `null` awareness entry.
+- ✅ Probe 0014-collab-share pinned the login/limit contract first (link
+  roles, password gate, 4403/4404/4408/4413/4429, sync round trip) — and
+  caught a semantic worth recording: a share-link login REQUIRES a session
+  (an anonymous socket is refused 4401 before auth frames are read).
+- ✅ WS driver grew exactly what the plan listed: cookie jar + Origin
+  override, text/binary (hex) frames, frame-kind matching (sync/step1,
+  sync/step2, awareness), ready-field assertions, server close
+  code+reason assertions, `sends` for rate probes, NAMED SESSIONS across
+  steps (A/B peers) and per-side capture resolution; frames looked past are
+  kept so `ready` and the welcome sync cannot swallow each other.
+- ✅ Loop-caught this stretch (all real, each now covered):
+  1. WS route shape: the oracle serves `/ws/designs/<uuid>/`, NOT
+     `/api/v1/ws/...` (a WSGI-prefix assumption) — the Go route, the runner
+     and the docs now use the bare path.
+  2. Oracle boot: `manage.py runserver` serves the WSGI handler only (no
+     --asgi flag in this Django line), so every design-scoped WS dial 404'd
+     while the probe (uvicorn doory.asgi) was green. The runner now boots the
+     oracle on `uvicorn doory.asgi:application` (and migrates the workdir DB
+     itself; DATABASE_URL, not ORACLE_DATABASE_URL, is what settings read).
+  3. Cookie jar: Go's cookiejar returns NO cookies for a ws:// URL — the
+     dial went out session-less (4401 on the oracle, silence on Go). Lookups
+     now go through the http:// form, and the cookies are joined into ONE
+     Cookie header (Add appended a multi-value header, keeping only the
+     first).
+  4. Per-side captures: a WS step resolved `design_id` from the shared vars,
+     so the Go server was dialed with the ORACLE's design id (no such design
+     -> auth timer -> 4408 instead of ready).
+  5. Awareness frames were batched as document updates: the port only
+     excluded SyncStep1 from the update batch, while upstream requires an
+     actual SyncFrame. Presence updates were applied to the engine and never
+     relayed (scenario 21 caught it; peer A received nothing).
+  6. stats `Allow`: a DRF `@api_view` function view answers `GET, OPTIONS`
+     (only class views alias HEAD) — the collab route was class-styled.
+  7. signals were ported but never called: title/trash/restore/delete and
+     share-link create/update/delete now notify the registry
+     (doory/collab_signals.go), so a live room broadcasts `title` and
+     re-checks access; saves made by the room itself stay suppressed.
+- ✅ Engine gap closed (PATCHES.md 12 + 13): array index operations over
+  decoded multi-value ContentAny batches count VALUES and split the batch
+  (Yjs Item.splitItem — no clock consumed); local interior inserts now carry
+  OriginRight, without which a snapshot round trip appended them. Fixtures:
+  probes/0015-array-index (9 pycrdt cases) reproduced by
+  internal/crdt/array_index_test.go (values, Len, clock accounting,
+  round trip).
+- ✅ `doory collab-maintenance` ports the management command (purge stale
+  presence, save unflushed designs unless a room is live, compact long
+  update logs) with the command's exact summary line.
+- ✅ PORT_MAP collab section reviewed (21 rows: 19 ✅, 2 🟡 with named
+  gaps), `// Ports backend/apps/collab/...` claims added, collab family
+  dispositions written for all 26 upstream test files
+  (ledger/test-mapping-v*.json), D1/D3 evidence extended with the
+  single-process notify substitution and the new engine fixtures.
+- ⬜ Collab family remains 🟡 on named gaps only: password attempt lockout
+  (5 wrong -> 4429 password_locked), connect-rate window, byte-rate bucket,
+  idle timeout, max-participants design_full, link revocation mid-session,
+  slow-apply poison/block_user, live `collab.update` relay for REST edit ops
+  (needs the designs write_changes slice), stats 200 body (no staff
+  promotion path in the paired runner), REALTIME_ENABLED=false route
+  absence, and write_changes/sync_order (designs family).
+- ✅ Final sweep green: pnpm run check, pnpm run parity-fast (15/15),
+  collab scenarios 17/18/19/20/21 green, port-map drift, divergence
+  consistency, lint-scenarios.

@@ -1,5 +1,6 @@
 // The bounded update scanner (apps/collab/protocol.py scan_update): rejects
 // malformed or abusive Y updates WITHOUT applying them.
+// Ports backend/apps/collab/protocol.py
 package yproto
 
 import "sort"

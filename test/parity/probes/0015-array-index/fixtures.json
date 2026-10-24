@@ -1,0 +1,237 @@
+[
+ {
+  "name": "insert-inside-batch",
+  "base_history": [
+   [
+    "a",
+    "b",
+    "c"
+   ]
+  ],
+  "op": {
+   "kind": "insert",
+   "index": 2,
+   "values": [
+    "X"
+   ]
+  },
+  "base": "0101a2cd90ff9d8e8c0b00080109706167654f726465720377016177016277016300",
+  "sv_before": "01a2cd90ff9d8e8c0b03",
+  "values": [
+   "a",
+   "b",
+   "X",
+   "c"
+  ],
+  "len": 4,
+  "sv_after": "01a2cd90ff9d8e8c0b04"
+ },
+ {
+  "name": "insert-at-batch-start",
+  "base_history": [
+   [
+    "a",
+    "b",
+    "c"
+   ]
+  ],
+  "op": {
+   "kind": "insert",
+   "index": 0,
+   "values": [
+    "X"
+   ]
+  },
+  "base": "0101bfedb4bfb58fb80400080109706167654f726465720377016177016277016300",
+  "sv_before": "01bfedb4bfb58fb80403",
+  "values": [
+   "X",
+   "a",
+   "b",
+   "c"
+  ],
+  "len": 4,
+  "sv_after": "01bfedb4bfb58fb80404"
+ },
+ {
+  "name": "insert-at-batch-end",
+  "base_history": [
+   [
+    "a",
+    "b",
+    "c"
+   ]
+  ],
+  "op": {
+   "kind": "insert",
+   "index": 3,
+   "values": [
+    "X"
+   ]
+  },
+  "base": "0101f8aca6e1dec6c90c00080109706167654f726465720377016177016277016300",
+  "sv_before": "01f8aca6e1dec6c90c03",
+  "values": [
+   "a",
+   "b",
+   "c",
+   "X"
+  ],
+  "len": 4,
+  "sv_after": "01f8aca6e1dec6c90c04"
+ },
+ {
+  "name": "insert-multi-values-inside-batch",
+  "base_history": [
+   [
+    "a",
+    "b",
+    "c"
+   ]
+  ],
+  "op": {
+   "kind": "insert",
+   "index": 1,
+   "values": [
+    "X",
+    "Y"
+   ]
+  },
+  "base": "0101a094c9f3b3baa80700080109706167654f726465720377016177016277016300",
+  "sv_before": "01a094c9f3b3baa80703",
+  "values": [
+   "a",
+   "X",
+   "Y",
+   "b",
+   "c"
+  ],
+  "len": 5,
+  "sv_after": "01a094c9f3b3baa80707"
+ },
+ {
+  "name": "delete-one-inside-batch",
+  "base_history": [
+   [
+    "a",
+    "b",
+    "c"
+   ]
+  ],
+  "op": {
+   "kind": "delete",
+   "index": 1,
+   "length": 1
+  },
+  "base": "0101b5dacade96e6c00400080109706167654f726465720377016177016277016300",
+  "sv_before": "01b5dacade96e6c00403",
+  "values": [
+   "a",
+   "c"
+  ],
+  "len": 2,
+  "sv_after": "01b5dacade96e6c00403"
+ },
+ {
+  "name": "delete-across-batch",
+  "base_history": [
+   [
+    "a",
+    "b",
+    "c"
+   ]
+  ],
+  "op": {
+   "kind": "delete",
+   "index": 1,
+   "length": 2
+  },
+  "base": "01019cce99de8bafd70600080109706167654f726465720377016177016277016300",
+  "sv_before": "019cce99de8bafd70603",
+  "values": [
+   "a"
+  ],
+  "len": 1,
+  "sv_after": "019cce99de8bafd70603"
+ },
+ {
+  "name": "delete-tail-of-batch",
+  "base_history": [
+   [
+    "a",
+    "b",
+    "c"
+   ]
+  ],
+  "op": {
+   "kind": "delete",
+   "index": 2,
+   "length": 1
+  },
+  "base": "0101e8dbf9b6c08eda0800080109706167654f726465720377016177016277016300",
+  "sv_before": "01e8dbf9b6c08eda0803",
+  "values": [
+   "a",
+   "b"
+  ],
+  "len": 2,
+  "sv_after": "01e8dbf9b6c08eda0803"
+ },
+ {
+  "name": "insert-between-two-batches",
+  "base_history": [
+   [
+    "a",
+    "b"
+   ],
+   [
+    "c",
+    "d"
+   ]
+  ],
+  "op": {
+   "kind": "insert",
+   "index": 2,
+   "values": [
+    "Z"
+   ]
+  },
+  "base": "0101c3cac9cebab9a60f00080109706167654f726465720477016177016277016377016400",
+  "sv_before": "01c3cac9cebab9a60f04",
+  "values": [
+   "a",
+   "b",
+   "Z",
+   "c",
+   "d"
+  ],
+  "len": 5,
+  "sv_after": "01c3cac9cebab9a60f05"
+ },
+ {
+  "name": "delete-spanning-two-batches",
+  "base_history": [
+   [
+    "a",
+    "b"
+   ],
+   [
+    "c",
+    "d"
+   ]
+  ],
+  "op": {
+   "kind": "delete",
+   "index": 1,
+   "length": 2
+  },
+  "base": "0101abe2aeec91de910f00080109706167654f726465720477016177016277016377016400",
+  "sv_before": "01abe2aeec91de910f04",
+  "values": [
+   "a",
+   "d"
+  ],
+  "len": 2,
+  "sv_after": "01abe2aeec91de910f04"
+ }
+]

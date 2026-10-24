@@ -967,6 +967,252 @@
           "DNS/private-address decision table (needs fake hosts)"
         ]
       }
+    },
+    "collab": {
+      "backend/apps/collab/tests/__init__.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "package marker"
+        ]
+      },
+      "backend/apps/collab/tests/conftest.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:collab/17-collab, 19-collab-share, 20-collab-limits, 21-collab-peers (scenario fixtures replace the pytest env/registry fixtures)"
+        ],
+        "missing": [
+          "in-process registry injection helper (Go tests construct App directly)",
+          "redis channel-layer fixture (n/a, D1)"
+        ]
+      },
+      "backend/apps/collab/tests/helpers.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "pytest helpers (frame encoders/decoders) — internal/yproto + internal/crdt cover the same encoders"
+        ]
+      },
+      "backend/apps/collab/tests/hostile.py": {
+        "disposition": "partial",
+        "evidence": [
+          "internal/yproto scan_fixtures: 7 crafted hostile updates (truncated, trailing, huge clients, unknown roots, reference gaps, 40-level nesting)"
+        ],
+        "missing": [
+          "the remaining crafted variants (see test_protocol/test_hardening)"
+        ]
+      },
+      "backend/apps/collab/tests/fixtures/": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "fuzz_replay.json corpus replay (pending with test_fuzz_replay)"
+        ]
+      },
+      "backend/apps/collab/tests/interop/": {
+        "disposition": "partial",
+        "evidence": [
+          "internal/crdt: 12-batch oracle edit stream applied by yjs-go; Go witness update applied by pycrdt (go_updates/verdict.json)"
+        ],
+        "missing": [
+          "driving the real y-websocket JS client against the Go server (node harness)"
+        ]
+      },
+      "backend/apps/collab/tests/peer.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:collab/21-collab-peers (two live sockets, link login, presence relay)",
+          "test/parity/runner ws sessions"
+        ],
+        "missing": [
+          "pytest peer helper parity (asserts on the same frames)"
+        ]
+      },
+      "backend/apps/collab/tests/test_access_changes.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:collab/19-collab-share (link role/expiry/revocation refusals)",
+          "parity:collab/17-collab (design_trashed 4404)"
+        ],
+        "missing": [
+          "link revoked while joined (recheck closes the member)",
+          "role downgrade mid-session",
+          "owner block after slow update"
+        ]
+      },
+      "backend/apps/collab/tests/test_api_edits.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "designs live-edit ops (fill/fields/bulk_fill) are the designs family's pending slice; collab.update notify is wired but no op path exercises it"
+        ]
+      },
+      "backend/apps/collab/tests/test_auth.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:collab/19-collab-share (edit/view/password links, forged token 4403, no-session 4401, pending 4408)",
+          "parity:collab/20-collab-limits (frame/rate 4413/4429)"
+        ],
+        "missing": [
+          "password attempt lockout (5 wrong -> 4429 password_locked)",
+          "auth-frame size/non-object edges",
+          "auth_required before any frame"
+        ]
+      },
+      "backend/apps/collab/tests/test_budget.py": {
+        "disposition": "partial",
+        "evidence": [
+          "doory/collab_engine_test.go conformance (budget outcomes/reasons from engine_fixtures)",
+          "internal/yproto scanner limits"
+        ],
+        "missing": [
+          "per-design budget counters visible through stats"
+        ]
+      },
+      "backend/apps/collab/tests/test_command.py": {
+        "disposition": "partial",
+        "evidence": [
+          "doory/collab_maintenance.go + `doory collab-maintenance` (summary line: saved/skipped/failed/compacted/removed)"
+        ],
+        "missing": [
+          "crash-recovery fixture (Y state ahead of the document) driven through the paired runner — the CLI smoke proves the wiring only"
+        ]
+      },
+      "backend/apps/collab/tests/test_connect.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:collab/17-collab (ready shape, welcome sync, ping/pong, close codes)"
+        ],
+        "missing": [
+          "connect-rate window per minute (block_user/connects-per-minute)"
+        ]
+      },
+      "backend/apps/collab/tests/test_fuzz_replay.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "replay the recorded fuzz corpus through internal/yproto scan + engine"
+        ]
+      },
+      "backend/apps/collab/tests/test_hardening.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:collab/20-collab-limits (oversize frame 4413, message rate 4429)",
+          "internal/yproto scanner bounds (depth, clients, refs)"
+        ],
+        "missing": [
+          "byte-rate bucket",
+          "idle timeout 4408",
+          "max participants 4429 design_full"
+        ]
+      },
+      "backend/apps/collab/tests/test_interop.py": {
+        "disposition": "partial",
+        "evidence": [
+          "internal/crdt conformance both directions against pycrdt 0.14.10 (probes/0011-collab-crdt)"
+        ],
+        "missing": [
+          "y-websocket client driving the Go server"
+        ]
+      },
+      "backend/apps/collab/tests/test_multi_process.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "n/a by design: D1 single process; the channel-layer relay is replaced by direct registry calls (notify.py row)"
+        ]
+      },
+      "backend/apps/collab/tests/test_persistence.py": {
+        "disposition": "partial",
+        "evidence": [
+          "doory/collab_store.go ported (snapshot+updates, flush CAS, replacement CAS, compaction, admit/heartbeat)",
+          "parity:collab/18-collab-guard (room_is_live guard)"
+        ],
+        "missing": [
+          "crash-recovery flush scenarios",
+          "auto-version on room save",
+          "compaction threshold run"
+        ]
+      },
+      "backend/apps/collab/tests/test_protocol.py": {
+        "disposition": "partial",
+        "evidence": [
+          "internal/yproto conformance: 22/22 scanner verdicts + counters/extents byte-equal",
+          "frame parse/state vector/awareness fixtures"
+        ],
+        "missing": [
+          "remaining crafted protocol edges (trailing bytes on awareness, query-awareness with payload)"
+        ]
+      },
+      "backend/apps/collab/tests/test_redis_layer.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "n/a by design: D1 single process, no shared channel layer (recorded in DIVERGENCES D1)"
+        ]
+      },
+      "backend/apps/collab/tests/test_rest.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:collab/18-collab-guard (409 use_realtime; stats 403/401 with Allow GET, OPTIONS)",
+          "parity:collab/17-collab (trash 4404)"
+        ],
+        "missing": [
+          "stats 200 body (staff promotion is not available through the API in the paired runner)",
+          "shared-link PATCH guard 409"
+        ]
+      },
+      "backend/apps/collab/tests/test_robustness.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:collab/17-collab (bad text/binary frame 4400, foreign origin HTTP 403)"
+        ],
+        "missing": [
+          "slow-apply poisoning + block_user",
+          "inbox/outbox pressure",
+          "room crash 1011 / shutdown 1013"
+        ]
+      },
+      "backend/apps/collab/tests/test_schema.py": {
+        "disposition": "partial",
+        "evidence": [
+          "internal/yschema: write/read roundtrips of all four fixture documents, oracle snapshot reads, edit-stream final state, concurrent convergence, repair + anomalies"
+        ],
+        "missing": [
+          "write_changes/sync_order diff cases (designs slice pending)"
+        ]
+      },
+      "backend/apps/collab/tests/test_sync.py": {
+        "disposition": "partial",
+        "evidence": [
+          "parity:collab/17-collab (sync/step2 decoded document equal across sides)",
+          "parity:collab/21-collab-peers (awareness relay both directions)",
+          "internal/crdt conformance (merge paths, concurrent convergence)"
+        ],
+        "missing": [
+          "update relay between two writers (needs a client-generated update fixture applied through the room)",
+          "awareness expiry",
+          "controlled-client cap"
+        ]
+      },
+      "backend/apps/collab/tests/test_units.py": {
+        "disposition": "partial",
+        "evidence": [
+          "internal/crdt array_index_test (0015-array-index: 9 oracle cases)",
+          "internal/yproto varuint/frame unit coverage via conformance"
+        ],
+        "missing": [
+          "version tracker unit cases",
+          "token bucket unit cases (clock-injected)"
+        ]
+      },
+      "backend/apps/collab/tests/test_write_changes.py": {
+        "disposition": "pending",
+        "evidence": [],
+        "missing": [
+          "write_changes/sync_order (designs edits diff engine) — designs family pending slice"
+        ]
+      }
     }
   }
 }

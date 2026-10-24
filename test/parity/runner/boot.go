@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -82,12 +83,35 @@ func (r *Run) bootPair(sc *Scenario, renderURL string) (*Side, *Side, error) {
 	oracle := &Side{Name: "oracle", Base: fmt.Sprintf("http://127.0.0.1:%d", oraclePort)}
 	oracleLog := filepath.Join(r.WorkDir, "oracle.log")
 	oracle.log, _ = os.Create(oracleLog)
-	oracleCmd := exec.Command("bash", "tools/oracle/serve.sh")
-	oracleCmd.Dir = r.Repo
+	// The oracle boots on the ASGI application (uvicorn doory.asgi:application):
+	// Django's runserver serves the WSGI handler only (no --asgi flag in this
+	// Django line), while the collab realtime WS lives behind the ASGI
+	// ProtocolTypeRouter — a WSGI boot answers the design-scoped WS dial with
+	// handler404's plain page instead of routing it (the scenario-17/18 dial
+	// 404 was this, not a design-scoped route miss).
+	pythonBin := filepath.Join(r.Repo, ".oracle", "venv", "bin", "python")
+	oracleBackend := filepath.Join(r.Repo, ".upstream", "current", "backend")
+	oracleMigrate := exec.Command(pythonBin, "manage.py", "migrate", "--noinput")
+	oracleMigrate.Dir = oracleBackend
+	oracleMigrate.Env = append(os.Environ(),
+		"DJANGO_SETTINGS_MODULE=doory.settings.prod",
+		"DATABASE_URL=sqlite:///"+filepath.Join(r.WorkDir, "oracle.sqlite3"),
+		"MEDIA_ROOT="+media,
+		"EXPORT_STORAGE_ROOT="+exports,
+		"DJANGO_SECRET_KEY=parity-oracle-secret-key-0123456789",
+		"SECURE_SSL_REDIRECT=false",
+		"SECURE_COOKIES=false",
+	)
+	if out, err := oracleMigrate.CombinedOutput(); err != nil {
+		return nil, nil, fmt.Errorf("oracle migrate: %v\n%s", err, out)
+	}
+	oracleCmd := exec.Command(pythonBin, "-m", "uvicorn", "doory.asgi:application",
+		"--host", "127.0.0.1", "--port", strconv.Itoa(int(oraclePort)), "--log-level", "warning")
+	oracleCmd.Dir = oracleBackend
 	oracleCmd.Env = append(os.Environ(),
 		fmt.Sprintf("ORACLE_PORT=%d", oraclePort),
-		"ORACLE_SETTINGS=doory.settings.prod",
-		"ORACLE_DATABASE_URL=sqlite:///"+filepath.Join(r.WorkDir, "oracle.sqlite3"),
+		"DJANGO_SETTINGS_MODULE=doory.settings.prod",
+		"DATABASE_URL=sqlite:///"+filepath.Join(r.WorkDir, "oracle.sqlite3"),
 		"MEDIA_ROOT="+media,
 		"EXPORT_STORAGE_ROOT="+exports,
 	)

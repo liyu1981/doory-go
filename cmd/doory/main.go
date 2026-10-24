@@ -3,9 +3,11 @@
 //
 // Subcommands:
 //
-//	serve     HTTP + (later) WS + MCP on one listener (D1 flags split them)
-//	migrate   apply the embedded schema for the DATABASE_URL dialect (D4)
-//	version   print the port version and its upstream pin
+//	serve                 HTTP + WS + MCP on one listener (D1 flags split them)
+//	migrate               apply the embedded schema for the DATABASE_URL dialect (D4)
+//	collab-maintenance    save unflushed live designs, compact long update logs,
+//	                      drop presence rows of dead processes (ops cron)
+//	version               print the port version and its upstream pin
 package main
 
 import (
@@ -53,6 +55,16 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Println("migrate: ok")
+	case "collab-maintenance":
+		// apps/collab/management/commands/collab_maintenance.py
+		s := doory.FromEnv()
+		db, _, err := doory.OpenDB(s.DatabaseURL)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "collab-maintenance:", err)
+			os.Exit(1)
+		}
+		defer db.Close()
+		doory.NewApp(s, db).RunCollabMaintenance(os.Stdout)
 	case "serve":
 		addr := envOr("DOORY_ADDR", ":8000")
 		for _, a := range args {
@@ -75,7 +87,7 @@ func main() {
 			os.Exit(1)
 		}
 	default:
-		fmt.Fprintf(os.Stderr, "unknown command %q (want serve|migrate|version)\n", cmd)
+		fmt.Fprintf(os.Stderr, "unknown command %q (want serve|migrate|collab-maintenance|version)\n", cmd)
 		os.Exit(2)
 	}
 }

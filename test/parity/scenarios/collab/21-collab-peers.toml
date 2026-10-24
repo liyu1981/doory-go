@@ -1,0 +1,91 @@
+# Behavior family: collab (family 15, PLAN.md M11) — TWO connections in one
+# room: the owner plus a guest joined through an edit link, and the presence
+# relay between them.
+#
+# Named sessions keep both sockets alive across steps (the runner dials them
+# once and reuses them), so B's join and B's awareness frame are observed on
+# A's already-joined socket — the A/B role shape the M11 plan calls for.
+#
+# Probe lineage: probes/0014-collab-share (link login: ready role=edit) and
+# probes/0012-collab (owner ready + welcome sync). The awareness frame below is
+# a fixed y-protocol awareness update (client 424242, clock 1, one user), so
+# both servers relay the same protocol shape to the peer that is already in
+# the room. Content is not byte-compared: the room fills the identity from the
+# member row (per-side user ids).
+
+name = "21-collab-peers"
+description = "Realtime collab with two peers: owner + edit-link guest, presence relay in both directions."
+driver = "ws"
+family = "collab"
+tags = []
+dialects = ["sqlite"]
+covers = [
+  "backend/apps/collab/room.py",
+  "backend/apps/collab/access.py",
+]
+
+[env]
+DJANGO_SECRET_KEY = "parity-oracle-secret-key-0123456789"
+SECURE_COOKIES = "false"
+REALTIME_ENABLED = "true"
+SITE_URL = "http://localhost:5173"
+
+# ---- owner + design + edit link ----
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/csrf/"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/register/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"peer21-owner@example.com","password":"Tr0ub4dor&3xkcd9"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"title":"Peers"}'
+capture = { did = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/{{capture:did}}/share-links/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"role":"edit"}'
+capture = { tok_e = "\"token\":\"([A-Za-z0-9_-]{32})\"" }
+
+# ---- guest account (separate jar) ----
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/csrf/"
+jar = "guest"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/register/"
+jar = "guest"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"peer21-guest@example.com","password":"Tr0ub4dor&3xkcd9"}'
+
+# ---- peer A (owner) joins and stays ----
+[[steps]]
+ws = { action = "expect", session = "A", design_id = "{{capture:did}}", expect = "ready", expect_role = "owner", expect_can_write = true, expect_binary_kind = "sync/step1" }
+
+# ---- peer B (guest via edit link) joins and stays ----
+[[steps]]
+ws = { action = "expect", session = "B", design_id = "{{capture:did}}", jar = "guest", send = '{"type":"auth","token":"{{capture:tok_e}}"}', expect_after = "ready", expect_after_role = "edit", expect_after_can_write = true }
+
+# B announces presence: A receives the relayed awareness frame.
+[[steps]]
+ws = { action = "expect", session = "B", design_id = "{{capture:did}}", jar = "guest", send = "011b01b2f21901157b2275736572223a7b226e616d65223a2242227d7d" }
+
+[[steps]]
+ws = { action = "expect", session = "A", design_id = "{{capture:did}}", expect_binary_kind = "awareness" }
+
+# B leaves; the room tells A (awareness "null" for that client).
+[[steps]]
+ws = { action = "close", session = "B", design_id = "{{capture:did}}", close_code = 1000, close_reason = "bye" }
+
+[[steps]]
+ws = { action = "expect", session = "A", design_id = "{{capture:did}}", expect_binary_kind = "awareness", close_code = 1000, close_reason = "bye" }

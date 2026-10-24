@@ -7,6 +7,7 @@
 // a crafted update (deep nesting, references to history the document does not
 // have) can crash the process or grow memory without bound. ProtocolError
 // closes the connection with 4400 (apps/collab consumers).
+// Ports backend/apps/collab/protocol.py
 package yproto
 
 import (

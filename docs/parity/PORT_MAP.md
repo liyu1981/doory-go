@@ -179,27 +179,27 @@ behavioral verification).
 
 | upstream | go | status |
 |---|---|---|
-| `backend/apps/collab/access.py` |  | ⬜ |
-| `backend/apps/collab/apps.py` |  | ⬜ |
-| `backend/apps/collab/availability.py` |  | ⬜ |
-| `backend/apps/collab/consumers.py` |  | ⬜ |
-| `backend/apps/collab/crdt.py` |  | ⬜ |
-| `backend/apps/collab/engine.py` |  | ⬜ |
-| `backend/apps/collab/limits.py` |  | ⬜ |
-| `backend/apps/collab/management/` |  | ⬜ |
-| `backend/apps/collab/middleware.py` |  | ⬜ |
-| `backend/apps/collab/migrations/` |  | ⬜ |
-| `backend/apps/collab/models.py` |  | ⬜ |
-| `backend/apps/collab/notify.py` |  | ⬜ |
-| `backend/apps/collab/protocol.py` |  | ⬜ |
-| `backend/apps/collab/room.py` |  | ⬜ |
-| `backend/apps/collab/routing.py` |  | ⬜ |
-| `backend/apps/collab/schema.py` |  | ⬜ |
-| `backend/apps/collab/signals.py` |  | ⬜ |
-| `backend/apps/collab/store.py` |  | ⬜ |
-| `backend/apps/collab/tests/` |  | ⬜ |
-| `backend/apps/collab/urls.py` |  | ⬜ |
-| `backend/apps/collab/views.py` |  | ⬜ |
+| `backend/apps/collab/access.py` | doory/collab_access.go (Grant/Forbidden/DesignGone/PasswordNeeded/Locked, owner/link grants over the sharing helpers, origin_allowed incl. Django validate_host) | ✅ |
+| `backend/apps/collab/apps.py` | doory/app.go (registry wired at boot; signals land in doory/collab_signals.go) | ✅ |
+| `backend/apps/collab/availability.py` | doory/settings.go + doory/views.go (Realtime flag in /config/, max participants) | ✅ |
+| `backend/apps/collab/consumers.py` | doory/collab_consumer.go + doory/collab_consumer_read.go (origin validator, connect/login/refuse 44xx, ready frame, limits, ping/flush/bad_frame, scan+submit) | ✅ |
+| `backend/apps/collab/crdt.py` | internal/crdt (yjs-go engine wrapper; D3 substitution, conformance-proven both directions in probes/0011-collab-crdt) | ✅ |
+| `backend/apps/collab/engine.py` | doory/collab_engine.go (apply_client_updates/budgets/slow-apply/noop/merged delta/pages_gone, convert, repair delta, replacement) | ✅ |
+| `backend/apps/collab/limits.py` | doory/collab_limits.go (TokenBucket from settings; per-account connect window + block in-process) | ✅ |
+| `backend/apps/collab/management/` | doory/collab_maintenance.go + cmd/doory/main.go (`collab-maintenance`: purge stale presence, save unflushed designs, compact logs) | ✅ |
+| `backend/apps/collab/middleware.py` | doory/collab_presence.go + doory/designs_views.go (409 use_realtime guard on document PATCH) | ✅ |
+| `backend/apps/collab/migrations/` | doory/migrations/0001_initial.sqlite.sql (collab_ystate/yupdate/roomconnection/collabinstance) | ✅ |
+| `backend/apps/collab/models.py` | doory/collab_store.go + doory/collab_presence.go (YState/YUpdate/RoomConnection/CollabInstance rows) | ✅ |
+| `backend/apps/collab/notify.py` | doory/collab_room.go (registry notify; single-process substitution of the channel layer) | ✅ |
+| `backend/apps/collab/protocol.py` | internal/yproto (lib0 reader/writer, frame parse, state vectors, awareness, bounded update scanner) | ✅ |
+| `backend/apps/collab/room.py` | doory/collab_room.go + collab_room_tasks.go + collab_room_saving.go (actor, members, version tracker, awareness, welcome/relay, flush/recheck/repair/compact) | ✅ |
+| `backend/apps/collab/routing.py` | doory/app.go (/ws/designs/{uuid}/ route, bare path as the oracle's). REALTIME_ENABLED=false does not gate the Go route yet (upstream registers no WS route at all); the config flag is exposed and no scenario boots with realtime off — recorded as the row's remaining gap. | 🟡 |
+| `backend/apps/collab/schema.py` | internal/yschema (document<->Y mapping, defensive reader/anomalies, repair, json_equal) | ✅ |
+| `backend/apps/collab/signals.py` | doory/collab_signals.go + designs/sharing write paths (design_saved title/recheck, link_changed, design_deleted) | ✅ |
+| `backend/apps/collab/store.py` | doory/collab_store.go + doory/collab_presence.go (load/init, snapshot+updates, flush/replacement CAS, compaction, admit/release/heartbeat/room_is_live, check_access) | ✅ |
+| `backend/apps/collab/tests/` | (dispositions: ledger/test-mapping-v*.json) | 🟡 |
+| `backend/apps/collab/urls.py` | doory/app.go (collab/stats route, AllowAPIView GET,OPTIONS) | ✅ |
+| `backend/apps/collab/views.py` | doory/collab_stats.go (staff-only stats shape) | ✅ |
 
 ## `backend/apps/core/`
 

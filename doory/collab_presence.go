@@ -2,6 +2,8 @@
 // admit/release/heartbeat rows, the live-room test behind the409
 // use_realtime guard, and check_access — why each connection must close now.
 
+// Ports backend/apps/collab/store.py
+// Ports backend/apps/collab/middleware.py
 package doory
 
 import (

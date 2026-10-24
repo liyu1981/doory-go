@@ -6,6 +6,8 @@ package runner
 
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -95,6 +97,8 @@ func Execute(repo string, sc *Scenario, renderURL string) ([]string, error) {
 	defer r.shutdown(oracle, goSide)
 
 	var problems []string
+	wsSessions := newWsSessionStore()
+	defer wsSessions.closeAll()
 	captures := map[string]map[string]string{"oracle": {}, "go": {}}
 	vars := map[string]string{}
 	for i, step := range sc.Steps {
@@ -114,7 +118,7 @@ func Execute(repo string, sc *Scenario, renderURL string) ([]string, error) {
 			wsStep = sc.Ws
 		}
 		if wsStep != nil {
-			stepProblems = runWsStep(i, oracle, goSide, *wsStep, vars, captures)
+			stepProblems = runWsStep(i, oracle, goSide, *wsStep, vars, captures, wsSessions)
 			if len(stepProblems) > 0 {
 				status = "diff"
 			}
@@ -320,33 +324,145 @@ func cookieStableCheck(pre string, cap *capture) string {
 
 // runWsStep replays one WebSocket interaction (dial/send/expect/close) on
 // both sides of the pair and reports expectation problems.
-func runWsStep(i int, oracle, goSide *Side, step WsStep, vars map[string]string, captures map[string]map[string]string) []string {
+func runWsStep(i int, oracle, goSide *Side, step WsStep, vars map[string]string,
+	captures map[string]map[string]string, sessions *wsSessionStore,
+) []string {
 	var problems []string
-	designID := resolveCaptures(step.DesignID, vars)
-	if designID == "" {
+	// design_id resolves PER SIDE: each side must dial the id IT created
+	// (capture values differ between oracle and Go; the shared `vars` map
+	// keeps only the first side's value, so dialing that id on the other
+	// server lands on a nonexistent design and burns the auth timer instead
+	// of producing the ready frame).
+	if resolveCaptures(step.DesignID, vars) == "" {
 		return []string{fmt.Sprintf("step %02d: ws: missing design_id", i+1)}
 	}
+	// documents collects the decoded document of each side's sync/step2 so the
+	// CRDT roundtrip can be compared ACROSS sides after both replays.
+	documents := map[string]any{}
+	haveDocument := map[string]bool{}
 	for _, pair := range []struct {
 		name string
 		side *Side
 	}{{"oracle", oracle}, {"go", goSide}} {
-		s, err := dialWs(pair.side, designID, step.Jar)
-		if err != nil {
-			problems = append(problems, fmt.Sprintf("step %02d: ws(%s): dial: %v", i+1, pair.name, err))
+		designID := resolveCaptures(step.DesignID, captures[pair.name])
+		if designID == "" {
+			problems = append(problems, fmt.Sprintf("step %02d: ws(%s): missing design_id", i+1, pair.name))
+			continue
+		}
+		s := sessions.get(step.Session, pair.name)
+		if s != nil && step.Origin != "" {
+			s = nil // a different Origin needs a fresh handshake
+		}
+		if s == nil {
+			var err error
+			s, err = dialWs(pair.side, designID, step.Jar, step.Origin)
+			if err != nil {
+				var dialErr *wsDialError
+				if step.ExpectDialStatus != 0 && errors.As(err, &dialErr) && dialErr.Status == step.ExpectDialStatus {
+					continue // the refusal IS the assertion (foreign Origin -> 403)
+				}
+				problems = append(problems, fmt.Sprintf("step %02d: ws(%s): dial: %v", i+1, pair.name, err))
+				continue
+			}
+			sessions.set(step.Session, pair.name, s)
+		}
+		if step.ExpectDialStatus != 0 {
+			problems = append(problems, fmt.Sprintf("step %02d: ws(%s): dial succeeded, expected HTTP %d",
+				i+1, pair.name, step.ExpectDialStatus))
+			s.closeIfNeeded()
 			continue
 		}
 		switch step.Action {
-		case "connect":
-			if _, err := s.waitForType(step.Expect, 10*time.Second); err != nil {
-				problems = append(problems, fmt.Sprintf("step %02d: ws(%s) connect: %v", i+1, pair.name, err))
+		case "connect", "expect":
+			if step.Expect != "" {
+				f, err := s.waitForType(step.Expect, 10*time.Second)
+				if err != nil {
+					problems = append(problems, fmt.Sprintf("step %02d: ws(%s) connect: %v", i+1, pair.name, err))
+				} else {
+					problems = append(problems, assertFrame(i, pair.name, step, f)...)
+				}
+			}
+			if step.ExpectBinaryKind != "" {
+				f, err := s.waitForBinaryKind(step.ExpectBinaryKind, 10*time.Second)
+				if err != nil {
+					problems = append(problems, fmt.Sprintf("step %02d: ws(%s) binary: %v", i+1, pair.name, err))
+				} else if step.ExpectDocument != "" {
+					doc, derr := decodeSyncDocument(f.Data)
+					if derr != nil {
+						problems = append(problems, fmt.Sprintf("step %02d: ws(%s): decode %s: %v",
+							i+1, pair.name, step.ExpectBinaryKind, derr))
+					} else {
+						documents[pair.name] = normalizeDocument(doc)
+						haveDocument[pair.name] = true
+					}
+				}
 			}
 			if step.Send != "" {
-				if err := s.send(step.Send); err != nil {
+				if os.Getenv("PARITY_WS_DEBUG") != "" {
+					fmt.Printf("      ws(%s) send: %s\n", pair.name, resolveCaptures(step.Send, captures[pair.name]))
+				}
+				if err := s.send(resolveCaptures(step.Send, captures[pair.name])); err != nil {
 					problems = append(problems, fmt.Sprintf("step %02d: ws(%s) send: %v", i+1, pair.name, err))
+					break
 				}
 				if step.ExpectAfter != "" {
-					if _, err := s.waitForType(step.ExpectAfter, 10*time.Second); err != nil {
+					f, err := s.waitForType(step.ExpectAfter, 10*time.Second)
+					if err != nil {
 						problems = append(problems, fmt.Sprintf("step %02d: ws(%s) expect: %v", i+1, pair.name, err))
+					} else {
+						if step.ExpectAfterCode != "" && frameCode(f) != step.ExpectAfterCode {
+							problems = append(problems, fmt.Sprintf("step %02d: ws(%s): %s code=%q, want %q",
+								i+1, pair.name, step.ExpectAfter, frameCode(f), step.ExpectAfterCode))
+						}
+						after := step
+						after.Expect = step.ExpectAfter
+						after.ExpectCode = step.ExpectAfterCode
+						after.ExpectRole = step.ExpectAfterRole
+						after.ExpectCanWrite = step.ExpectAfterWrite
+						problems = append(problems, assertFrame(i, pair.name, after, f)...)
+					}
+				}
+				if step.ExpectAfterBinary != "" {
+					f, err := s.waitForBinaryKind(step.ExpectAfterBinary, 10*time.Second)
+					if err != nil {
+						problems = append(problems, fmt.Sprintf("step %02d: ws(%s) binary: %v", i+1, pair.name, err))
+					} else if step.ExpectAfterDoc != "" {
+						doc, derr := decodeSyncDocument(f.Data)
+						if derr != nil {
+							problems = append(problems, fmt.Sprintf("step %02d: ws(%s): decode %s: %v",
+								i+1, pair.name, step.ExpectAfterBinary, derr))
+						} else {
+							documents[pair.name] = normalizeDocument(doc)
+							haveDocument[pair.name] = true
+						}
+					}
+				}
+			}
+			for _, extra := range step.Sends {
+				frame := resolveCaptures(extra, captures[pair.name])
+				if err := s.send(frame); err != nil {
+					// The server may close between two frames of a rate probe:
+					// when a close is expected, the pending waitForClose below
+					// owns the verdict.
+					if step.ExpectCloseCode == 0 {
+						problems = append(problems, fmt.Sprintf("step %02d: ws(%s) send: %v", i+1, pair.name, err))
+					}
+					break
+				}
+				time.Sleep(60 * time.Millisecond) // over the 1-message/second rate
+			}
+			if step.ExpectCloseCode != 0 || step.ExpectCloseReason != "" {
+				code, reason, err := s.waitForClose(15 * time.Second)
+				if err != nil {
+					problems = append(problems, fmt.Sprintf("step %02d: ws(%s) close: %v", i+1, pair.name, err))
+				} else {
+					if step.ExpectCloseCode != 0 && code != step.ExpectCloseCode {
+						problems = append(problems, fmt.Sprintf("step %02d: ws(%s): close code=%d, want %d",
+							i+1, pair.name, code, step.ExpectCloseCode))
+					}
+					if step.ExpectCloseReason != "" && reason != step.ExpectCloseReason {
+						problems = append(problems, fmt.Sprintf("step %02d: ws(%s): close reason=%q, want %q",
+							i+1, pair.name, reason, step.ExpectCloseReason))
 					}
 				}
 			}
@@ -363,6 +479,14 @@ func runWsStep(i int, oracle, goSide *Side, step WsStep, vars map[string]string,
 					problems = append(problems, fmt.Sprintf("step %02d: ws(%s) expect: %v", i+1, pair.name, err))
 				}
 			}
+			if step.ExpectCloseCode != 0 {
+				if code, _, err := s.waitForClose(15 * time.Second); err != nil {
+					problems = append(problems, fmt.Sprintf("step %02d: ws(%s) close: %v", i+1, pair.name, err))
+				} else if code != step.ExpectCloseCode {
+					problems = append(problems, fmt.Sprintf("step %02d: ws(%s): close code=%d, want %d",
+						i+1, pair.name, code, step.ExpectCloseCode))
+				}
+			}
 		case "close":
 			if err := s.close(step.CloseCode, step.CloseReason); err != nil {
 				problems = append(problems, fmt.Sprintf("step %02d: ws(%s) close: %v", i+1, pair.name, err))
@@ -370,7 +494,46 @@ func runWsStep(i int, oracle, goSide *Side, step WsStep, vars map[string]string,
 		default:
 			problems = append(problems, fmt.Sprintf("step %02d: ws(%s): unknown action %q", i+1, pair.name, step.Action))
 		}
-		s.closeIfNeeded()
+		if step.Session == "" || step.CloseCode > 0 || step.CloseReason != "" || step.Action == "close" {
+			sessions.drop(step.Session, pair.name)
+			s.closeIfNeeded()
+		}
+	}
+	// CRDT roundtrip parity: the update each server sent back must reconstruct
+	// the SAME document (normalized page/object ids) on both sides.
+	if (step.ExpectDocument != "" || step.ExpectAfterDoc != "") && haveDocument["oracle"] && haveDocument["go"] {
+		left, _ := json.Marshal(documents["oracle"])
+		right, _ := json.Marshal(documents["go"])
+		if os.Getenv("PARITY_WS_DEBUG") != "" {
+			fmt.Printf("      ws document: %s\n", left)
+		}
+		if string(left) != string(right) {
+			problems = append(problems, fmt.Sprintf("step %02d: ws document differs (expect_document %s):\n      oracle: %s\n      go:    %s",
+				i+1, step.ExpectDocument, left, right))
+		}
+	}
+	return problems
+}
+
+// assertFrame checks the optional ready-frame assertions (code/role/canWrite).
+func assertFrame(i int, side string, step WsStep, f *wsFrame) []string {
+	var problems []string
+	if step.ExpectCode != "" && frameCode(f) != step.ExpectCode {
+		problems = append(problems, fmt.Sprintf("step %02d: ws(%s): %s code=%q, want %q",
+			i+1, side, step.Expect, frameCode(f), step.ExpectCode))
+	}
+	if step.ExpectRole != "" {
+		if got := frameString(f, "role"); got != step.ExpectRole {
+			problems = append(problems, fmt.Sprintf("step %02d: ws(%s): ready role=%q, want %q",
+				i+1, side, got, step.ExpectRole))
+		}
+	}
+	if step.ExpectCanWrite != nil {
+		got, ok := frameBool(f, "canWrite")
+		if !ok || got != *step.ExpectCanWrite {
+			problems = append(problems, fmt.Sprintf("step %02d: ws(%s): ready canWrite=%v (present=%v), want %v",
+				i+1, side, got, ok, *step.ExpectCanWrite))
+		}
 	}
 	return problems
 }

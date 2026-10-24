@@ -363,14 +363,20 @@ func NewApp(s *Settings, db *sql.DB) *App {
 		Route{
 			// Collab WebSocket (apps/collab, ASGI ws/designs/<uuid>/): the
 			// origin validator refuses the handshake (HTTP403) inside the
-			// handler;44xx codes are sent after accept (probe0012).
-			Path: "/api/v1/ws/designs/{uuid}/", Methods: []string{"GET"}, Style: AllowClass,
+			// handler;44xx codes are sent after accept (probe0012). Route
+			// shape is the ORACLE's bare /ws/designs/<uuid>/ — the /api/v1
+			// prefix is the API namespace, not the websocket route (ledger
+			// routes-v2eb2557…: ws/designs/<uuid:design_id>/; probe0012).
+			Path: "/ws/designs/{uuid}/", Methods: []string{"GET"}, Style: AllowClass,
 			Session: SessionConsult,
 			Handler: a.HandleCollabWS,
 		},
 		Route{
-			// collab/stats: staff-only observability (IsAdminUser).
-			Path: "/api/v1/collab/stats/", Methods: []string{"GET"}, Style: AllowClass,
+			// collab/stats: staff-only observability (IsAdminUser). A DRF
+			// @api_view function view: Allow "GET, OPTIONS" (no HEAD — only
+			// class-based views alias head=get; parity scenario 18 caught
+			// the class-style "GET, HEAD, OPTIONS").
+			Path: "/api/v1/collab/stats/", Methods: []string{"GET"}, Style: AllowAPIView,
 			Session: SessionConsult, Require: RequireAlways,
 			Handler: a.collabStats,
 		},
@@ -444,7 +450,7 @@ func (a *App) notFound(w http.ResponseWriter, r *http.Request) {
 func (a *App) Handler() http.Handler {
 	stack := buildStack(a.Router, a.Settings)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/api/v1/ws/") {
+		if strings.HasPrefix(r.URL.Path, "/ws/designs/") {
 			// The WebSocket upgrade hijacks the connection; it must see the
 			// raw writer (buffering would break http.Hijacker — probe0012).
 			stack.ServeHTTP(w, r)

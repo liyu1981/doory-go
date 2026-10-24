@@ -1,5 +1,13 @@
 # Behavior family: collab (family 15, PLAN.md M11) — collab guard rails:
 # the designs PATCH realtime guard (409 use_realtime) + staff-only stats.
+#
+# Probe lineage: probes/0014-collab-share (L7 handshake refusal, live rooms)
+# and the live stats check recorded in the M11 log: the endpoint is behind
+# IsAdminUser, so a non-staff session answers 403 permission_denied and no
+# session at all answers 401 (DRF default permission denial order). The 200
+# body carries per-process heartbeat timestamps and instance ids, so the
+# staff-200 shape is asserted structurally by the endpoint's own unit port
+# rather than byte-compared here.
 
 name = "18-collab-guard"
 description = "Realtime collab guard: designs PATCH realtime 409 with a live room + staff-only stats."
@@ -9,6 +17,7 @@ tags = []
 dialects = ["sqlite"]
 covers = [
   "backend/apps/collab/middleware.py",
+  "backend/apps/collab/views.py",
 ]
 
 [env]
@@ -39,6 +48,17 @@ path = "/api/v1/designs/{{capture:did}}/"
 
 [[steps]]
 ws = { action = "connect", design_id = "{{capture:did}}", expect = "ready", close_code = 0, close_reason = "" }
+
+# stats is staff-only: the live room above does not change the permission answer.
+[[steps]]
+method = "GET"
+path = "/api/v1/collab/stats/"
+
+# no session at all: DRF denies before the staff check (401).
+[[steps]]
+method = "GET"
+path = "/api/v1/collab/stats/"
+jar = "anon"
 
 [[steps]]
 method = "PATCH"

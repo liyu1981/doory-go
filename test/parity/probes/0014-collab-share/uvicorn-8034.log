@@ -1,0 +1,219 @@
+/home/yli/doory-go/.oracle/venv/lib/python3.12/site-packages/django/core/handlers/base.py:63: UserWarning: No directory at: /home/yli/doory-go/.upstream/current/backend/staticfiles/
+  mw_instance = middleware(adapted_handler)
+MIME-Version: 1.0
+Content-Type: multipart/alternative;
+ boundary="===============7510026094461338703=="
+Subject: Verify your email address for Doory
+From: Doory <no-reply@localhost>
+To: shareprobe1717257x1@example.com
+Date: Sat, 24 Oct 2026 06:44:05 +0000
+Message-ID: <179282424565.1717264.16192899075865427714@2403-4800-2812-f600-be24-11ff-fea2-73c2.core.vocus.network>
+
+--===============7510026094461338703==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+Hi shareprobe1717257x1,
+
+Welcome to Doory. Confirm your email address by opening this link:
+
+http://localhost:5173/verify-email?uid=3DMDVhNjQxZGItMzljMi00NDM0LWIxOTAtNTVl=
+NzQwMTM1YjZm&token=3Ddgxxdh-b89b6eafa1690b3e00615231c65d4867
+
+The link expires in 24 hours. If you did not create a Doory account, you can =
+ignore this message.
+
+
+--===============7510026094461338703==
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+<!doctype html>
+<html lang=3D"en">
+  <head>
+    <meta charset=3D"utf-8">
+    <meta name=3D"viewport" content=3D"width=3Ddevice-width, initial-scale=3D=
+1">
+    <meta name=3D"color-scheme" content=3D"light">
+    <title>Verify your email address</title>
+  </head>
+  <body style=3D"margin:0;padding:0;background-color:#f9f7ff;">
+    <div style=3D"display:none;max-height:0;overflow:hidden;opacity:0;">Confi=
+rm your email address to finish setting up Doory.</div>
+    <table role=3D"presentation" width=3D"100%" cellpadding=3D"0" cellspacing=
+=3D"0" style=3D"background-color:#f9f7ff;">
+      <tr>
+        <td align=3D"center" style=3D"padding:32px 16px;">
+          <table role=3D"presentation" width=3D"100%" cellpadding=3D"0" cells=
+pacing=3D"0" style=3D"max-width:520px;background-color:#ffffff;border:1px sol=
+id #e6e0f2;border-radius:12px;">
+            <tr>
+              <td style=3D"padding:28px 32px 0 32px;font-family:Georgia,'Time=
+s New Roman',serif;font-size:24px;font-style:italic;font-weight:700;color:#5b=
+43c4;letter-spacing:-0.01em;">
+                Doory
+              </td>
+            </tr>
+            <tr>
+              <td style=3D"padding:16px 32px 32px 32px;font-family:-apple-sys=
+tem,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size=
+:16px;line-height:1.55;color:#2b1c17;">
+               =20
+<h1 style=3D"margin:0 0 12px 0;font-size:20px;line-height:1.3;color:#2b1c17;"=
+>Confirm your email address</h1>
+<p style=3D"margin:0 0 20px 0;">Hi shareprobe1717257x1, welcome to Doory. Con=
+firm your email address so we can reach you about your account and you can re=
+cover it if you ever lose access.</p>
+<table role=3D"presentation" cellpadding=3D"0" cellspacing=3D"0" style=3D"mar=
+gin:0 0 24px 0;">
+  <tr>
+    <td style=3D"background-color:#2b1c17;border-radius:999px;">
+      <a href=3D"http://localhost:5173/verify-email?uid=3DMDVhNjQxZGItMzljMi0=
+0NDM0LWIxOTAtNTVlNzQwMTM1YjZm&amp;token=3Ddgxxdh-b89b6eafa1690b3e00615231c65d=
+4867" style=3D"display:inline-block;padding:12px 22px;font-size:16px;font-wei=
+ght:600;color:#ffffff;text-decoration:none;">Verify email address</a>
+    </td>
+  </tr>
+</table>
+<p style=3D"margin:0 0 8px 0;font-size:14px;color:#6f6170;">This link expires=
+ in 24 hours. If the button does not work, copy and paste this address into y=
+our browser:</p>
+<p style=3D"margin:0;font-size:14px;word-break:break-all;"><a href=3D"http://=
+localhost:5173/verify-email?uid=3DMDVhNjQxZGItMzljMi00NDM0LWIxOTAtNTVlNzQwMTM=
+1YjZm&amp;token=3Ddgxxdh-b89b6eafa1690b3e00615231c65d4867" style=3D"color:#5b=
+43c4;">http://localhost:5173/verify-email?uid=3DMDVhNjQxZGItMzljMi00NDM0LWIxO=
+TAtNTVlNzQwMTM1YjZm&amp;token=3Ddgxxdh-b89b6eafa1690b3e00615231c65d4867</a></=
+p>
+
+              </td>
+            </tr>
+          </table>
+          <p style=3D"max-width:520px;margin:16px 0 0 0;font-family:-apple-sy=
+stem,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-siz=
+e:12px;line-height:1.5;color:#6f6170;text-align:center;">
+            You are receiving this because someone used your email address on=
+ Doory. If that was not you, you can ignore this message.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+
+--===============7510026094461338703==--
+
+-------------------------------------------------------------------------------
+MIME-Version: 1.0
+Content-Type: multipart/alternative;
+ boundary="===============4483251924727162781=="
+Subject: Verify your email address for Doory
+From: Doory <no-reply@localhost>
+To: shareprobe1717257x2@example.com
+Date: Sat, 24 Oct 2026 06:44:07 +0000
+Message-ID: <179282424772.1717264.1195579260205348927@2403-4800-2812-f600-be24-11ff-fea2-73c2.core.vocus.network>
+
+--===============4483251924727162781==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+Hi shareprobe1717257x2,
+
+Welcome to Doory. Confirm your email address by opening this link:
+
+http://localhost:5173/verify-email?uid=3DNmMyZmJiMzctM2M5Ni00ZDdhLWJmNjktMTg4=
+ZjVhM2NkMTc1&token=3Ddgxxdj-282cd8d886e3a79a0cba8dcf564bdcbf
+
+The link expires in 24 hours. If you did not create a Doory account, you can =
+ignore this message.
+
+
+--===============4483251924727162781==
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+<!doctype html>
+<html lang=3D"en">
+  <head>
+    <meta charset=3D"utf-8">
+    <meta name=3D"viewport" content=3D"width=3Ddevice-width, initial-scale=3D=
+1">
+    <meta name=3D"color-scheme" content=3D"light">
+    <title>Verify your email address</title>
+  </head>
+  <body style=3D"margin:0;padding:0;background-color:#f9f7ff;">
+    <div style=3D"display:none;max-height:0;overflow:hidden;opacity:0;">Confi=
+rm your email address to finish setting up Doory.</div>
+    <table role=3D"presentation" width=3D"100%" cellpadding=3D"0" cellspacing=
+=3D"0" style=3D"background-color:#f9f7ff;">
+      <tr>
+        <td align=3D"center" style=3D"padding:32px 16px;">
+          <table role=3D"presentation" width=3D"100%" cellpadding=3D"0" cells=
+pacing=3D"0" style=3D"max-width:520px;background-color:#ffffff;border:1px sol=
+id #e6e0f2;border-radius:12px;">
+            <tr>
+              <td style=3D"padding:28px 32px 0 32px;font-family:Georgia,'Time=
+s New Roman',serif;font-size:24px;font-style:italic;font-weight:700;color:#5b=
+43c4;letter-spacing:-0.01em;">
+                Doory
+              </td>
+            </tr>
+            <tr>
+              <td style=3D"padding:16px 32px 32px 32px;font-family:-apple-sys=
+tem,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size=
+:16px;line-height:1.55;color:#2b1c17;">
+               =20
+<h1 style=3D"margin:0 0 12px 0;font-size:20px;line-height:1.3;color:#2b1c17;"=
+>Confirm your email address</h1>
+<p style=3D"margin:0 0 20px 0;">Hi shareprobe1717257x2, welcome to Doory. Con=
+firm your email address so we can reach you about your account and you can re=
+cover it if you ever lose access.</p>
+<table role=3D"presentation" cellpadding=3D"0" cellspacing=3D"0" style=3D"mar=
+gin:0 0 24px 0;">
+  <tr>
+    <td style=3D"background-color:#2b1c17;border-radius:999px;">
+      <a href=3D"http://localhost:5173/verify-email?uid=3DNmMyZmJiMzctM2M5Ni0=
+0ZDdhLWJmNjktMTg4ZjVhM2NkMTc1&amp;token=3Ddgxxdj-282cd8d886e3a79a0cba8dcf564b=
+dcbf" style=3D"display:inline-block;padding:12px 22px;font-size:16px;font-wei=
+ght:600;color:#ffffff;text-decoration:none;">Verify email address</a>
+    </td>
+  </tr>
+</table>
+<p style=3D"margin:0 0 8px 0;font-size:14px;color:#6f6170;">This link expires=
+ in 24 hours. If the button does not work, copy and paste this address into y=
+our browser:</p>
+<p style=3D"margin:0;font-size:14px;word-break:break-all;"><a href=3D"http://=
+localhost:5173/verify-email?uid=3DNmMyZmJiMzctM2M5Ni00ZDdhLWJmNjktMTg4ZjVhM2N=
+kMTc1&amp;token=3Ddgxxdj-282cd8d886e3a79a0cba8dcf564bdcbf" style=3D"color:#5b=
+43c4;">http://localhost:5173/verify-email?uid=3DNmMyZmJiMzctM2M5Ni00ZDdhLWJmN=
+jktMTg4ZjVhM2NkMTc1&amp;token=3Ddgxxdj-282cd8d886e3a79a0cba8dcf564bdcbf</a></=
+p>
+
+              </td>
+            </tr>
+          </table>
+          <p style=3D"max-width:520px;margin:16px 0 0 0;font-family:-apple-sy=
+stem,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-siz=
+e:12px;line-height:1.5;color:#6f6170;text-align:center;">
+            You are receiving this because someone used your email address on=
+ Doory. If that was not you, you can ignore this message.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+
+--===============4483251924727162781==--
+
+-------------------------------------------------------------------------------
+connect design=6c1cf5ad-f445-4cd4-8c33-fe5369bea76f user=6c2fbb37-3c96-4d7a-bf69-188f5a3cd175 role=edit
+close design=6c1cf5ad-f445-4cd4-8c33-fe5369bea76f user=6c2fbb37-3c96-4d7a-bf69-188f5a3cd175 role=edit code=1000
+connect design=6c1cf5ad-f445-4cd4-8c33-fe5369bea76f user=6c2fbb37-3c96-4d7a-bf69-188f5a3cd175 role=view
+close design=6c1cf5ad-f445-4cd4-8c33-fe5369bea76f user=6c2fbb37-3c96-4d7a-bf69-188f5a3cd175 role=view code=1000
+connect design=6c1cf5ad-f445-4cd4-8c33-fe5369bea76f user=6c2fbb37-3c96-4d7a-bf69-188f5a3cd175 role=edit
+close design=6c1cf5ad-f445-4cd4-8c33-fe5369bea76f user=6c2fbb37-3c96-4d7a-bf69-188f5a3cd175 role=edit code=1000
+refuse design=6c1cf5ad-f445-4cd4-8c33-fe5369bea76f code=4403 reason=forbidden
+connect design=6c1cf5ad-f445-4cd4-8c33-fe5369bea76f user=05a641db-39c2-4434-b190-55e740135b6f role=owner
+close design=6c1cf5ad-f445-4cd4-8c33-fe5369bea76f user=05a641db-39c2-4434-b190-55e740135b6f role=owner code=1000

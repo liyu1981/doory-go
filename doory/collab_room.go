@@ -8,6 +8,8 @@
 // in-process calls into the registry — single-process substitution, recorded
 // in PLAN.md; self-echoes are filtered by the saving_from_room flag.
 
+// Ports backend/apps/collab/room.py
+// Ports backend/apps/collab/notify.py
 package doory
 
 import (

@@ -243,6 +243,7 @@ func (a *App) shareLinkCreate(w http.ResponseWriter, r *http.Request) {
 		writeDRF(w, http.StatusInternalServerError, "server_error", "Something went wrong on our side.")
 		return
 	}
+	a.notifyDesignRecheck(d.ID) // signals.link_changed (post_save)
 	writeJSON(w, http.StatusCreated, l.envelope(a.Settings.SiteURL))
 }
 
@@ -470,6 +471,7 @@ func (a *App) shareLinkUpdate(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	a.notifyDesignRecheck(d.ID) // signals.link_changed (post_save)
 	writeJSON(w, http.StatusOK, fresh.envelope(a.Settings.SiteURL))
 }
 
@@ -496,6 +498,7 @@ func (a *App) shareLinkDestroy(w http.ResponseWriter, r *http.Request) {
 		writeDRF(w, http.StatusInternalServerError, "server_error", "Something went wrong on our side.")
 		return
 	}
+	a.notifyDesignRecheck(l.DesignID) // signals.link_changed (post_delete)
 	w.Header().Set("Content-Length", "0")
 	w.WriteHeader(http.StatusNoContent)
 }

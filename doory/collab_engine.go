@@ -4,6 +4,7 @@
 // Everything here runs on plain data; the engine itself is
 // internal/crdt (yjs-go, conformance-proven against pycrdt), the wire
 // scanner is internal/yproto and the document mapping internal/yschema.
+// Ports backend/apps/collab/engine.py
 package doory
 
 import (

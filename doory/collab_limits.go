@@ -5,6 +5,7 @@
 // map — same visible behaviour for the paired scenarios, recorded in
 // PLAN.md as a substitution of the storage only.
 
+// Ports backend/apps/collab/limits.py
 package doory
 
 import (

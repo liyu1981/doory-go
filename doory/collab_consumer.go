@@ -1,6 +1,8 @@
 // The WebSocket consumer (apps/collab/consumers.py): handshake, login, rate
 // limits, then frames to and from the room — /api/v1/ws/designs/<uuid>/.
 
+// Ports backend/apps/collab/consumers.py
+// Ports backend/apps/collab/routing.py
 package doory
 
 import (

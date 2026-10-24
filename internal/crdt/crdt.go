@@ -11,6 +11,7 @@
 // The engine surface mirrors what apps/collab uses of pycrdt: Doc with
 // apply_update/get_state/get_update, the three root types (meta Map,
 // pageOrder Array, pages Map) and plain-data conversion.
+// Ports backend/apps/collab/crdt.py
 package crdt
 
 import (

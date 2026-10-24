@@ -2,6 +2,8 @@
 // (snapshot + appended update rows), flush/replacement CAS and the
 // compaction helpers. Plain synchronous functions.
 
+// Ports backend/apps/collab/store.py
+// Ports backend/apps/collab/models.py
 package doory
 
 import (

@@ -299,6 +299,14 @@ func (a *App) designsPartialUpdate(w http.ResponseWriter, r *http.Request) {
 		writeDRF(w, http.StatusInternalServerError, "server_error", "Something went wrong on our side.")
 		return
 	}
+	// signals.design_saved: a title change tells the room (and its members)
+	// the new title; a document/trash change makes it re-check.
+	if body.Title != nil && updated.Title != d.Title {
+		a.notifyDesignTitle(updated.ID, updated.Title)
+	}
+	if hasDoc {
+		a.notifyDesignRecheck(updated.ID)
+	}
 	writeJSON(w, http.StatusOK, updated.full())
 }
 
@@ -407,7 +415,11 @@ func (a *App) designsDestroy(w http.ResponseWriter, r *http.Request) {
 				"Only designs in the trash can be deleted permanently.")
 			return
 		}
-		a.purgeDesigns([]string{d.ID})
+		if err := a.purgeDesigns([]string{d.ID}); err != nil {
+			writeDRF(w, http.StatusInternalServerError, "server_error", "Something went wrong on our side.")
+			return
+		}
+		a.notifyDesignRecheck(d.ID) // signals.design_deleted
 		w.Header().Set("Content-Length", "0")
 		w.WriteHeader(http.StatusNoContent)
 		return
@@ -420,6 +432,9 @@ func (a *App) designsDestroy(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeDRF(w, http.StatusInternalServerError, "server_error", "Something went wrong on our side.")
 		return
+	}
+	if !d.TrashedAt.Valid {
+		a.notifyDesignRecheck(d.ID) // signals.design_saved on trashed_at
 	}
 	w.Header().Set("Content-Length", "0")
 	w.WriteHeader(http.StatusNoContent)
@@ -453,6 +468,7 @@ func (a *App) designsRestore(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		d, _ = a.getDesignByID(d.ID)
+		a.notifyDesignRecheck(d.ID) // signals.design_saved on trashed_at
 	}
 	writeJSON(w, http.StatusOK, d.full())
 }
@@ -537,6 +553,7 @@ func (a *App) designsTrashEmpty(w http.ResponseWriter, r *http.Request) {
 		writeDRF(w, http.StatusInternalServerError, "server_error", "Something went wrong on our side.")
 		return
 	}
+	a.notifyDesignsRecheck(ids) // signals.design_deleted
 	w.Header().Set("Content-Length", "0")
 	w.WriteHeader(http.StatusNoContent)
 }
