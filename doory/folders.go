@@ -70,18 +70,19 @@ func (a *App) getFolderByOwner(ownerID, id string) (*folderRow, error) {
 
 // parentMap ports _parent_map (id -> parent id) for chain/height checks.
 func (a *App) parentMap(ownerID string) (map[string]string, error) {
-	rows, err := a.DB.Query(`SELECT id, COALESCE(parent_id, '') FROM designs_folder WHERE owner_id = ?`, ownerID)
+	rows, err := a.DB.Query(`SELECT id, parent_id FROM designs_folder WHERE owner_id = ?`, ownerID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	m := map[string]string{}
 	for rows.Next() {
-		var id, parent string
+		var id string
+		var parent sql.NullString
 		if err := rows.Scan(&id, &parent); err != nil {
 			return nil, err
 		}
-		m[id] = parent
+		m[id] = parent.String
 	}
 	return m, rows.Err()
 }

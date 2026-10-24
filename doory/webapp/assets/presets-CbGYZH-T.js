@@ -1,0 +1,1 @@
+import{t as e}from"./registry-0c4KTK0D.js";var t=new e((e,t)=>e.order-t.order);function n(e){return t.register(e)}var r=new e((e,t)=>e.order-t.order);function i(e){return r.register(e)}var a=new e((e,t)=>e.order-t.order);function o(e){return a.register(e)}export{o as a,n as i,t as n,a as o,i as r,r as t};

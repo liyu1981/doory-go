@@ -1319,3 +1319,107 @@ M13 progress log (this session — cli foundation + deterministic commands):
   WebP encoder lands (D15); (c) the deep audio metadata parse (duration/
   channels) belongs to the assets upload pipeline, still pending there;
   (d) `sync_audio --pack` has no manifest entry to exercise (unit-tested).
+
+M14 scoping (single-binary release — sources read, semantics derived):
+
+- **Frontend**: `.upstream/current/frontend` builds with `tsc -b && vite build`
+  into `dist/` (3 entries: `index.html`, `presenter-view.html`,
+  `render.html`; hashed `/assets/`, `/icons/`, `manifest.webmanifest`,
+  `robots.txt`, `og-image.png`; 20 MB, 14 MB of it the onnxruntime wasm).
+  Served by nginx upstream with the rules in `deploy/nginx.conf` +
+  `frontend/nginx/security-headers.conf`: `/assets/` immutable + 404 (never the
+  shell), `/index.html` and SPA routes no-cache, other root files 86400 s, the
+  security header set on every page response, `/media/` immutable + nosniff +
+  sandbox CSP (audio `index.json` no-cache), `/static/` proxied to Django
+  (whitenoise compressed-manifest), `/api|/admin|/sitemap.xml` to the API,
+  `/ws/` upgraded, `/mcp` streamed.
+- **Dev proxy parity**: `frontend/vite.config.ts` proxies `/api`, `/media`,
+  `/admin`, `/static` and `/ws` (ws upgrade) to `VITE_API_PROXY`
+  (default http://localhost:8000) — the Go binary serves the SPA itself, so a
+  dev mode must proxy those prefixes to a Vite dev server instead.
+- **D4 no-config boot**: `DATABASE_URL` unset → embedded SQLite file in a data
+  dir (WAL, busy_timeout, foreign_keys per connection, already implemented);
+  M14 adds the data-dir default (`DOORY_DATA_DIR`, media/exports/db under it)
+  so `doory serve` needs no environment at all. PG from the same binary is
+  dialect-matrix tested (schema parity already green on both).
+- **D7 static**: whitenoise `CompressedManifestStaticFilesStorage` semantics —
+  accept-encoding negotiation (gzip/brotli), `Vary: Accept-Encoding`, ETag /
+  If-None-Match, immutable caching for manifest-hashed names — over the
+  embedded asset tree (the port has no admin assets; D2 keeps that surface
+  minimal).
+- **D2 admin**: spike S3 inventory lives in the upstream admin modules
+  (registered ModelAdmins, actions, custom views). Interim scope: the
+  operations the self-host docs require — createsuperuser, content
+  (templates/elements/presets) management, AI provider confirm actions,
+  user/asset moderation.
+- **Coverage report**: `pnpm coverage` is a stub; M14 replaces it with a
+  generator that reads scenarios + PORT_MAP dispositions and writes the table
+  embedded in AGENTS.md (weak-only routes must not count as verified).
+- **Docker**: one image (Go binary + optional Chromium) replacing api,
+  realtime, mcp and the web nginx from `docker-compose.yml`; volumes
+  media/exports, healthcheck via the binary, `/app/data` for the SQLite
+  default.
+
+M14 build order: (1) webapp embedding + static/media/SPA serving + dev proxy +
+tests derived from the nginx config (D7 update); (2) data-dir default +
+no-config smoke + PG dialect run; (3) Dockerfile/compose replacement + docs;
+(4) coverage generator; (5) D2 admin inventory + minimal admin, or an explicit
+owner decision to defer (recorded).
+
+M14 progress log (this session — release candidate slices 1-4):
+
+- ✅ Frontend embedded (D16): `pnpm frontend:build` exports the pinned mirror
+  frontend with `git archive` into a scratch dir, runs `npm ci && npm run build`
+  (`tsc -b && vite build`) there and copies only `dist/` into `doory/webapp/`
+  (20 MB, 14 MB of it the onnxruntime wasm). The Go server serves it with the
+  nginx rules: `/assets/` immutable and 404 (never the shell), the shell and
+  SPA routes no-cache, root files 86 400 s, the app CSP/header set on every
+  page response, gzip by nginx's type list and 512-byte threshold, ETag/304.
+  `/media/` is served with the nginx media headers (immutable, nosniff,
+  sandbox CSP, svg attachment, audio index no-cache) and a missing media file
+  falls through to the app stack (the oracle harness's behaviour, so scenario
+  11 stays green). `/static/` keeps whitenoise semantics over an embedded
+  static tree (empty: no Django admin assets). Golden tests encode every rule
+  (doory/webapp_test.go).
+- ✅ Dev proxy (vite parity): `DOORY_DEV_PROXY` makes the binary proxy every
+  non-app path to the Vite dev server (verified: API local, pages proxied,
+  502 when Vite is down).
+- ✅ No-config boot (D4): `DATABASE_URL` unset → `sqlite:///<DOORY_DATA_DIR>/
+  doory.sqlite3` with the directory created; media/exports default under the
+  same data dir. Verified with `env -i` (no environment at all): migrate,
+  serve, SPA and API answer.
+- ✅ Postgres from the same binary (D4 + D17): the driver seam
+  (`doory/pgq.go`) rewrites `?` placeholders to `$N` (string literals,
+  identifiers, comments and dollar quotes skipped) and renders timestamps as
+  Django's storage text; boolean writes take Go bools and `TRUE`/`FALSE`
+  literals, uuid columns are read as nullable instead of `COALESCE(uuid, '')`,
+  and the assets list's Django-style `-created_at` default became
+  `created_at DESC`. New `test/pgsmoke` walks the API on Postgres (register,
+  login, designs, share links, comments, folders, versions, catalogs,
+  trash/restore/purge, duplicate email, revision conflict) — green.
+- ✅ Docker: `Dockerfile` (multi-stage Go build, optional Chromium, non-root,
+  `/app/data` volume, `doory healthcheck`) and `docker-compose.yml` replacing
+  upstream's api + realtime + mcp + web with one service (+ optional
+  `postgres` profile). Built and smoke-tested: container serves API, SPA,
+  render.html, MCP health and media 404s; healthcheck exits 0.
+- ✅ Coverage report (`pnpm coverage`, automation/ci/coveragereport): families
+  with PORT_MAP rows reviewed vs. scenario-covered, test-file dispositions,
+  and the review-only rows named — written between markers in AGENTS.md.
+  Current totals: 106/325 rows scenario-covered, 63 review-only (mcp and ops
+  dominate the weak list, matching the open M12/M13 items).
+- ✅ `.env.example` for the single binary (same variable names as upstream,
+  plus DOORY_DATA_DIR / DOORY_DEV_PROXY) and a README "Running the single
+  binary" section (no-config, Postgres, Docker, the path map).
+- ⬜ M14 remaining: (a) D2 admin — the S3 inventory is 19 registered models
+  (User, Provider/UserProvider/AICall, ApiToken, Asset, BrandKit,
+  Design/DesignVersion/Folder, ElementPack/Element, FontFamily,
+  TemplateCategory/Template, SizePresetGroup/SizePreset, ShareLink/Comment),
+  ~20 bulk actions (publish/unpublish, trash/restore, verify/activate users,
+  revoke tokens, feature templates), two confirm pages (AI provider
+  load-models/test) and the multi-file element upload; the Go port answers
+  `/admin/` with 404 today. Implementing a minimal Go admin is a sub-project
+  and D2's remove-when asks the OWNER for the go/no-go (admin unsupported is
+  an explicit decision, not a silent default) — awaiting that call.
+  (b) The paired dialect matrix (each scenario additionally on Postgres) is
+  not wired into the runner; Postgres is covered by schema-parity + pg-smoke.
+  (c) S3 media storage stays pending with the assets family (D7 note).

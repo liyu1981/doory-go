@@ -29,6 +29,17 @@ covers = [
   "backend/apps/core/management/",
   "backend/apps/ai/management/",
   "backend/apps/collab/management/",
+  # The embedded content the commands ship and install (D14/D16).
+  "backend/data/audio_library.json",
+  "backend/data/element_packs.json",
+  "backend/data/element_pack_files/open-doodles.json",
+  "backend/data/element_pack_files/open-peeps.json",
+  "backend/data/ml_models.json",
+  "backend/data/popular_fonts.json",
+  "backend/data/size_presets.json",
+  "backend/data/unicode_ranges.json",
+  "backend/data/templates/manifest.json",
+  "backend/data/templates/bold-sale-announcement.json",
 ]
 
 # Thumbnails are derived images: the oracle re-encodes every one through

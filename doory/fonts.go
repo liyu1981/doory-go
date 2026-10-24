@@ -317,7 +317,7 @@ func (a *App) fontList(w http.ResponseWriter, r *http.Request) {
 		writeDRFValidation(w, fields)
 		return
 	}
-	clause := "f.owner_id IS NULL AND f.is_published = 1"
+	clause := "f.owner_id IS NULL AND f.is_published = TRUE"
 	for _, cond := range where {
 		clause += " AND " + cond
 	}

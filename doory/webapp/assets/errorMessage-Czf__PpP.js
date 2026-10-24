@@ -1,0 +1,1 @@
+import{i as e}from"./client-CRc-NDY_.js";function t(t,n=`Please try again.`){return e(t)?t.isNetwork?`You seem to be offline.`:t.message:n}export{t};

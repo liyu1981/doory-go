@@ -1,0 +1,20 @@
+{
+  "name": "Doory",
+  "short_name": "Doory",
+  "description": "Free, open-source design for everyone. Design anything — no sign-up to start.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f9f7ff",
+  "theme_color": "#f9f7ff",
+  "categories": ["design", "graphics", "productivity"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "New design", "short_name": "New", "url": "/create", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

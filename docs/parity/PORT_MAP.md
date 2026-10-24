@@ -26,15 +26,15 @@ behavioral verification).
 
 | upstream | go | status |
 |---|---|---|
-| `backend/.env.example` |  | ⬜ |
-| `backend/Dockerfile` |  | ⬜ |
-| `backend/conftest.py` |  | ⬜ |
-| `backend/docker-entrypoint.sh` |  | ⬜ |
-| `backend/healthcheck.py` |  | ⬜ |
-| `backend/manage.py` |  | ⬜ |
-| `backend/requirements-dev.txt` |  | ⬜ |
-| `backend/requirements.txt` |  | ⬜ |
-| `backend/tests/` |  | ⬜ |
+| `backend/.env.example` | `.env.example` (the single binary's knobs, same variable names; D4 data dir) | ✅ |
+| `backend/Dockerfile` | `Dockerfile` (multi-stage Go build + runtime; replaces api/realtime/mcp/web; optional Chromium) | ✅ |
+| `backend/conftest.py` | test/parity (paired scenarios replace the pytest harness; ledger dispositions) | 🟡 |
+| `backend/docker-entrypoint.sh` | doory/entrypoint.go (`doory entrypoint`: DB wait, migrate, env-gated bootstraps, never fatal) | ✅ |
+| `backend/healthcheck.py` | doory/entrypoint.go (`doory healthcheck`: HEALTH_PORT/HEALTH_PATH, ALLOWED_HOSTS host, 4 s) | ✅ |
+| `backend/manage.py` | cmd/doory/main.go + doory/cli.go (`doory <command>`; D13) | ✅ |
+| `backend/requirements-dev.txt` | (n/a: Go toolchain + pnpm gate ladder; see package.json) | ✅ |
+| `backend/requirements.txt` | (n/a: pure-Go build; dependencies are in go.mod — the S2 substitution record) | ✅ |
+| `backend/tests/` | test/parity (the upstream whole-backend tests map to scenarios; dispositions pending) | 🟡 |
 
 ## `backend/apps/accounts/`
 

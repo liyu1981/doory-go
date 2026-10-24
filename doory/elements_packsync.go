@@ -140,8 +140,8 @@ func (a *App) unpublishElements(packID string, keys []string) (int, error) {
 		for _, key := range chunk {
 			args = append(args, key)
 		}
-		result, err := a.DB.Exec(`UPDATE elements_element SET is_published = 0, updated_at = ?
-		     WHERE pack_id = ? AND is_published = 1 AND key IN (`+placeholders+`)`, args...)
+		result, err := a.DB.Exec(`UPDATE elements_element SET is_published = FALSE, updated_at = ?
+		     WHERE pack_id = ? AND is_published = TRUE AND key IN (`+placeholders+`)`, args...)
 		if err != nil {
 			return total, err
 		}
@@ -153,7 +153,7 @@ func (a *App) unpublishElements(packID string, keys []string) (int, error) {
 
 // publishedElementKeys lists the pack's published keys.
 func (a *App) publishedElementKeys(packID string) ([]string, error) {
-	rows, err := a.DB.Query(`SELECT key FROM elements_element WHERE pack_id = ? AND is_published = 1`,
+	rows, err := a.DB.Query(`SELECT key FROM elements_element WHERE pack_id = ? AND is_published = TRUE`,
 		packID)
 	if err != nil {
 		return nil, err

@@ -172,7 +172,7 @@ func (a *App) ensureFontFamily(fontID, family, category, license string, rank in
 		if _, err := a.DB.Exec(`INSERT INTO fonts_fontfamily
 		     (id, created_at, updated_at, family, slug, category, scripts, is_variable, popularity,
 		      license, source, is_published, owner_id)
-		     VALUES (?, ?, ?, ?, ?, ?, '[]', 0, ?, ?, ?, 1, NULL)`,
+		     VALUES (?, ?, ?, ?, ?, ?, '[]', FALSE, ?, ?, ?, TRUE, NULL)`,
 			id, now, now, family, fontID, category, rank, license, fontSourceName); err != nil {
 			return "", err
 		}

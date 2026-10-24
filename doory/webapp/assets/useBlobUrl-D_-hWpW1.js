@@ -1,0 +1,1 @@
+import{r as e}from"./modulepreload-polyfill-DHZR_UKa.js";import{t}from"./react-R8TFQQWi.js";var n=e(t(),1);function r(e){let[t,r]=(0,n.useState)(null);return(0,n.useEffect)(()=>{if(!e)return;let t=URL.createObjectURL(e);return r(t),()=>{URL.revokeObjectURL(t),r(null)}},[e]),e?t:null}export{r as t};

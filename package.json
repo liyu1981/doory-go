@@ -17,10 +17,12 @@
     "verify": "pnpm run check && pnpm run parity-fast && echo 'TODO(M1): full parity + contracts' && exit 1",
     "parity": "go run ./test/parity/cmd/parrun test/parity/scenarios",
     "parity-fast": "go run ./test/parity/cmd/parrun -fast test/parity/scenarios",
-    "coverage": "echo 'TODO(M1): coverage tool' && exit 1",
+    "coverage": "go run ./automation/ci/coveragereport",
     "port-map-drift": "go run ./automation/ci/portmapdrift",
     "lint-scenarios": "go run ./test/parity/cmd/lintscenarios",
-    "divergence-consistency": "go run ./automation/ci/divergencecheck"
+    "divergence-consistency": "go run ./automation/ci/divergencecheck",
+    "frontend:build": "bash scripts/frontend-build.sh",
+    "pg-smoke": "go test ./test/pgsmoke/ -count=1"
   },
   "targets-help": {
     "help": "List the available targets",
@@ -35,9 +37,11 @@
     "verify": "check + parity-fast + full parity + contracts",
     "parity": "Run all paired oracle/Go scenarios",
     "parity-fast": "Run scenarios tagged fast (one strict pair each)",
-    "coverage": "Regenerate the coverage report embedded in AGENTS.md",
+    "coverage": "Regenerate the coverage report embedded in AGENTS.md (weak rows listed, never counted)",
     "port-map-drift": "Reject unmapped Go sources and rows whose upstream file vanished",
     "lint-scenarios": "Validate families.toml + scenario TOMLs against mirror and PORT_MAP",
-    "divergence-consistency": "Match DIVERGENCES records to call-site markers and the ID list"
+    "divergence-consistency": "Match DIVERGENCES records to call-site markers and the ID list",
+    "frontend:build": "Rebuild the embedded frontend (doory/webapp) from the pinned upstream source",
+    "pg-smoke": "Run the PostgreSQL smoke test against the local parity container (D4)"
   }
 }

@@ -121,7 +121,7 @@ func (a *App) createDesign(owner *UserRow, title string, document any, documentR
 	}
 	_, err = a.DB.Exec(
 		`INSERT INTO designs_design (`+designCols+`)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, 0, 1, ?, ?, NULL)`,
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, FALSE, 1, ?, ?, NULL)`,
 		id, owner.ID, title, info.Width, info.Height, info.Preset, string(docText),
 		info.PageCount, folderArg, now, now)
 	if err != nil {
@@ -380,7 +380,7 @@ func (a *App) recordVersion(d *designRow, docText string, pageCount int64, u *Us
 // (manual ones are never pruned).
 func (a *App) pruneAutoVersions(designID string) {
 	rows, err := a.DB.Query(
-		`SELECT id FROM designs_designversion WHERE design_id = ? AND is_auto = 1
+		`SELECT id FROM designs_designversion WHERE design_id = ? AND is_auto = TRUE
 		 ORDER BY created_at DESC, id DESC`, designID)
 	if err != nil {
 		return
@@ -512,7 +512,7 @@ func (a *App) copyDesignRow(u *UserRow, src *designRow, title string, folder any
 		`INSERT INTO designs_design
 		 (id, owner_id, title, width, height, preset, document, page_count, thumbnail,
 		  folder_id, starred, revision, created_at, updated_at, trashed_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, 0, 1, ?, ?, NULL)`,
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, FALSE, 1, ?, ?, NULL)`,
 		id, u.ID, title, src.Width, src.Height, src.Preset, src.Document, src.PageCount,
 		folder, now, now)
 	if err != nil {

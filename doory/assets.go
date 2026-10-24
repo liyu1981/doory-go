@@ -162,7 +162,7 @@ func (a *App) assetsList(w http.ResponseWriter, r *http.Request) {
 		writeDRFValidation(w, fields)
 		return
 	}
-	order := "-created_at, id ASC" // default + order_queryset pk tie-break
+	order := "created_at DESC, id ASC" // default + order_queryset pk tie-break
 	if ordering != "" {
 		col := strings.TrimPrefix(ordering, "-")
 		dirn := "ASC"

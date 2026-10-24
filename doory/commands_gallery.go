@@ -430,7 +430,7 @@ func (a *App) missingFontFamilies(families map[string]bool) []string {
 	}
 	installed := map[string]bool{}
 	rows, err := a.DB.Query(`SELECT DISTINCT family FROM fonts_fontfamily
-	      WHERE owner_id IS NULL AND is_published = 1`)
+	      WHERE owner_id IS NULL AND is_published = TRUE`)
 	if err == nil {
 		for rows.Next() {
 			var family string

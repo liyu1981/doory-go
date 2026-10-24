@@ -60,9 +60,9 @@ func (a *App) elementPacksList(w http.ResponseWriter, r *http.Request) {
 		SELECT p.id, p.slug, p.name, p.kind, p.license, p.license_url, p.attribution,
 		       p.source_url, p.thumbnail, p.sort_order
 		FROM elements_elementpack p
-		WHERE p.is_published = 1
+		WHERE p.is_published = TRUE
 		  AND EXISTS (SELECT 1 FROM elements_element e
-		              WHERE e.pack_id = p.id AND e.is_published = 1)
+		              WHERE e.pack_id = p.id AND e.is_published = TRUE)
 		ORDER BY p.sort_order, p.name, p.id`)
 	if err != nil {
 		logerr(err, "elementPacksList")
@@ -117,7 +117,7 @@ func (a *App) elementList(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	var fields []FieldError
 
-	where := []string{"e.is_published = 1", "p.is_published = 1"}
+	where := []string{"e.is_published = TRUE", "p.is_published = TRUE"}
 	args := []any{}
 
 	if pack := q.Get("pack"); pack != "" {

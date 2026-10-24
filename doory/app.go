@@ -20,6 +20,10 @@ type App struct {
 	// collab: the process-wide room registry (lazily built).
 	collabOnce sync.Once
 	collab     *CollabRoomRegistry
+
+	// webapp: the embedded frontend + /static + /media (M14, family 14).
+	webappOnce sync.Once
+	webapp     *webappHandler
 }
 
 // NewApp builds the route table. M2 slice of the 214-route ledger
@@ -445,20 +449,65 @@ func (a *App) notFound(w http.ResponseWriter, r *http.Request) {
 	http.NotFound(w, r)
 }
 
+// webappHandler lazily builds the embedded-frontend handler.
+func (a *App) webappHandler(fallback http.Handler) *webappHandler {
+	a.webappOnce.Do(func() {
+		a.webapp = newWebappHandler(a.Settings.MediaRoot, fallback)
+	})
+	return a.webapp
+}
+
+// isAppPath reports the paths the Django oracle handles (API, admin, sockets,
+// MCP, sitemap). Everything else is the SPA, /static or /media (M14).
+func isAppPath(path string) bool {
+	switch {
+	case strings.HasPrefix(path, "/api/"),
+		strings.HasPrefix(path, "/admin/"),
+		strings.HasPrefix(path, "/ws/"),
+		path == "/admin",
+		path == "/mcp",
+		path == "/mcp/health",
+		path == "/sitemap.xml":
+		return true
+	}
+	return false
+}
+
 // Handler builds the full stack: buffering (Django's assemble-then-send
-// model) around the middleware chain around the router.
+// model) around the middleware chain around the router, with the embedded
+// frontend serving everything the oracle does not own.
 func (a *App) Handler() http.Handler {
 	stack := buildStack(a.Router, a.Settings)
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/ws/designs/") {
-			// The WebSocket upgrade hijacks the connection; it must see the
-			// raw writer (buffering would break http.Hijacker — probe0012).
-			stack.ServeHTTP(w, r)
-			return
-		}
+	// The webapp's fallback answers the paths it cannot serve (a missing media
+	// file) through the same buffered stack the app paths use: middleware like
+	// the CORS layer patches headers after the handler returns, which only
+	// works before the response is flushed.
+	buffered := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		buf := newBufferedWriter(w)
 		stack.ServeHTTP(buf, r)
 		buf.flush()
+	})
+	webapp := a.webappHandler(buffered)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if isAppPath(r.URL.Path) {
+			if strings.HasPrefix(r.URL.Path, "/ws/designs/") {
+				// The WebSocket upgrade hijacks the connection; it must see
+				// the raw writer (buffering breaks http.Hijacker — probe0012).
+				stack.ServeHTTP(w, r)
+				return
+			}
+			buf := newBufferedWriter(w)
+			stack.ServeHTTP(buf, r)
+			buf.flush()
+			return
+		}
+		if a.Settings.DevProxyURL != "" {
+			// Dev mode: the SPA is served by Vite; every non-API path is
+			// proxied to it (frontend/vite.config.ts's server.proxy).
+			proxyToDevServer(w, r, a.Settings.DevProxyURL)
+			return
+		}
+		webapp.ServeHTTP(w, r)
 	})
 }
 

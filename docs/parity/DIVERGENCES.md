@@ -239,3 +239,47 @@ Rules (PiG §6):
   record go away.
 - evidence: PLAN.md M13 log, scenario 22-ops-commands (seed_templates),
   doory/commands_gallery.go.
+
+## D16 — embedded frontend: pinned build output (D7 companion)
+
+- SCRUTINIZED: approved
+- status: active
+- summary: the single binary ships the built React frontend (`index.html`,
+  `presenter-view.html`, `render.html`, hashed `/assets/`, icons, manifest) in
+  `doory/webapp/` (go:embed). It is the pinned upstream source's Vite build
+  output, regenerated with `pnpm frontend:build` (git archive of the mirror →
+  temp dir → `npm ci && npm run build` → copy) — the mirror stays pristine and
+  the artifact is reproducible. Serving follows upstream's nginx rules
+  (deploy/nginx.conf + frontend/nginx/security-headers.conf): immutable hashed
+  assets that 404 rather than fall back to the shell, no-cache shell and SPA
+  routes, 86400 s for root files, the app CSP/header set on every page, and
+  `/media/` with the media headers (immutable, nosniff, sandbox CSP, no-cache
+  audio catalogue). `/static/` keeps whitenoise semantics (ETag/Vary/304,
+  immutable manifest-hashed names) over the embedded static tree, which is
+  empty in the port (no Django admin assets; D2).
+- remove-when: n/a (structural: the release installs the same frontend the
+  upstream image serves). The artifact is rebuilt on every upstream leap.
+- evidence: PLAN.md M14 log, doory/webapp.go + webapp_test.go (nginx-rule
+  golden tests), scenario 22 (media 404 falls through to the app stack),
+  AGENTS.md "Testing scope" (the frontend itself is validated later).
+
+## D17 — Postgres driver seams (placeholder + timestamp normalisation)
+
+- SCRUTINIZED: approved
+- status: active
+- summary: the port's SQL is written once with `?` placeholders and
+  Django/SQLite-shaped datetime text. PostgreSQL needs `$N` placeholders and
+  returns `timestamp with time zone` as `time.Time`, so a database/sql driver
+  wrapper (`doory/pgq.go`) rewrites placeholders outside string literals /
+  quoted identifiers / comments / dollar-quoted bodies and renders timestamps
+  as Django's storage text ("YYYY-MM-DD HH:MM:SS.ffffff", UTC). Boolean columns
+  take Go bools and `TRUE`/`FALSE` literals (ported across the handlers), and
+  uuid columns are read as nullable instead of `COALESCE(uuid, '')`. The
+  observable contract is identical on both dialects; the SQL text sent to
+  Postgres differs from what Django emits (its ORM parameterises the same way
+  through psycopg).
+- remove-when: n/a (dialect seam). Re-verify on every upstream leap that no
+  Postgres-only feature is adopted (D4).
+- evidence: PLAN.md M14 log, doory/pgq_test.go (rewrite cases), scenario-free
+  `pnpm pg-smoke` (test/pgsmoke: API flow + error paths on Postgres),
+  `pnpm schema-parity` (both dialects).

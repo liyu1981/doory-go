@@ -39,6 +39,9 @@ type Settings struct {
 	RealtimeMaxConns         int
 	SiteURL                  string
 	DatabaseURL              string
+	// DevProxyURL is `doory dev`'s Vite dev server (M14): every non-API path
+	// is proxied there, mirroring frontend/vite.config.ts's server.proxy.
+	DevProxyURL              string
 	AllowedOrigins           []string // CORS_ALLOWED_ORIGINS (prod.py env.list, default none)
 	SecureCookies            bool     // SECURE_COOKIES (prod.py env read, default true): session+csrf cookie Secure attr
 	SecretKey                string   // DJANGO_SECRET_KEY (base.py env read, default dev-insecure...)
@@ -127,7 +130,7 @@ func FromEnv() *Settings {
 		ServerPDFEnabled:         envBool("SERVER_PDF_ENABLED", true),
 		ExportFilenameStyle:      envStr("EXPORT_FILENAME_STYLE", "simple"),
 		ExportFilenameTS:         envBool("EXPORT_FILENAME_TIMESTAMP", false),
-		MediaRoot:                envStr("MEDIA_ROOT", "media"),
+		MediaRoot:                envStr("MEDIA_ROOT", defaultDataPath("media")),
 		BulkFillMaxRows:          envInt("BULK_FILL_MAX_ROWS", 100),
 		MCPEnabled:               envBool("MCP_ENABLED", false),
 		McpPath:                   envStr("MCP_PATH", "/mcp"),
@@ -146,7 +149,8 @@ func FromEnv() *Settings {
 		RealtimeEnabled:          envBool("REALTIME_ENABLED", true),
 		RealtimeMaxConns:         envInt("REALTIME_MAX_CONNECTIONS_PER_DESIGN", 25),
 		SiteURL:                  envStr("SITE_URL", "http://localhost:5173"),
-		DatabaseURL:              envStr("DATABASE_URL", "doory.sqlite3"),
+		DatabaseURL:              envStr("DATABASE_URL", defaultDatabaseURL()),
+		DevProxyURL:              envStr("DOORY_DEV_PROXY", ""),
 		AllowedOrigins:           envList("CORS_ALLOWED_ORIGINS", nil),
 		SecureCookies:            envBool("SECURE_COOKIES", true),
 		SecretKey:                envStr("DJANGO_SECRET_KEY", "dev-insecure-secret-key-change-me"),
@@ -162,7 +166,7 @@ func FromEnv() *Settings {
 		ExportAllowedOrigins:     envList("EXPORT_ALLOWED_ORIGINS", nil),
 		ExportChromiumNoSandbox:  envBool("EXPORT_CHROMIUM_NO_SANDBOX", false),
 		ExportWorkDir:            envStr("EXPORT_WORK_DIR", ""),
-		ExportStorageRoot:        envStr("EXPORT_STORAGE_ROOT", "exports"),
+		ExportStorageRoot:        envStr("EXPORT_STORAGE_ROOT", defaultDataPath("exports")),
 		McpExportURLTTLSeconds:   envInt("MCP_EXPORT_URL_TTL_SECONDS", 600),
 		McpCallsPerMinute:         envInt("MCP_CALLS_PER_MINUTE", 120),
 		McpMaxRequestBytes:        envInt("MCP_MAX_REQUEST_BYTES", 4*1024*1024),
@@ -285,6 +289,19 @@ const (
 )
 
 // env helpers: same coercions as django-environ (bool accepts 1/true/yes/on).
+
+// dataDir is the port's data directory (D4): everything a self-hosted install
+// needs to keep — the SQLite database, media and exports — lives under one
+// directory that can be mounted as a volume. DOORY_DATA_DIR overrides it;
+// the default is ./data next to the binary's working directory.
+func dataDir() string { return envStr("DOORY_DATA_DIR", "data") }
+
+// defaultDataPath is one path under the data directory.
+func defaultDataPath(name string) string { return dataDir() + "/" + name }
+
+// defaultDatabaseURL is the no-config default (D4): an embedded SQLite file in
+// the data directory. The parent directory is created on open.
+func defaultDatabaseURL() string { return "sqlite:///" + defaultDataPath("doory.sqlite3") }
 
 func envStr(name, def string) string {
 	if v, ok := os.LookupEnv(name); ok {

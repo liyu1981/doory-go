@@ -101,10 +101,10 @@ func newShareToken() string {
 
 // activeLinkWhere mirrors services.active_links: not expired, on, design
 // not trashed, owner enabled.
-const activeLinkWhere = `l.is_active = 1
+const activeLinkWhere = `l.is_active = TRUE
 	AND (l.expires_at IS NULL OR l.expires_at > ?)
 	AND d.trashed_at IS NULL
-	AND u.is_active = 1`
+	AND u.is_active = TRUE`
 
 // getOwnDesignForOwner ports OwnerAPIView.get_design: owner-scoped,404
 // otherwise (document deferred — not needed for link/comment lists).
@@ -232,7 +232,7 @@ func (a *App) shareLinkCreate(w http.ResponseWriter, r *http.Request) {
 		`INSERT INTO sharing_sharelink
 		 (id, created_at, updated_at, design_id, token, role, is_active, expires_at,
 		  password_hash, created_by_id, last_accessed_at, access_count)
-		 VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, NULL, 0)`,
+		 VALUES (?, ?, ?, ?, ?, ?, TRUE, ?, ?, ?, NULL, 0)`,
 		id, now, now, d.ID, newShareToken(), body.Role, expiryArg, pwHash, u.ID); err != nil {
 		logerr(err, "shareLinkCreate.insert")
 		writeDRF(w, http.StatusInternalServerError, "server_error", "Something went wrong on our side.")
@@ -634,9 +634,9 @@ func (a *App) commentsList(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if b {
-			where = append(where, "resolved = 1")
+			where = append(where, "resolved = TRUE")
 		} else {
-			where = append(where, "resolved = 0")
+			where = append(where, "resolved = FALSE")
 		}
 	}
 	if v := q.Get("page_id"); v != "" {
@@ -746,7 +746,7 @@ func (a *App) createCommentFor(w http.ResponseWriter, r *http.Request, designID 
 		var foundX, foundY sql.NullFloat64
 		var foundParent sql.NullString
 		err := a.DB.QueryRow(
-			`SELECT page_id, x, y, COALESCE(parent_id, '') FROM sharing_comment
+			`SELECT page_id, x, y, parent_id FROM sharing_comment
 			 WHERE id = ? AND design_id = ?`, pk, designID).
 			Scan(&foundPage, &foundX, &foundY, &foundParent)
 		if err == sql.ErrNoRows {
@@ -808,7 +808,7 @@ func (a *App) createCommentFor(w http.ResponseWriter, r *http.Request, designID 
 	if _, err := a.DB.Exec(
 		`INSERT INTO sharing_comment
 		 (id, created_at, updated_at, design_id, author_id, body, page_id, x, y, parent_id, resolved)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, FALSE)`,
 		id, now, now, designID, u.ID, body.Body, page, xArg, yArg, parentID); err != nil {
 		logerr(err, "commentsCreate.insert")
 		writeDRF(w, http.StatusInternalServerError, "server_error", "Something went wrong on our side.")

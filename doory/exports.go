@@ -650,7 +650,7 @@ func (a *App) fontManifest(page map[string]any, ownerID string) []any {
 	rows.Close()
 	// then the catalogue's (owner-less, published)
 	rows, err = a.DB.Query(
-		`SELECT ` + familyCols + ` FROM fonts_fontfamily WHERE owner_id IS NULL AND is_published = 1
+		`SELECT ` + familyCols + ` FROM fonts_fontfamily WHERE owner_id IS NULL AND is_published = TRUE
 		 ORDER BY family, id`)
 	if err != nil {
 		return out

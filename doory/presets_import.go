@@ -808,7 +808,7 @@ func (a *App) upsertPresetGroup(tx *sql.Tx, g presetGroupRow, parentID any, over
 		if _, ierr := tx.Exec(`INSERT INTO presets_sizepresetgroup
 		     (id, created_at, updated_at, slug, label, icon, sort_order, is_active, parent_id)
 		     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			id, now, now, g.Slug, g.Label, g.Icon, g.SortOrder, boolToInt(g.IsActive), parentID); ierr != nil {
+			id, now, now, g.Slug, g.Label, g.Icon, g.SortOrder, g.IsActive, parentID); ierr != nil {
 			return "", false, false, ierr
 		}
 		return id, true, false, nil
@@ -839,7 +839,7 @@ func (a *App) upsertPresetGroup(tx *sql.Tx, g presetGroupRow, parentID any, over
 	}
 	if _, uerr := tx.Exec(`UPDATE presets_sizepresetgroup SET label = ?, icon = ?, sort_order = ?,
 	     is_active = ?, parent_id = ?, updated_at = ? WHERE id = ?`,
-		g.Label, icon, order, boolToInt(g.IsActive), parentID, now, cur.id); uerr != nil {
+		g.Label, icon, order, g.IsActive, parentID, now, cur.id); uerr != nil {
 		return "", false, false, uerr
 	}
 	return cur.id, false, true, nil
@@ -874,7 +874,7 @@ func (a *App) upsertPresetRow(tx *sql.Tx, p presetRow, groupID string, overwrite
 		      is_active, is_quick, tags, aliases, meta, group_id)
 		     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			id, now, now, p.Slug, p.Label, p.Width, p.Height, p.Unit, p.Icon, p.SortOrder,
-			boolToInt(p.IsActive), boolToInt(p.IsQuick),
+			p.IsActive, p.IsQuick,
 			pyJSONStringList(p.Tags), pyJSONStringList(p.Aliases), p.Meta,
 			groupID); ierr != nil {
 			return false, false, ierr
@@ -899,7 +899,7 @@ func (a *App) upsertPresetRow(tx *sql.Tx, p presetRow, groupID string, overwrite
 	if _, uerr := tx.Exec(`UPDATE presets_sizepreset SET label = ?, width = ?, height = ?, unit = ?,
 	     icon = ?, sort_order = ?, is_active = ?, is_quick = ?, tags = ?, aliases = ?, meta = ?,
 	     group_id = ?, updated_at = ? WHERE id = ?`,
-		p.Label, p.Width, p.Height, p.Unit, p.Icon, p.SortOrder, boolToInt(p.IsActive), boolToInt(p.IsQuick),
+		p.Label, p.Width, p.Height, p.Unit, p.Icon, p.SortOrder, p.IsActive, p.IsQuick,
 		tags, aliases, p.Meta, groupID, now, cur.id); uerr != nil {
 		return false, false, uerr
 	}
@@ -934,7 +934,7 @@ func deactivateMissing(tx *sql.Tx, table string, slugs []any, now string) (int, 
 	placeholders := strings.TrimSuffix(strings.Repeat("?,", len(slugs)), ",")
 	// updated_at is the FIRST placeholder, then the kept slugs.
 	args := append([]any{now}, slugs...)
-	query := `UPDATE ` + table + ` SET is_active = 0, updated_at = ? WHERE is_active = 1`
+	query := `UPDATE ` + table + ` SET is_active = FALSE, updated_at = ? WHERE is_active = TRUE`
 	if placeholders != "" {
 		query += ` AND slug NOT IN (` + placeholders + `)`
 	}
@@ -948,7 +948,7 @@ func deactivateMissing(tx *sql.Tx, table string, slugs []any, now string) (int, 
 
 // findPresetNameClash ports importer.find_name_clash.
 func (a *App) findPresetNameClash(tx *sql.Tx) (string, error) {
-	rows, err := tx.Query(`SELECT slug, aliases FROM presets_sizepreset WHERE is_active = 1`)
+	rows, err := tx.Query(`SELECT slug, aliases FROM presets_sizepreset WHERE is_active = TRUE`)
 	if err != nil {
 		return "", err
 	}
@@ -991,13 +991,6 @@ func parseJSONStringList(text string) []string {
 	}
 	_ = json.Unmarshal([]byte(text), &out)
 	return out
-}
-
-func boolToInt(v bool) int {
-	if v {
-		return 1
-	}
-	return 0
 }
 
 func nullStringEquals(v sql.NullString, want any) bool {

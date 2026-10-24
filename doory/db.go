@@ -15,6 +15,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
@@ -23,16 +25,28 @@ import (
 )
 
 // openPostgres opens a pgx-backed *sql.DB with the search_path pinned on
-// every new connection (OptionAfterConnect).
+// every new connection (OptionAfterConnect). Statements go through the pgq
+// driver wrapper, which rewrites the port's `?` placeholders to `$N` (D4).
 func openPostgres(dsn string) (*sql.DB, error) {
 	cfg, err := pgx.ParseConfig(dsn)
 	if err != nil {
 		return nil, err
 	}
-	return pgxstd.OpenDB(*cfg, pgxstd.OptionAfterConnect(func(ctx context.Context, c *pgx.Conn) error {
+	return openPostgresWith(*cfg, pgxstd.OptionAfterConnect(func(ctx context.Context, c *pgx.Conn) error {
 		_, err := c.Exec(ctx, "SET search_path = public, pg_catalog")
 		return err
 	})), nil
+}
+
+// sqliteFileFromDSN strips the driver's _pragma query from a SQLite DSN and
+// returns the file path ("" for an in-memory database).
+func sqliteFileFromDSN(dsn string) string {
+	file, _, _ := strings.Cut(dsn, "?")
+	file = strings.TrimPrefix(file, "file:")
+	if file == ":memory:" || strings.HasPrefix(file, ":memory:") {
+		return ""
+	}
+	return file
 }
 
 const sqlitePragmas = "_pragma=foreign_keys(1)&_pragma=busy_timeout(10000)&_pragma=journal_mode(WAL)"
@@ -56,6 +70,14 @@ func OpenDB(databaseURL string) (*sql.DB, string, error) {
 		driver, dsn = "sqlite", withPragmas(strings.TrimPrefix(databaseURL, "sqlite://"))
 	default:
 		driver, dsn = "sqlite", withPragmas(databaseURL)
+	}
+	if driver == "sqlite" {
+		// The no-config default lives in the data directory (D4): create it.
+		if file := sqliteFileFromDSN(dsn); file != "" {
+			if dir := filepath.Dir(file); dir != "" && dir != "." {
+				_ = os.MkdirAll(dir, 0o755)
+			}
+		}
 	}
 	db, err := sql.Open(driver, dsn)
 	if err != nil {

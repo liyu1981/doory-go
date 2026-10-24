@@ -531,7 +531,7 @@ func (a *App) ensureElementPack(slug string, name, kind, license, sourceURL, des
 		     (id, created_at, updated_at, slug, name, kind, license, license_url, attribution,
 		      source_url, source_ref, sync_fingerprint, synced_at, description, thumbnail,
 		      sort_order, is_published)
-		     VALUES (?, ?, ?, ?, ?, ?, ?, '', '', '', '', '', NULL, '', '', 0, 1)`,
+		     VALUES (?, ?, ?, ?, ?, ?, ?, '', '', '', '', '', NULL, '', '', 0, TRUE)`,
 			id, now, now, slug, name, kindArg, license); err != nil {
 			return "", false, err
 		}
@@ -845,10 +845,10 @@ func (a *App) writeElementPlans(packSlug string, writes []elementWrite) error {
 			if _, ierr := tx.Exec(`INSERT INTO elements_element
 			     (id, created_at, updated_at, key, name, kind, style, tags, search_name, search_tags,
 			      content_hash, svg, width, height, colors, is_recolorable, is_published, sort_order, pack_id)
-			     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`,
+			     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE, ?, ?)`,
 				id, now, now, write.Key, write.Name, write.Kind, write.Style, tagsJSON, searchName,
 				searchTags, write.ContentHash, storage, write.Width, write.Height, colorsJSON,
-				boolToInt(write.IsRecolorable), write.SortOrder, write.PackID); ierr != nil {
+				write.IsRecolorable, write.SortOrder, write.PackID); ierr != nil {
 				cleanup()
 				return ierr
 			}
@@ -859,7 +859,7 @@ func (a *App) writeElementPlans(packSlug string, writes []elementWrite) error {
 		     colors = ?, is_recolorable = ?, sort_order = ?, updated_at = ?
 		     WHERE id = ?`,
 			write.Name, write.Kind, write.Style, tagsJSON, searchName, searchTags, write.ContentHash,
-			storage, write.Width, write.Height, colorsJSON, boolToInt(write.IsRecolorable),
+			storage, write.Width, write.Height, colorsJSON, write.IsRecolorable,
 			write.SortOrder, now, id); uerr != nil {
 			cleanup()
 			return uerr

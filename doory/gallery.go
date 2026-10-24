@@ -34,7 +34,7 @@ func (a *App) templateCategoriesList(w http.ResponseWriter, r *http.Request) {
 	rows, err := a.DB.Query(`
 		SELECT c.id, c.slug, c.name, c.icon, c.sort_order,
 		       (SELECT COUNT(*) FROM gallery_template t
-		        WHERE t.category_id = c.id AND t.is_published = 1)
+		        WHERE t.category_id = c.id AND t.is_published = TRUE)
 		FROM gallery_templatecategory c
 		ORDER BY c.sort_order, c.name, c.id`)
 	if err != nil {
@@ -72,7 +72,7 @@ func (a *App) templatesList(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	var fields []FieldError
 
-	where := []string{"t.is_published = 1"}
+	where := []string{"t.is_published = TRUE"}
 	args := []any{}
 
 	if category := q.Get("category"); category != "" {
@@ -104,9 +104,9 @@ func (a *App) templatesList(w http.ResponseWriter, r *http.Request) {
 			fields = append(fields, SimpleField("featured",
 				"Enter a valid boolean.", "invalid"))
 		} else if b {
-			where = append(where, "t.is_featured = 1")
+			where = append(where, "t.is_featured = TRUE")
 		} else {
-			where = append(where, "t.is_featured = 0")
+			where = append(where, "t.is_featured = FALSE")
 		}
 	}
 	if words := q.Get("q"); words != "" {
@@ -273,7 +273,7 @@ func (a *App) templateDetail(w http.ResponseWriter, r *http.Request) {
 		       t.document, c.id, c.slug, c.name
 		FROM gallery_template t
 		LEFT JOIN gallery_templatecategory c ON c.id = t.category_id
-		WHERE t.slug = ? AND t.is_published = 1`, slug)
+		WHERE t.slug = ? AND t.is_published = TRUE`, slug)
 	var raw struct {
 		ID, Slug, Title, Description, Tags, Preset, Thumbnail string
 		Width, Height, PageCount, UseCount                    int64
@@ -325,7 +325,7 @@ func (a *App) templateUse(w http.ResponseWriter, r *http.Request) {
 	slug := routeParam(r, "slug")
 	var exists int
 	if err := a.DB.QueryRow(
-		`SELECT COUNT(*) FROM gallery_template WHERE slug = ? AND is_published = 1`,
+		`SELECT COUNT(*) FROM gallery_template WHERE slug = ? AND is_published = TRUE`,
 		slug).Scan(&exists); err != nil {
 		logerr(err, "templateUse")
 		writeDRF(w, http.StatusInternalServerError, "server_error", "Something went wrong on our side.")
@@ -355,7 +355,7 @@ func (a *App) sitemap(w http.ResponseWriter, r *http.Request) {
 	// Published templates (slug + lastmod), ordered by slug — none until
 	// seed_templates runs (ops family).
 	rows, err := a.DB.Query(
-		`SELECT slug, updated_at FROM gallery_template WHERE is_published = 1
+		`SELECT slug, updated_at FROM gallery_template WHERE is_published = TRUE
 		 ORDER BY slug LIMIT ?`, 50000-5)
 	if err == nil {
 		for rows.Next() {

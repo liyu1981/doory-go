@@ -104,7 +104,7 @@ func (a *App) createUser(email, password, displayName string) (*UserRow, error) 
 		`INSERT INTO accounts_user
 		 (password, last_login, is_superuser, id, created_at, updated_at, email,
 		  display_name, avatar, google_sub, is_email_verified, is_active, is_staff)
-		 VALUES (?, NULL, 0, ?, ?, ?, ?, ?, '', NULL, 0, 1, 0)`,
+		 VALUES (?, NULL, FALSE, ?, ?, ?, ?, ?, '', NULL, FALSE, TRUE, FALSE)`,
 		u.Password, u.ID, now, now, u.Email, u.DisplayName)
 	if err != nil {
 		return nil, err

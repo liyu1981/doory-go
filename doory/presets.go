@@ -13,6 +13,7 @@
 package doory
 
 import (
+	"database/sql"
 	"encoding/json"
 	"math/big"
 	"net/http"
@@ -153,8 +154,8 @@ func (a *App) sizePresets(w http.ResponseWriter, r *http.Request) {
 	// @cache_control(public=True, max_age=60) — set BEFORE the middleware
 	// stack so PrivateApiCache's setdefault leaves it (probe0004 step30).
 	w.Header().Set("Cache-Control", "public, max-age=60")
-	grows, err := a.DB.Query(`SELECT id, COALESCE(parent_id,''), slug, label, icon
-		FROM presets_sizepresetgroup WHERE is_active = 1
+	grows, err := a.DB.Query(`SELECT id, parent_id, slug, label, icon
+		FROM presets_sizepresetgroup WHERE is_active = TRUE
 		ORDER BY sort_order, label, slug`)
 	if err != nil {
 		logerr(err, "sizePresets.groups")
@@ -164,19 +165,21 @@ func (a *App) sizePresets(w http.ResponseWriter, r *http.Request) {
 	groups := []storedGroup{}
 	for grows.Next() {
 		var g storedGroup
-		if err := grows.Scan(&g.id, &g.parent, &g.slug, &g.label, &g.icon); err != nil {
+		var parent sql.NullString
+		if err := grows.Scan(&g.id, &parent, &g.slug, &g.label, &g.icon); err != nil {
 			grows.Close()
 			logerr(err, "sizePresets.groups.scan")
 			writeDRF(w, http.StatusInternalServerError, "server_error", "Something went wrong on our side.")
 			return
 		}
+		g.parent = parent.String
 		groups = append(groups, g)
 	}
 	grows.Close()
 
 	prows, err := a.DB.Query(`SELECT slug, label, width, height, unit, icon,
 		tags, aliases, meta, is_quick, group_id
-		FROM presets_sizepreset WHERE is_active = 1 ORDER BY sort_order, label, slug`)
+		FROM presets_sizepreset WHERE is_active = TRUE ORDER BY sort_order, label, slug`)
 	if err != nil {
 		logerr(err, "sizePresets.presets")
 		writeDRF(w, http.StatusInternalServerError, "server_error", "Something went wrong on our side.")
@@ -252,7 +255,7 @@ func (a *App) presetRowFor(slug string) *presetLookup {
 	rows, err := a.DB.Query(`
 		SELECT p.slug, p.width, p.height, p.meta, g.slug
 		FROM presets_sizepreset p JOIN presets_sizepresetgroup g ON g.id = p.group_id
-		WHERE p.is_active = 1 AND g.is_active = 1`)
+		WHERE p.is_active = TRUE AND g.is_active = TRUE`)
 	if err != nil {
 		return nil
 	}

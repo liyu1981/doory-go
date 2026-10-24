@@ -1,0 +1,1 @@
+import{r as e}from"./modulepreload-polyfill-DHZR_UKa.js";import{c as t,l as n}from"./minus-BVMF_gwu.js";import{t as r}from"./react-R8TFQQWi.js";var i=e(r(),1);function a(e,r,a){let[o,s]=(0,i.useState)(()=>{let n=t(e);return a.find(e=>e===n)??r});return[o,(0,i.useCallback)(t=>{s(t),n(e,t)},[e])]}export{a as t};

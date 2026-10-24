@@ -387,7 +387,7 @@ func (a *App) createFontFamily(ownerID, name, categoryOverride, inferred string)
 		`INSERT INTO fonts_fontfamily
 		 (id, created_at, updated_at, family, slug, category, scripts, is_variable,
 		  popularity, license, source, owner_id, is_published)
-		 VALUES (?, ?, ?, ?, ?, ?, '[]', 0, ?, ?, 'upload', ?, 1)`,
+		 VALUES (?, ?, ?, ?, ?, ?, '[]', FALSE, ?, ?, 'upload', ?, TRUE)`,
 		id, now, now, name, slugify(name), category, unranked, userFontLicense,
 		ownerID); err != nil {
 		return nil, err

@@ -175,7 +175,7 @@ func (a *App) versionsCreate(w http.ResponseWriter, r *http.Request) {
 	}
 	var manualCount int
 	_ = a.DB.QueryRow(
-		`SELECT COUNT(*) FROM designs_designversion WHERE design_id = ? AND is_auto = 0`,
+		`SELECT COUNT(*) FROM designs_designversion WHERE design_id = ? AND is_auto = FALSE`,
 		d.ID).Scan(&manualCount)
 	if manualCount >= maxManualVersions {
 		writeDRF(w, http.StatusConflict, "limit_reached",

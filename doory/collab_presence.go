@@ -248,9 +248,9 @@ func (a *App) collabActiveLink(id string) (shareLinkRow, bool) {
 		 FROM sharing_sharelink l
 		 JOIN designs_design d ON d.id = l.design_id
 		 JOIN accounts_user u ON u.id = d.owner_id
-		 WHERE l.id = ? AND l.is_active = 1
+		 WHERE l.id = ? AND l.is_active = TRUE
 		   AND (l.expires_at IS NULL OR l.expires_at > ?)
-		   AND d.trashed_at IS NULL AND u.is_active = 1`, id, now).
+		   AND d.trashed_at IS NULL AND u.is_active = TRUE`, id, now).
 		Scan(&l.ID, &l.DesignID, &l.Token, &l.Role, &l.IsActive, &l.ExpiresAt,
 			&l.PasswordHash, &l.CreatedBy, &l.LastAccessed, &l.AccessCount,
 			&l.CreatedAt, &l.UpdatedAt)

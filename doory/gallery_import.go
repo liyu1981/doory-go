@@ -593,7 +593,7 @@ func (a *App) importTemplate(data map[string]any, loadThumbnail thumbnailLoader,
 		     (id, created_at, updated_at, slug, title, description, tags, width, height, preset,
 		      document, page_count, thumbnail, is_featured, is_published, use_count, category_id,
 		      created_by_id)
-		     VALUES (?, ?, ?, ?, ?, '', '[]', ?, ?, '', '{}', 1, '', 0, 0, 0, NULL, NULL)`,
+		     VALUES (?, ?, ?, ?, ?, '', '[]', ?, ?, '', '{}', 1, '', FALSE, FALSE, 0, NULL, NULL)`,
 			existingID, now, now, parsed.Slug, parsed.Title, summary.Width, summary.Height); ierr != nil {
 			return "", false, ierr
 		}
@@ -627,7 +627,7 @@ func (a *App) importTemplate(data map[string]any, loadThumbnail thumbnailLoader,
 	}
 	if parsed.Featured != nil {
 		updates = append(updates, "is_featured = ?")
-		args = append(args, boolToInt(*parsed.Featured))
+		args = append(args, *parsed.Featured)
 	}
 	effectivePublish := parsed.Published
 	if publish != nil {
@@ -635,7 +635,7 @@ func (a *App) importTemplate(data map[string]any, loadThumbnail thumbnailLoader,
 	}
 	if effectivePublish != nil {
 		updates = append(updates, "is_published = ?")
-		args = append(args, boolToInt(*effectivePublish))
+		args = append(args, *effectivePublish)
 	}
 	updates = append(updates, "document = ?")
 	args = append(args, parsed.DocumentRaw)
