@@ -73,7 +73,7 @@ behavioral verification).
 | `backend/apps/ai/checks.py` |  | ⬜ |
 | `backend/apps/ai/env.py` | doory/ai_env.go (AI_PROVIDER_<n>_* parse, validation drops, MODELS/TASKS) | 🟡 |
 | `backend/apps/ai/errors.py` | doory/ai_policy.go + ai_taskview.go (STATUS map, ai_<code> envelopes, gate/quota codes) | 🟡 |
-| `backend/apps/ai/management/` |  | ⬜ |
+| `backend/apps/ai/management/` | doory/commands_seed.go (reencrypt_ai_secrets: decrypt with the configured keys, write back under the primary key, --dry-run) | ✅ |
 | `backend/apps/ai/migrations/` |  | ⬜ |
 | `backend/apps/ai/models.py` | doory/ai_rows.go (Provider/ProviderModel/AICall rows, audience, keeps-secret origin) | 🟡 |
 | `backend/apps/ai/quotas.py` | doory/ai_run.go (used_today, seconds_until_reset, ai_quota throttled envelope) | 🟡 |
@@ -186,7 +186,7 @@ behavioral verification).
 | `backend/apps/collab/crdt.py` | internal/crdt (yjs-go engine wrapper; D3 substitution, conformance-proven both directions in probes/0011-collab-crdt) | ✅ |
 | `backend/apps/collab/engine.py` | doory/collab_engine.go (apply_client_updates/budgets/slow-apply/noop/merged delta/pages_gone, convert, repair delta, replacement) | ✅ |
 | `backend/apps/collab/limits.py` | doory/collab_limits.go (TokenBucket from settings; per-account connect window + block in-process) | ✅ |
-| `backend/apps/collab/management/` | doory/collab_maintenance.go + cmd/doory/main.go (`collab-maintenance`: purge stale presence, save unflushed designs, compact logs) | ✅ |
+| `backend/apps/collab/management/` | doory/collab_maintenance.go + doory/cli.go (collab_maintenance: purge stale presence, save unflushed designs, compact logs) | ✅ |
 | `backend/apps/collab/middleware.py` | doory/collab_presence.go + doory/designs_views.go (409 use_realtime guard on document PATCH) | ✅ |
 | `backend/apps/collab/migrations/` | doory/migrations/0001_initial.sqlite.sql (collab_ystate/yupdate/roomconnection/collabinstance) | ✅ |
 | `backend/apps/collab/models.py` | doory/collab_store.go + doory/collab_presence.go (YState/YUpdate/RoomConnection/CollabInstance rows) | ✅ |
@@ -209,7 +209,7 @@ behavioral verification).
 | `backend/apps/core/csrf.py` | doory/csrf_verify.go (enforce_csrf causes + masked-token unmask) + doory/router.go (mixin ordering) | ✅ |
 | `backend/apps/core/exceptions.py` | doory/envelope.go (uniform error envelope + 401-for-anon; ValidationError field maps, ApiError, Throttled retry_after pending) | 🟡 |
 | `backend/apps/core/images.py` | doory/assets.go (prepareRaster: decode-decides, dims/pixels, original-bytes storage); EXIF transpose/re-encode + AVIF + thumbnail encoder pending | 🟡 |
-| `backend/apps/core/management/` |  | ⬜ |
+| `backend/apps/core/management/` | doory/commands_models.go + doory/mlmodels.go (sync_models: --list/--dry-run/--from-dir/HTTPS sources with size+SHA-256 verify, .part rename, NOTICE.txt) | ✅ |
 | `backend/apps/core/middleware.py` | doory/middleware.go (PermissionsPolicy + PrivateApiCache; MediaSecurityHeaders with assets family) | 🟡 |
 | `backend/apps/core/models.py` |  | ⬜ |
 | `backend/apps/core/pagination.py` | doory/designs.go (paginate/pageSlice/pageLink: 24/100 sizes, page_size cap, alphabetized absolute links, Invalid page) | ✅ |
@@ -241,7 +241,7 @@ behavioral verification).
 | `backend/apps/designs/fill.py` | (pending: fill/bulk_fill actions) | ⬜ |
 | `backend/apps/designs/folder_views.py` | doory/folders.go (list/create/detail/patch/delete + design_count annotation) | 🟡 |
 | `backend/apps/designs/folders.py` | doory/folders.go (depth/cycle/unique/reparent rules); pending: LimitReached 409 at500 folders | 🟡 |
-| `backend/apps/designs/management/` | (purge_trash command — ops family) | ⬜ |
+| `backend/apps/designs/management/` | doory/commands_seed.go + doory/designs_purge.go (purge_trash --days; full cascade delete + thumbnail files) | ✅ |
 | `backend/apps/designs/migrations/` | (schema: generated from oracle, digest-proven) | ✅ |
 | `backend/apps/designs/models.py` | doory/designs.go + doory/designs_versions.go + doory/folders.go (row ops, Meta ordering, thumbnail paths pending with assets) | 🟡 |
 | `backend/apps/designs/parsers.py` | doory/views_auth.go jsonBody (bounded); pending: DesignJSONParser media-type edge probes | 🟡 |
@@ -311,7 +311,7 @@ behavioral verification).
 | `backend/apps/exports/filenames.py` | doory/filenames.go (simple + structured, slug, preset parts) | 🟡 |
 | `backend/apps/exports/fonts.py` | doory/render.go (media storage names, sniffed font bytes, size caps) | ✅ |
 | `backend/apps/exports/layout.py` | doory/render.go (PageGeometry, crop marks, shadow-root sections, font CSS) | ✅ |
-| `backend/apps/exports/management/` | (purge_exports command — ops family) | ⬜ |
+| `backend/apps/exports/management/` | doory/commands_seed.go (purge_exports: expired exported images) | ✅ |
 | `backend/apps/exports/models.py` |  | ⬜ |
 | `backend/apps/exports/pdfmeta.py` | internal/pdfmeta (exact boxes anchored top-left, Trim/Bleed, /Lang, /Creator — pypdf round-6 number writing) | ✅ |
 | `backend/apps/exports/policy.py` | internal/renderpolicy (origin/prefix decisions, path traversal, fetch rules) | ✅ |
@@ -354,7 +354,7 @@ behavioral verification).
 | `backend/apps/gallery/apps.py` |  | ⬜ |
 | `backend/apps/gallery/filters.py` | doory/gallery.go (category/q/orientation/preset/featured/ordering + total tie-breaks) | 🟡 |
 | `backend/apps/gallery/importer.py` | (seed_templates/import_template command — ops family content) | ⬜ |
-| `backend/apps/gallery/management/` |  | ⬜ |
+| `backend/apps/gallery/management/` | doory/commands_seed.go (seed_gallery only; seed_templates/import_template pending — templates content slice) | 🟡 |
 | `backend/apps/gallery/migrations/` |  | ⬜ |
 | `backend/apps/gallery/models.py` | doory/gallery.go (row reads + orientation derivation); apply_document pending with import_template | 🟡 |
 | `backend/apps/gallery/serializers.py` | doory/gallery.go (category/summary/detail envelopes) | 🟡 |
@@ -404,7 +404,7 @@ behavioral verification).
 | `backend/apps/presets/admin.py` |  | ⬜ |
 | `backend/apps/presets/apps.py` |  | ⬜ |
 | `backend/apps/presets/importer.py` | doory/migrations/0002_presets.seed.sqlite.sql (row dump via pnpm seedgen — content parity without porting write()); FORMAT_VERSION via doory/presets.go | ✅ |
-| `backend/apps/presets/management/` | (seed_size_presets command — ops family) | ⬜ |
+| `backend/apps/presets/management/` | doory/commands_seed.go + doory/presets_import.go (seed_size_presets --update; import_size_presets paths --mode --dry-run with the full validator) | ✅ |
 | `backend/apps/presets/migrations/` | (schema + seed via generated migrations, digest-proven) | ✅ |
 | `backend/apps/presets/models.py` | doory/presets.go (row reads + width_px/height_px as to_px properties) | 🟡 |
 | `backend/apps/presets/tests/` | (dispositions: ledger/test-mapping-v*.json) | 🟡 |

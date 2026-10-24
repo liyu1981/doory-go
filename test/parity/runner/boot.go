@@ -27,6 +27,16 @@ type Side struct {
 	Jars map[string]http.CookieJar
 	cmd  *exec.Cmd
 	log  *os.File
+
+	// The CLI driver needs the side's database, roots, binary and Python.
+	DatabaseURL string
+	MediaRoot   string
+	ExportRoot  string
+	WorkDir     string
+	RepoRoot    string
+	Bin         string // the Go binary
+	Python      string // the oracle venv interpreter
+	BackendDir  string // the oracle's backend directory
 }
 
 // jar returns (creating on demand) the named cookie jar.
@@ -72,15 +82,24 @@ func (r *Run) bootPair(sc *Scenario, renderURL string) (*Side, *Side, error) {
 		return nil, nil, err
 	}
 
-	media := filepath.Join(r.WorkDir, "media")
-	exports := filepath.Join(r.WorkDir, "exports")
-	for _, d := range []string{media, exports} {
+	// Per-side storage roots: the CLI driver compares each side's media tree,
+	// so oracle and Go must not write into the same directory.
+	media := filepath.Join(r.WorkDir, "oracle-media")
+	exports := filepath.Join(r.WorkDir, "oracle-exports")
+	goMedia := filepath.Join(r.WorkDir, "go-media")
+	goExports := filepath.Join(r.WorkDir, "go-exports")
+	for _, d := range []string{media, exports, goMedia, goExports} {
 		if err := os.MkdirAll(d, 0o755); err != nil {
 			return nil, nil, err
 		}
 	}
 
-	oracle := &Side{Name: "oracle", Base: fmt.Sprintf("http://127.0.0.1:%d", oraclePort)}
+	oracleDB := filepath.Join(r.WorkDir, "oracle.sqlite3")
+	oracle := &Side{Name: "oracle", Base: fmt.Sprintf("http://127.0.0.1:%d", oraclePort),
+		DatabaseURL: "sqlite:///" + oracleDB,
+		MediaRoot:   media, ExportRoot: exports, WorkDir: r.WorkDir, RepoRoot: r.Repo,
+		Python: filepath.Join(r.Repo, ".oracle", "venv", "bin", "python"),
+		BackendDir: filepath.Join(r.Repo, ".upstream", "current", "backend")}
 	oracleLog := filepath.Join(r.WorkDir, "oracle.log")
 	oracle.log, _ = os.Create(oracleLog)
 	// The oracle boots on the ASGI application (uvicorn doory.asgi:application):
@@ -142,13 +161,17 @@ func (r *Run) bootPair(sc *Scenario, renderURL string) (*Side, *Side, error) {
 	}
 	oracle.cmd = oracleCmd
 
-	goSide := &Side{Name: "go", Base: fmt.Sprintf("http://127.0.0.1:%d", goPort)}
+	goSide := &Side{Name: "go", Base: fmt.Sprintf("http://127.0.0.1:%d", goPort),
+		DatabaseURL: goDB, MediaRoot: goMedia, ExportRoot: goExports, WorkDir: r.WorkDir,
+		RepoRoot: r.Repo, Bin: binPath}
 	goLog := filepath.Join(r.WorkDir, "go.log")
 	goSide.log, _ = os.Create(goLog)
 	serve := exec.Command(binPath, "serve", fmt.Sprintf("127.0.0.1:%d", goPort))
 	serve.Dir = r.Repo
 	serve.Env = append(os.Environ(), "DATABASE_URL="+goDB,
 		fmt.Sprintf("DOORY_ADDR=127.0.0.1:%d", goPort),
+		"MEDIA_ROOT="+goMedia,
+		"EXPORT_STORAGE_ROOT="+goExports,
 		// Same plain-HTTP local-testing opt-out as the oracle (prod.py docs).
 		"SECURE_COOKIES=false")
 	serve.Env = append(serve.Env, scenarioEnv(sc)...)

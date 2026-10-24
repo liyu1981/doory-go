@@ -117,7 +117,15 @@ func Execute(repo string, sc *Scenario, renderURL string) ([]string, error) {
 			// a scenario-level [ws] table is the trailing WS interaction
 			wsStep = sc.Ws
 		}
-		if wsStep != nil {
+		if step.Command != "" {
+			stepProblems = runCommandStep(i, oracle, goSide, sc, StepCommand{
+				Command: step.Command, Args: step.Args, Env: step.Env,
+			})
+			if len(stepProblems) > 0 {
+				status = "diff"
+			}
+			fmt.Printf("  step %02d CLI    %-32s %s\n", i+1, step.Command, status)
+		} else if wsStep != nil {
 			stepProblems = runWsStep(i, oracle, goSide, *wsStep, vars, captures, wsSessions)
 			if len(stepProblems) > 0 {
 				status = "diff"

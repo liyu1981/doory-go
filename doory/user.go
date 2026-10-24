@@ -27,6 +27,7 @@ type UserRow struct {
 	IsActive        bool
 	IsStaff         bool
 	Password        string
+	LastLogin       sql.NullString
 	CreatedAt       string // Django sqlite datetime storage
 	UpdatedAt       string
 }
@@ -36,21 +37,21 @@ type UserRow struct {
 func getUserByEmail(db *sql.DB, email string) (*UserRow, error) {
 	return scanUser(db.QueryRow(
 		`SELECT id, email, display_name, avatar, google_sub, is_email_verified, is_active,
-		        is_staff, password, created_at, updated_at
+		        is_staff, password, last_login, created_at, updated_at
 		 FROM accounts_user WHERE email = ?`, strings.ToLower(strings.TrimSpace(email))))
 }
 
 func getUserByID(db *sql.DB, id string) (*UserRow, error) {
 	return scanUser(db.QueryRow(
 		`SELECT id, email, display_name, avatar, google_sub, is_email_verified, is_active,
-		        is_staff, password, created_at, updated_at
+		        is_staff, password, last_login, created_at, updated_at
 		 FROM accounts_user WHERE id = ?`, id))
 }
 
 func scanUser(row *sql.Row) (*UserRow, error) {
 	var u UserRow
 	err := row.Scan(&u.ID, &u.Email, &u.DisplayName, &u.Avatar, &u.GoogleSub,
-		&u.IsEmailVerified, &u.IsActive, &u.IsStaff, &u.Password, &u.CreatedAt, &u.UpdatedAt)
+		&u.IsEmailVerified, &u.IsActive, &u.IsStaff, &u.Password, &u.LastLogin, &u.CreatedAt, &u.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}

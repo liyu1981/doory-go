@@ -1,0 +1,176 @@
+# Behavior family: ops (M13) — management commands: exit code, stdout,
+# stderr, database rows and media files, compared after every command.
+#
+# The cli driver runs each step on both sides of a booted pair (same workdir
+# DBs the HTTP steps use) and compares:
+#   - exit code, stdout, stderr (normalizing only the program name and the
+#     Django global-option block, D13),
+#   - a per-table database digest (rows normalized for per-side uuids,
+#     timestamps and secret columns) + PRAGMA foreign_key_check,
+#   - the media and export trees (relative paths + content hashes).
+#
+# Commands covered here are the deterministic ones: purge_trash (cascade +
+# thumbnail removal), purge_exports, seed_gallery, seed_size_presets,
+# import_size_presets (extend/dry-run/replace), sync_models
+# (--list/--dry-run/--from-dir), reencrypt_ai_secrets (with and without
+# --dry-run) and collab_maintenance.
+
+name = "22-ops-commands"
+description = "Management commands match the oracle: output, exit codes, database cascade and media files."
+driver = "cli"
+family = "ops"
+tags = []
+dialects = ["sqlite"]
+covers = [
+  "backend/apps/designs/management/",
+  "backend/apps/exports/management/",
+  "backend/apps/gallery/management/",
+  "backend/apps/presets/management/",
+  "backend/apps/core/management/",
+  "backend/apps/ai/management/",
+  "backend/apps/collab/management/",
+]
+
+[env]
+DJANGO_SECRET_KEY = "parity-oracle-secret-key-0123456789"
+SECURE_COOKIES = "false"
+REALTIME_ENABLED = "true"
+
+# ---- empty-state commands ----
+[[steps]]
+command = "purge_exports"
+
+[[steps]]
+command = "collab_maintenance"
+
+[[steps]]
+command = "reencrypt_ai_secrets"
+
+[[steps]]
+command = "reencrypt_ai_secrets"
+args = ["--dry-run"]
+
+[[steps]]
+command = "seed_gallery"
+
+[[steps]]
+command = "seed_gallery"
+args = ["--update"]
+
+[[steps]]
+command = "seed_size_presets"
+
+[[steps]]
+command = "seed_size_presets"
+args = ["--update"]
+
+# ---- data for purge_trash: a trashed design with a link, a comment and a version ----
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/csrf/"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/register/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"ops22@example.com","password":"Tr0ub4dor&3xkcd9"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"title":"To Purge"}'
+capture = { did = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/{{capture:did}}/share-links/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"role":"view"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/{{capture:did}}/comments/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"body":"thread","page_id":"p1","x":1,"y":2}'
+
+[[steps]]
+method = "DELETE"
+path = "/api/v1/designs/{{capture:did}}/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+
+# Two trashed designs (nothing removed with a future cutoff), then the purge.
+[[steps]]
+command = "purge_trash"
+
+[[steps]]
+command = "purge_trash"
+args = ["--days", "0"]
+
+[[steps]]
+method = "GET"
+path = "/api/v1/designs/{{capture:did}}/"
+
+# ---- error paths ----
+[[steps]]
+command = "purge_trash"
+args = ["--days", "-1"]
+
+[[steps]]
+command = "purge_trash"
+args = ["--days", "abc"]
+
+[[steps]]
+command = "import_size_presets"
+
+[[steps]]
+command = "import_size_presets"
+args = ["test/parity/testdata/ops/presets-extra.json", "--mode", "bogus"]
+
+[[steps]]
+command = "import_size_presets"
+args = ["test/parity/testdata/ops/does-not-exist.json"]
+
+# ---- size preset catalogues ----
+[[steps]]
+command = "import_size_presets"
+args = ["test/parity/testdata/ops/presets-extra.json"]
+
+[[steps]]
+command = "import_size_presets"
+args = ["test/parity/testdata/ops/presets-extra.json"]
+
+[[steps]]
+command = "import_size_presets"
+args = ["test/parity/testdata/ops/presets-extra.json", "--dry-run"]
+
+[[steps]]
+command = "import_size_presets"
+args = ["test/parity/testdata/ops/presets-extra.json", "--mode", "replace"]
+
+[[steps]]
+command = "seed_size_presets"
+
+# ---- machine-learning models (offline paths) ----
+[[steps]]
+command = "sync_models"
+args = ["--list"]
+
+[[steps]]
+command = "sync_models"
+args = ["--dry-run"]
+
+[[steps]]
+command = "sync_models"
+args = ["--model", "nope"]
+
+[[steps]]
+command = "sync_models"
+args = ["--from-dir", "test/parity/testdata/ops/models"]
+
+[[steps]]
+command = "sync_models"
+args = ["--from-dir", "test/parity/testdata/ops"]
+
+[[steps]]
+command = "nope"

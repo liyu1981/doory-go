@@ -1,0 +1,445 @@
+{
+  "version": 1,
+  "groups": [
+    {
+      "slug": "social",
+      "label": "Social media",
+      "icon": "share-2",
+      "children": [
+        {
+          "slug": "instagram",
+          "label": "Instagram",
+          "presets": [
+            {
+              "slug": "instagram-post",
+              "label": "Instagram Post",
+              "width": 1080,
+              "height": 1080,
+              "unit": "px",
+              "icon": "square",
+              "tags": [
+                "1:1"
+              ],
+              "is_quick": true
+            },
+            {
+              "slug": "instagram-portrait",
+              "label": "Instagram Portrait Post",
+              "width": 1080,
+              "height": 1350,
+              "unit": "px",
+              "icon": "rectangle-vertical",
+              "tags": [
+                "4:5"
+              ]
+            },
+            {
+              "slug": "instagram-story",
+              "label": "Instagram Story",
+              "width": 1080,
+              "height": 1920,
+              "unit": "px",
+              "icon": "smartphone",
+              "tags": [
+                "9:16"
+              ],
+              "is_quick": true
+            },
+            {
+              "slug": "instagram-reel",
+              "label": "Instagram Reel",
+              "width": 1080,
+              "height": 1920,
+              "unit": "px",
+              "icon": "clapperboard",
+              "tags": [
+                "9:16"
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "facebook",
+          "label": "Facebook",
+          "presets": [
+            {
+              "slug": "facebook-post",
+              "label": "Facebook Post",
+              "width": 1200,
+              "height": 630,
+              "unit": "px",
+              "icon": "rectangle-horizontal"
+            },
+            {
+              "slug": "facebook-cover",
+              "label": "Facebook Cover",
+              "width": 820,
+              "height": 312,
+              "unit": "px",
+              "icon": "image"
+            }
+          ]
+        },
+        {
+          "slug": "x",
+          "label": "X (Twitter)",
+          "presets": [
+            {
+              "slug": "x-post",
+              "label": "X (Twitter) Post",
+              "width": 1600,
+              "height": 900,
+              "unit": "px",
+              "icon": "rectangle-horizontal",
+              "tags": [
+                "16:9"
+              ],
+              "aliases": [
+                "twitter-post"
+              ]
+            },
+            {
+              "slug": "x-header",
+              "label": "X (Twitter) Header",
+              "width": 1500,
+              "height": 500,
+              "unit": "px",
+              "icon": "image",
+              "tags": [
+                "3:1"
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "linkedin",
+          "label": "LinkedIn",
+          "presets": [
+            {
+              "slug": "linkedin-post",
+              "label": "LinkedIn Post",
+              "width": 1200,
+              "height": 627,
+              "unit": "px",
+              "icon": "briefcase"
+            },
+            {
+              "slug": "linkedin-banner",
+              "label": "LinkedIn Banner",
+              "width": 1584,
+              "height": 396,
+              "unit": "px",
+              "icon": "image",
+              "tags": [
+                "4:1"
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "youtube",
+          "label": "YouTube",
+          "presets": [
+            {
+              "slug": "youtube-thumbnail",
+              "label": "YouTube Thumbnail",
+              "width": 1280,
+              "height": 720,
+              "unit": "px",
+              "icon": "film",
+              "tags": [
+                "16:9"
+              ],
+              "is_quick": true
+            },
+            {
+              "slug": "youtube-banner",
+              "label": "YouTube Banner",
+              "width": 2560,
+              "height": 1440,
+              "unit": "px",
+              "icon": "image",
+              "tags": [
+                "16:9"
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "pinterest",
+          "label": "Pinterest",
+          "presets": [
+            {
+              "slug": "pinterest-pin",
+              "label": "Pinterest Pin",
+              "width": 1000,
+              "height": 1500,
+              "unit": "px",
+              "icon": "layout",
+              "tags": [
+                "2:3"
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "tiktok",
+          "label": "TikTok",
+          "presets": [
+            {
+              "slug": "tiktok-video",
+              "label": "TikTok Video",
+              "width": 1080,
+              "height": 1920,
+              "unit": "px",
+              "icon": "smartphone",
+              "tags": [
+                "9:16"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "presentation",
+      "label": "Presentation",
+      "icon": "presentation",
+      "presets": [
+        {
+          "slug": "presentation",
+          "label": "Presentation (16:9)",
+          "width": 1920,
+          "height": 1080,
+          "unit": "px",
+          "icon": "presentation",
+          "tags": [
+            "16:9"
+          ],
+          "is_quick": true
+        },
+        {
+          "slug": "presentation-4-3",
+          "label": "Presentation (4:3)",
+          "width": 1024,
+          "height": 768,
+          "unit": "px",
+          "icon": "presentation",
+          "tags": [
+            "4:3"
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "print",
+      "label": "Print",
+      "icon": "printer",
+      "children": [
+        {
+          "slug": "paper",
+          "label": "Paper sizes",
+          "presets": [
+            {
+              "slug": "a4",
+              "label": "A4 Document",
+              "width": 210,
+              "height": 297,
+              "unit": "mm",
+              "icon": "file-text",
+              "is_quick": true
+            },
+            {
+              "slug": "a5",
+              "label": "A5",
+              "width": 148,
+              "height": 210,
+              "unit": "mm",
+              "icon": "file-text"
+            },
+            {
+              "slug": "a3",
+              "label": "A3",
+              "width": 297,
+              "height": 420,
+              "unit": "mm",
+              "icon": "file-text"
+            },
+            {
+              "slug": "letter",
+              "label": "US Letter",
+              "width": 8.5,
+              "height": 11,
+              "unit": "in",
+              "icon": "file-text"
+            }
+          ]
+        },
+        {
+          "slug": "posters-flyers",
+          "label": "Posters and flyers",
+          "presets": [
+            {
+              "slug": "poster",
+              "label": "Poster (18 × 24 in)",
+              "width": 18,
+              "height": 24,
+              "unit": "in",
+              "icon": "printer",
+              "tags": [
+                "3:4"
+              ],
+              "is_quick": true
+            },
+            {
+              "slug": "flyer",
+              "label": "Flyer (5.5 × 8.5 in)",
+              "width": 5.5,
+              "height": 8.5,
+              "unit": "in",
+              "icon": "newspaper"
+            },
+            {
+              "slug": "brochure",
+              "label": "Brochure (11 × 8.5 in)",
+              "width": 11,
+              "height": 8.5,
+              "unit": "in",
+              "icon": "newspaper"
+            }
+          ]
+        },
+        {
+          "slug": "cards",
+          "label": "Cards and invitations",
+          "presets": [
+            {
+              "slug": "business-card",
+              "label": "Business Card (3.5 × 2 in)",
+              "width": 3.5,
+              "height": 2,
+              "unit": "in",
+              "icon": "credit-card"
+            },
+            {
+              "slug": "postcard",
+              "label": "Postcard (6 × 4 in)",
+              "width": 6,
+              "height": 4,
+              "unit": "in",
+              "icon": "mail",
+              "tags": [
+                "3:2"
+              ]
+            },
+            {
+              "slug": "invitation",
+              "label": "Invitation (5 × 7 in)",
+              "width": 5,
+              "height": 7,
+              "unit": "in",
+              "icon": "party-popper",
+              "tags": [
+                "5:7"
+              ]
+            },
+            {
+              "slug": "greeting-card",
+              "label": "Greeting Card (4.25 × 5.5 in)",
+              "width": 4.25,
+              "height": 5.5,
+              "unit": "in",
+              "icon": "mail"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "documents",
+      "label": "Documents",
+      "icon": "file-text",
+      "presets": [
+        {
+          "slug": "resume",
+          "label": "Resume",
+          "width": 210,
+          "height": 297,
+          "unit": "mm",
+          "icon": "briefcase"
+        },
+        {
+          "slug": "letterhead",
+          "label": "Letterhead",
+          "width": 8.5,
+          "height": 11,
+          "unit": "in",
+          "icon": "file-text"
+        }
+      ]
+    },
+    {
+      "slug": "video",
+      "label": "Video",
+      "icon": "monitor",
+      "presets": [
+        {
+          "slug": "video-1080p",
+          "label": "Video (1080p)",
+          "width": 1920,
+          "height": 1080,
+          "unit": "px",
+          "icon": "monitor",
+          "tags": [
+            "16:9"
+          ]
+        },
+        {
+          "slug": "video-4k",
+          "label": "Video (4K)",
+          "width": 3840,
+          "height": 2160,
+          "unit": "px",
+          "icon": "monitor",
+          "tags": [
+            "16:9"
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "web",
+      "label": "Web",
+      "icon": "globe",
+      "presets": [
+        {
+          "slug": "web-banner",
+          "label": "Web Banner (728 × 90)",
+          "width": 728,
+          "height": 90,
+          "unit": "px",
+          "icon": "rectangle-horizontal"
+        }
+      ]
+    },
+    {
+      "slug": "etc",
+      "label": "More",
+      "icon": "ellipsis",
+      "presets": [
+        {
+          "slug": "logo",
+          "label": "Logo (500 × 500)",
+          "width": 500,
+          "height": 500,
+          "unit": "px",
+          "icon": "square",
+          "tags": [
+            "1:1"
+          ],
+          "is_quick": true
+        }
+      ]
+    }
+  ]
+}

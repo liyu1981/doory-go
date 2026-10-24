@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "groups": [
+    {
+      "slug": "parity-extra",
+      "label": "Parity Extra",
+      "icon": "flask-conical",
+      "order": 990,
+      "presets": [
+        {"slug": "parity-a6", "label": "Parity A6", "width": 105, "height": 148, "unit": "mm", "icon": "file", "tags": ["Print", "print"], "aliases": ["a6-old"], "meta": {"safe_zone": {"top": 0.1, "bottom": 0.05}}},
+        {"slug": "parity-square", "label": "Parity Square", "width": 512, "height": 512, "is_quick": true}
+      ],
+      "children": [
+        {"slug": "parity-extra-child", "label": "Parity Child", "presets": [
+          {"slug": "parity-child", "label": "Parity Child Page", "width": 8.5, "height": 11, "unit": "in"}
+        ]}
+      ]
+    }
+  ]
+}

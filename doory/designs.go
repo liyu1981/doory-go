@@ -563,7 +563,7 @@ func (a *App) designsCreate(w http.ResponseWriter, r *http.Request) {
 		document = doc
 		// Storage keeps the submitted key order (Python's json.loads ->
 		// dict preserves it; mustMarshal of a Go map would not).
-		documentRaw = compactStoredJSON(body.Document)
+		documentRaw = pythonStoredJSON(body.Document)
 	} else {
 		document, documentRaw = blankDocument(*body.Width, *body.Height, deref(body.Preset))
 	}

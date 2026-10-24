@@ -373,7 +373,7 @@ func (a *App) CollabFlushDocument(designID string, document map[string]any, vers
 			editor = u
 		}
 	}
-	a.maybeRecordAutoVersion(&designForVersion, docRaw, editor)
+	a.maybeRecordAutoVersion(&designForVersion, string(docRaw), editor)
 	return CollabFlushResult{Saved: true, Revision: newRevision}, nil
 }
 

@@ -6,6 +6,7 @@ package doory
 import (
 	_ "embed"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -17,19 +18,34 @@ var manifestJSON []byte
 
 // Manifest mirrors data/ml_models.json (schema + models).
 type Manifest struct {
+	Schema int             `json:"schema"`
 	Models []ManifestModel `json:"models"`
 }
 
+// ManifestModel is manifest.ModelSpec (the fields sync_models and /config/ use).
 type ManifestModel struct {
-	ID       string        `json:"id"`
-	Task     string        `json:"task"`
-	Name     string        `json:"name"`
-	Priority int           `json:"priority"`
-	File     string        `json:"file"`
-	Bytes    int64         `json:"bytes"`
-	SHA256   string        `json:"sha256"`
-	Input    ManifestInput `json:"input"`
-	Output   string        `json:"output"`
+	ID          string          `json:"id"`
+	Task        string          `json:"task"`
+	Name        string          `json:"name"`
+	Description string          `json:"description"`
+	Priority    int             `json:"priority"`
+	Default     bool            `json:"default"`
+	File        string          `json:"file"`
+	Bytes       int64           `json:"bytes"`
+	SHA256      string          `json:"sha256"`
+	URLs        []string        `json:"urls"`
+	Homepage    string          `json:"homepage"`
+	License     ManifestLicense `json:"license"`
+	Input       ManifestInput   `json:"input"`
+	Output      string          `json:"output"`
+}
+
+// ManifestLicense is manifest.LicenseSpec.
+type ManifestLicense struct {
+	SPDX     string `json:"spdx"`
+	URL      string `json:"url"`
+	Holder   string `json:"holder"`
+	Evidence string `json:"evidence"`
 }
 
 type ManifestInput struct {
@@ -38,6 +54,66 @@ type ManifestInput struct {
 	Mean    []float64 `json:"mean"`
 	Std     []float64 `json:"std"`
 	Rescale string    `json:"rescale"`
+}
+
+// notice ports ModelSpec.notice: the text written next to the model file so
+// the licence travels with the weights.
+func (m ManifestModel) notice() string {
+	return fmt.Sprintf("%s\n%s\n\nThe weights in %s are distributed under the %s licence (%s).\n%s\n\n"+
+		"Doory downloaded this exact file (SHA-256 %s) from the sources listed in backend/data/ml_models.json "+
+		"and did not modify it.\n",
+		m.Name, m.Homepage, m.storedName(), m.License.SPDX, m.License.URL, m.License.Holder, m.SHA256)
+}
+
+// defaults ports Manifest.defaults.
+func (m *Manifest) defaults() []ManifestModel {
+	out := []ManifestModel{}
+	for _, model := range m.Models {
+		if model.Default {
+			out = append(out, model)
+		}
+	}
+	return out
+}
+
+// selectModels ports Manifest.select: the named ids in manifest order, every
+// model (--all), or the defaults.
+func (m *Manifest) selectModels(ids []string, everything bool) ([]ManifestModel, error) {
+	if everything {
+		return append([]ManifestModel{}, m.Models...), nil
+	}
+	if len(ids) == 0 {
+		return m.defaults(), nil
+	}
+	known := map[string]bool{}
+	for _, model := range m.Models {
+		known[model.ID] = true
+	}
+	var unknown []string
+	for _, id := range ids {
+		if !known[id] {
+			unknown = append(unknown, id)
+		}
+	}
+	if len(unknown) > 0 {
+		names := make([]string, len(m.Models))
+		for i, model := range m.Models {
+			names[i] = model.ID
+		}
+		return nil, fmt.Errorf("Unknown model id(s): %s. Known models: %s.",
+			strings.Join(unknown, ", "), strings.Join(names, ", "))
+	}
+	wanted := map[string]bool{}
+	for _, id := range ids {
+		wanted[id] = true
+	}
+	out := []ManifestModel{}
+	for _, model := range m.Models {
+		if wanted[model.ID] {
+			out = append(out, model)
+		}
+	}
+	return out, nil
 }
 
 // loadManifest parses the embedded manifest. Parse failure mirrors

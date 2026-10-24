@@ -87,7 +87,10 @@ func blankDocument(width, height int64, preset string) (parsed any, raw []byte) 
 	if preset != "" {
 		doc.Meta = &blankMeta{PresetID: preset}
 	}
-	raw = encodeCompactJSON(doc)
+	// Django's default_document() is a dict stored through json.dumps: the
+	// column text carries Python's ", "/": " separators (the oracle's seeded
+	// and created rows show it; the API re-canonicalizes on read).
+	raw = pythonStoredJSON(encodeCompactJSON(doc))
 	parsed, _ = parseJSONValue(raw)
 	return parsed, raw
 }
@@ -119,7 +122,7 @@ func (a *App) createDesign(owner *UserRow, title string, document any, documentR
 	_, err = a.DB.Exec(
 		`INSERT INTO designs_design (`+designCols+`)
 		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, 0, 1, ?, ?, NULL)`,
-		id, owner.ID, title, info.Width, info.Height, info.Preset, docText,
+		id, owner.ID, title, info.Width, info.Height, info.Preset, string(docText),
 		info.PageCount, folderArg, now, now)
 	if err != nil {
 		return nil, err
@@ -272,11 +275,11 @@ func (a *App) designsPartialUpdate(w http.ResponseWriter, r *http.Request) {
 		info, _ := describeDocument(parsedDoc)
 		updates = append(updates, "document = ?", "width = ?", "height = ?",
 			"page_count = ?", "preset = ?", "revision = ?")
-		args = append(args, compactStoredJSON(body.Document),
+		args = append(args, string(pythonStoredJSON(body.Document)),
 			info.Width, info.Height, info.PageCount, info.Preset, d.Revision+1)
 		// _maybe_record_auto_version: first document save snapshots
 		// (latest is None); later saves within 10 minutes skip.
-		a.maybeRecordAutoVersion(d, compactStoredJSON(body.Document), u)
+		a.maybeRecordAutoVersion(d, string(pythonStoredJSON(body.Document)), u)
 	}
 	if len(updates) == 0 && !hasDoc {
 		// Nothing touched: Django still wouldn't save — but validated_data
@@ -338,7 +341,7 @@ func writeConflict(w http.ResponseWriter, revision int64, updatedAt string, mess
 }
 
 // maybeRecordAutoVersion ports services._maybe_record_auto_version.
-func (a *App) maybeRecordAutoVersion(d *designRow, docRaw []byte, u *UserRow) {
+func (a *App) maybeRecordAutoVersion(d *designRow, docRaw string, u *UserRow) {
 	var latest sql.NullString
 	_ = a.DB.QueryRow(
 		`SELECT created_at FROM designs_designversion WHERE design_id = ?
@@ -350,7 +353,7 @@ func (a *App) maybeRecordAutoVersion(d *designRow, docRaw []byte, u *UserRow) {
 		}
 	}
 	pageCount := int64(0)
-	if parsed, err := parseJSONValue(docRaw); err == nil {
+	if parsed, err := parseJSONValue([]byte(docRaw)); err == nil {
 		if m, ok := parsed.(map[string]any); ok {
 			if pages, ok := m["pages"].([]any); ok {
 				pageCount = int64(len(pages))
@@ -362,7 +365,7 @@ func (a *App) maybeRecordAutoVersion(d *designRow, docRaw []byte, u *UserRow) {
 }
 
 // recordVersion ports services._record_version.
-func (a *App) recordVersion(d *designRow, docText []byte, pageCount int64, u *UserRow, isAuto bool, label string) error {
+func (a *App) recordVersion(d *designRow, docText string, pageCount int64, u *UserRow, isAuto bool, label string) error {
 	id := newUUID4Hex()
 	now := formatDjangoDateTime(time.Now())
 	_, err := a.DB.Exec(
@@ -415,7 +418,7 @@ func (a *App) designsDestroy(w http.ResponseWriter, r *http.Request) {
 				"Only designs in the trash can be deleted permanently.")
 			return
 		}
-		if err := a.purgeDesigns([]string{d.ID}); err != nil {
+		if _, err := a.purgeDesigns([]string{d.ID}); err != nil {
 			writeDRF(w, http.StatusInternalServerError, "server_error", "Something went wrong on our side.")
 			return
 		}
@@ -438,19 +441,6 @@ func (a *App) designsDestroy(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Length", "0")
 	w.WriteHeader(http.StatusNoContent)
-}
-
-// purgeDesigns deletes designs and (cascade) their versions.
-func (a *App) purgeDesigns(ids []string) error {
-	for _, id := range ids {
-		if _, err := a.DB.Exec(`DELETE FROM designs_designversion WHERE design_id = ?`, id); err != nil {
-			return err
-		}
-		if _, err := a.DB.Exec(`DELETE FROM designs_design WHERE id = ?`, id); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // designsRestore ports DesignViewSet.restore (untrash).
@@ -549,7 +539,7 @@ func (a *App) designsTrashEmpty(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	rows.Close()
-	if err := a.purgeDesigns(ids); err != nil {
+	if _, err := a.purgeDesigns(ids); err != nil {
 		writeDRF(w, http.StatusInternalServerError, "server_error", "Something went wrong on our side.")
 		return
 	}

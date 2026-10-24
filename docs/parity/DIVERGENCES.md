@@ -179,3 +179,23 @@ Rules (PiG §6):
   those paths becomes meaningful and this allowance can shrink to specific
   paths.
 - evidence: probes/0007-assets step18 (media 404 headers), PLAN.md §4.
+
+## D13 — single-binary CLI surface (management commands)
+
+- SCRUTINIZED: approved
+- status: active
+- summary: `manage.py <command>` becomes `doory <command>`; the command names,
+  options, stdout/stderr text, exit codes and side effects are the same, but
+  the framework-level shell is not: there is no Django global option block
+  (--settings/--pythonpath/--traceback/--no-color/--force-color/--skip-checks
+  — a single binary has no settings module), no `createcachetable` (the cache
+  is in-process, D6) and no `collectstatic` (assets are embedded, D7). The
+  parity cli-driver normalizes exactly those: the program name, the global
+  option block, argparse's line wrapping, and the framework tables
+  (django_migrations vs schema_migrations, django_content_type,
+  auth_permission/auth_group, django_session's signed payload — D5). Every
+  command's own output, rows and files compare byte for byte.
+- remove-when: n/a (structural); if a Django global option is ever needed the
+  driver's normalization entry goes away with it.
+- evidence: PLAN.md §5 #13 and the M13 logs, scenario 22-ops-commands,
+  doory/cli.go + cli_args.go + entrypoint.go.

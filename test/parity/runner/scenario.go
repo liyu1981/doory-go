@@ -61,6 +61,12 @@ type Step struct {
 	// Ws is a WebSocket interaction (dial/send/expect/close) instead of
 	// the plain HTTP replay for this step.
 	Ws *WsStep `toml:"ws"`
+	// Command runs a management command on both sides (cli driver): the
+	// command's exit code, stdout, stderr, database rows and media files are
+	// compared. Env adds per-step variables on top of the scenario's.
+	Command string            `toml:"command"`
+	Args    []string          `toml:"args"`
+	Env     map[string]string `toml:"env"`
 }
 
 // MultipartPart is one part of a multipart body: a form value or a file

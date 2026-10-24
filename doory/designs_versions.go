@@ -182,7 +182,7 @@ func (a *App) versionsCreate(w http.ResponseWriter, r *http.Request) {
 			"A design can keep at most 100 saved versions.")
 		return
 	}
-	if err := a.recordVersion(d, []byte(d.Document), d.PageCount, u, false, label); err != nil {
+	if err := a.recordVersion(d, d.Document, d.PageCount, u, false, label); err != nil {
 		writeDRF(w, http.StatusInternalServerError, "server_error", "Something went wrong on our side.")
 		return
 	}
@@ -266,7 +266,7 @@ func (a *App) versionsRestore(w http.ResponseWriter, r *http.Request) {
 	}
 	// _record_version BEFORE the restore snapshots the design's CURRENT
 	// document (services.restore_version order), label "Before restore".
-	if err := a.recordVersion(d, []byte(d.Document), d.PageCount, u, true, "Before restore"); err != nil {
+	if err := a.recordVersion(d, d.Document, d.PageCount, u, true, "Before restore"); err != nil {
 		writeDRF(w, http.StatusInternalServerError, "server_error", "Something went wrong on our side.")
 		return
 	}
@@ -275,7 +275,7 @@ func (a *App) versionsRestore(w http.ResponseWriter, r *http.Request) {
 	_, err := a.DB.Exec(
 		`UPDATE designs_design SET document = ?, width = ?, height = ?, page_count = ?,
 		 preset = ?, revision = ?, updated_at = ? WHERE id = ?`,
-		compactStoredJSON([]byte(v.Document)), info.Width, info.Height, info.PageCount,
+		string(pythonStoredJSON([]byte(v.Document))), info.Width, info.Height, info.PageCount,
 		info.Preset, d.Revision+1, now, d.ID)
 	if err != nil {
 		writeDRF(w, http.StatusInternalServerError, "server_error", "Something went wrong on our side.")

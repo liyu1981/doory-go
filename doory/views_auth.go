@@ -11,6 +11,7 @@
 package doory
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"io"
@@ -59,6 +60,12 @@ func enforceCSRFOr403(w http.ResponseWriter, r *http.Request) bool {
 // both cookies (probe 0002 step03: register response carries a fresh
 // csrftoken AND sessionid).
 func (a *App) finishLogin(w http.ResponseWriter, r *http.Request, u *UserRow) {
+	// django.contrib.auth.login sends user_logged_in, whose receiver stores
+	// last_login (the column the oracle shows after register/login).
+	now := formatDjangoDateTime(timeNowUTC())
+	if _, err := a.DB.Exec(`UPDATE accounts_user SET last_login = ? WHERE id = ?`, now, u.ID); err == nil {
+		u.LastLogin = sql.NullString{String: now, Valid: true}
+	}
 	hash := sessionAuthHash(u.Password)
 	key := newSessionKey()
 	if cookie, err := r.Cookie(sessionCookieName); err == nil && cookie.Value != "" {

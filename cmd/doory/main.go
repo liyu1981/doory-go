@@ -4,10 +4,16 @@
 // Subcommands:
 //
 //	serve                 HTTP + WS + MCP on one listener (D1 flags split them)
+//	entrypoint            container prep (wait for the DB, migrate, optional catalog
+//	                      bootstraps driven by DOORY_SYNC_*/DOORY_SEED_*) then serve
+//	healthcheck           container probe (HEALTH_PORT/HEALTH_PATH, exit 0 on 200)
 //	migrate               apply the embedded schema for the DATABASE_URL dialect (D4)
-//	collab-maintenance    save unflushed live designs, compact long update logs,
-//	                      drop presence rows of dead processes (ops cron)
 //	version               print the port version and its upstream pin
+//	help                  list the management commands
+//
+// Management commands (M13) keep their upstream names (purge_trash,
+// seed_size_presets, sync_models, …) and option spelling; the cli-driver
+// compares their output, database rows and media files against the oracle.
 package main
 
 import (
@@ -55,16 +61,42 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Println("migrate: ok")
-	case "collab-maintenance":
-		// apps/collab/management/commands/collab_maintenance.py
+	case "healthcheck":
+		// backend/healthcheck.py
+		os.Exit(doory.Healthcheck())
+	case "entrypoint":
+		// --prepare: prepare and exit 0 (probe the bootstraps without serving);
+		// --prepare-only is accepted as an alias. Extra args are ignored.
+		prepareOnly := false
+		for _, arg := range args {
+			if arg == "--prepare" || arg == "--prepare-only" {
+				prepareOnly = true
+			}
+		}
 		s := doory.FromEnv()
 		db, _, err := doory.OpenDB(s.DatabaseURL)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "collab-maintenance:", err)
+			fmt.Fprintln(os.Stderr, "entrypoint:", err)
 			os.Exit(1)
 		}
 		defer db.Close()
-		doory.NewApp(s, db).RunCollabMaintenance(os.Stdout)
+		if err := doory.WaitForDatabase(db, os.Stdout); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		app := doory.NewApp(s, db)
+		if err := doory.PrepareApp(app, os.Stdout); err != nil {
+			fmt.Fprintln(os.Stderr, "entrypoint:", err)
+			os.Exit(1)
+		}
+		if prepareOnly {
+			os.Exit(0)
+		}
+		fmt.Printf("doory: serving on %s (db: %s)\n", envOr("DOORY_ADDR", ":8000"), s.DatabaseURL)
+		if err := http.ListenAndServe(envOr("DOORY_ADDR", ":8000"), app.Handler()); err != nil {
+			fmt.Fprintln(os.Stderr, "serve:", err)
+			os.Exit(1)
+		}
 	case "serve":
 		addr := envOr("DOORY_ADDR", ":8000")
 		for _, a := range args {
@@ -87,8 +119,8 @@ func main() {
 			os.Exit(1)
 		}
 	default:
-		fmt.Fprintf(os.Stderr, "unknown command %q (want serve|migrate|collab-maintenance|version)\n", cmd)
-		os.Exit(2)
+		// Everything else is a management command (Django's manage.py <cmd>).
+		os.Exit(doory.RunCLIFromEnv(os.Args[1:]))
 	}
 }
 

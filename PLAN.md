@@ -1199,3 +1199,82 @@ M11 final log (this session — WS runtime + scenarios green, sweep green):
 - ✅ Final sweep green: pnpm run check, pnpm run parity-fast (15/15),
   collab scenarios 17/18/19/20/21 green, port-map drift, divergence
   consistency, lint-scenarios.
+
+M13 scoping (commands + content family — sources read, semantics derived):
+
+- **The 15 management commands**: ai/reencrypt_ai_secrets (provider secrets
+  re-encrypted under the primary key, --dry-run), assets/sync_audio (audio
+  library), collab/collab_maintenance (done in M11), core/sync_models
+  (pinned ONNX install: --model/--all/--list/--dry-run/--force/--from-dir),
+  designs/purge_trash (--days, purge_expired_trash), elements/{seed_elements,
+  sync_element_packs, import_elements}, exports/purge_exports,
+  fonts/sync_fonts (Fontsource via jsDelivr or --from-dir),
+  gallery/{seed_gallery, seed_templates, import_template},
+  presets/{seed_size_presets, import_size_presets}.
+- **Content**: backend/data/*.json (size_presets, ml_models, popular_fonts,
+  unicode_ranges, audio_library, element_packs, element_pack_files/,
+  graphics/*.py generators, templates/ with manifest+documents+thumbs+photos)
+  — the generated artwork/templates are the seed commands' input, so their
+  BYTES are part of the port's denominator (compile-time embedded copies).
+- **Entrypoint/healthcheck**: docker-entrypoint.sh (wait for DB, migrate,
+  gates on `manage.py help <cmd>`, DOORY_SYNC_* / DOORY_SEED_TEMPLATES /
+  DOORY_SIZE_PRESETS_FILE bootstraps, never fatal, then exec) and
+  healthcheck.py (HEALTH_PORT/HEALTH_PATH, first non-* ALLOWED_HOSTS host,
+  4s timeout, exit 0 only on 200).
+- **cli-driver** (PLAN §4): run one command on both sides against the pair's
+  own workdir DBs and compare exit code + stdout + stderr + a per-table
+  database digest (rows normalized for per-side uuids, timestamps and secret
+  columns, plus PRAGMA foreign_key_check) + the media/export trees (relative
+  paths with uuids normalized, content hashes).
+- **Deliberate exclusions** (recorded in D13): Django's global option block
+  in usage text (no --settings/--pythonpath/--traceback in a single binary),
+  its argparse line wrapping, the program name, and the framework tables
+  (django_migrations vs schema_migrations, django_content_type,
+  auth_permission/groups, django_session's signed payload — D5).
+
+M13 progress log (this session — cli foundation + deterministic commands):
+
+- ✅ cli-driver + scenario 22-ops-commands (33 steps) GREEN: purge_exports,
+  collab_maintenance, reencrypt_ai_secrets (with/without --dry-run),
+  seed_gallery (twice, --update), seed_size_presets (twice, --update),
+  purge_trash (empty, --days 0 with a full cascade, --days -1, non-integer),
+  import_size_presets (extend/repeat/dry-run/replace, missing file, bad mode),
+  sync_models (--list/--dry-run/unknown id/--from-dir with a bad file and a
+  directory without it), unknown command. Each step compares stdout, stderr,
+  exit code, every table's rows and both media trees.
+- ✅ `doory <command>` CLI (`doory/cli.go`, `cli_args.go`): argparse-shaped
+  options/messages (unrecognized arguments, invalid int, invalid choice,
+  required positional), CommandError → "CommandError: …" exit 1, usage →
+  exit 2, unknown command text.
+- ✅ Ports: purge_trash (+ full cascade delete: comments/links/presence/
+  Y state/versions/thumbnails — the old port deleted only versions and
+  answered 500 as soon as a link or comment existed), purge_exports,
+  reencrypt_ai_secrets, seed_gallery, seed_size_presets,
+  import_size_presets (full validators + ordered-node JSON so stored meta
+  key order matches), collab_maintenance, sync_models (manifest
+  validation shape, select/list, directory + HTTPS sources, size/SHA-256
+  verify, .part + rename, NOTICE.txt, stale cleanup, 20% milestones).
+- ✅ Entrypoint/healthcheck: `doory entrypoint [--prepare]` (DB wait, migrate,
+  env-gated bootstraps guarded by command availability, never fatal) and
+  `doory healthcheck` (probe with the ALLOWED_HOSTS host).
+- ✅ Loop-caught (all real, each now covered):
+  1. `import_size_presets --mode replace` bound updated_at to the first slug
+     (argument order vs placeholder order) → deactivated two named rows.
+  2. Stored JSON: Django's JSONField writes json.dumps text (", "/": "
+     separators, ensure_ascii) while the port stored compact text — visible in
+     the document/meta columns (and to any Django process reading the DB).
+     doory/pyjson.go now renders Python storage text; API bytes unchanged.
+  3. JSON columns were written as BLOBs ([]byte Exec args) instead of TEXT;
+     SQLite typeof() and any JSON function treat them differently.
+  4. Django's login signal stores last_login; the Go session flow did not.
+  5. `import_size_presets` merges multiple files and rolls a --dry-run back.
+- ⬜ M13 remaining (named build order): (a) gallery content: seed_templates +
+  import_template (manifest/document validation, category resolve,
+  thumbnails — WebP re-encode is the documented M7 encoder gap, so thumbnail
+  COMPARISON is path+dimension until a Go WebP encoder lands), (b) fonts:
+  sync_fonts (catalog/sources/from-dir, licence filter, variant naming),
+  (c) assets: sync_audio (library + freesound vocabulary), (d) elements:
+  import_elements, sync_element_packs, seed_elements (importer/normalize/
+  svgdata/tagdata/packsync/manifest + data/graphics generators — the largest
+  slice), (e) backend/data fixtures as embedded copies with digest rows,
+  (f) PORT_MAP/dispositions for the remaining command modules + final sweep.

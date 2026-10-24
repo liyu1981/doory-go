@@ -383,7 +383,7 @@ func (a *App) sharedDesignPatch(w http.ResponseWriter, r *http.Request) {
 		`UPDATE designs_design SET document = ?, width = ?, height = ?, page_count = ?,
 		 preset = ?, revision = ?, updated_at = ?
 		 WHERE id = ? AND revision = ? AND trashed_at IS NULL`,
-		compactStoredJSON(body.Document), info.Width, info.Height, info.PageCount,
+		string(pythonStoredJSON(body.Document)), info.Width, info.Height, info.PageCount,
 		info.Preset, live.Revision+1, now, live.ID, *body.BaseRevision)
 	if err != nil {
 		logerr(err, "sharedDesignPatch")
@@ -396,7 +396,7 @@ func (a *App) sharedDesignPatch(w http.ResponseWriter, r *http.Request) {
 	}
 	// record_auto_version_if_due attributed to the actor (designs port).
 	if fresh, err := a.getDesignByID(live.ID); err == nil && fresh != nil {
-		a.maybeRecordAutoVersion(fresh, compactStoredJSON(body.Document), currentUser(r))
+		a.maybeRecordAutoVersion(fresh, string(pythonStoredJSON(body.Document)), currentUser(r))
 	}
 	writeJSON(w, http.StatusOK, sharedSaveResult{
 		Revision:  live.Revision + 1,
