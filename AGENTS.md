@@ -48,14 +48,14 @@ session-level rules.
 
 | family | rows | scenario-covered | reviewed | uncovered | test files (ported/partial/pending) |
 |---|---|---|---|---|---|
-| accounts | 19 | 4 | 7 | 15 | 0/7/5 |
+| accounts | 19 | 4 | 9 | 15 | 0/7/5 |
 | ai | 29 | 12 | 16 | 17 | 0/3/6 |
 | apitokens | 10 | 5 | 7 | 5 | 0/1/0 |
-| assets | 33 | 9 | 17 | 24 | 0/5/15 |
+| assets | 33 | 9 | 20 | 24 | 0/5/15 |
 | brand | 9 | 4 | 4 | 5 | 0/1/1 |
 | collab | 21 | 9 | 21 | 12 | 0/18/8 |
 | core | 19 | 9 | 13 | 10 | 0/0/0 |
-| designs | 26 | 8 | 13 | 18 | 0/7/9 |
+| designs | 26 | 8 | 16 | 18 | 0/7/9 |
 | elements | 24 | 3 | 17 | 21 | 0/5/18 |
 | exports | 25 | 12 | 19 | 13 | 0/6/10 |
 | fonts | 18 | 8 | 10 | 10 | 0/4/8 |
@@ -63,17 +63,19 @@ session-level rules.
 | kernel | 14 | 2 | 8 | 12 | 0/0/0 |
 | mcp | 21 | 0 | 0 | 21 | 0/0/0 |
 | ops | 34 | 10 | 13 | 24 | 0/0/0 |
-| presets | 10 | 1 | 8 | 9 | 0/1/1 |
+| presets | 10 | 3 | 8 | 7 | 0/1/1 |
 | sharing | 11 | 5 | 7 | 6 | 0/5/4 |
 
-**Totals:** 107 of 338 PORT_MAP rows (32%) are covered by at least one scenario; 79 reviewed rows have no scenario that covers them (review-only: they do NOT count as verified).
+**Totals:** 109 of 338 PORT_MAP rows (32%) are covered by at least one scenario; 85 reviewed rows have no scenario that covers them (review-only: they do NOT count as verified).
 
 Review-only rows (weak evidence, not counted as verified):
 
 - `backend/.env.example`
 - `backend/Dockerfile`
 - `backend/apps/accounts/checks.py`
+- `backend/apps/accounts/emails.py`
 - `backend/apps/accounts/oidc.py`
+- `backend/apps/accounts/tokens.py`
 - `backend/apps/accounts/urls.py`
 - `backend/apps/ai/results.py`
 - `backend/apps/ai/styles/base.py`
@@ -89,6 +91,9 @@ Review-only rows (weak evidence, not counted as verified):
 - `backend/apps/assets/management/`
 - `backend/apps/assets/parsers.py`
 - `backend/apps/assets/tests/`
+- `backend/apps/assets/video.py`
+- `backend/apps/assets/video_providers.py`
+- `backend/apps/assets/video_stock.py`
 - `backend/apps/collab/apps.py`
 - `backend/apps/collab/availability.py`
 - `backend/apps/collab/crdt.py`
@@ -106,6 +111,9 @@ Review-only rows (weak evidence, not counted as verified):
 - `backend/apps/core/mlmodels/manifest.py`
 - `backend/apps/core/mlmodels/sources.py`
 - `backend/apps/core/urls.py`
+- `backend/apps/designs/doc/builders.py`
+- `backend/apps/designs/doc/fields.py`
+- `backend/apps/designs/doc/kinds.py`
 - `backend/apps/designs/exceptions.py`
 - `backend/apps/designs/migrations/`
 - `backend/apps/designs/parsers.py`
@@ -136,11 +144,9 @@ Review-only rows (weak evidence, not counted as verified):
 - `backend/apps/fonts/tests/`
 - `backend/apps/presets/importer.py`
 - `backend/apps/presets/migrations/`
-- `backend/apps/presets/models.py`
 - `backend/apps/presets/tests/`
 - `backend/apps/presets/urls.py`
 - `backend/apps/presets/validators.py`
-- `backend/apps/presets/views.py`
 - `backend/apps/sharing/tests/`
 - `backend/apps/sharing/throttling.py`
 - `backend/conftest.py`

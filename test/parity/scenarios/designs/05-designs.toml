@@ -15,6 +15,10 @@
 # pruning beyond50, design limit500 (one row pending is noted), malformed-
 # JSON parse_error message parity (CPython json text; core/parsers row).
 #
+# 0.2.0: the scenario also covers /size-presets/mine/ (the person's pinned
+# sizes, the recent sizes read from these designs, and the validator
+# envelopes) — see the last steps.
+#
 # Auth-throttle note: register is the only auth-scoped request; design
 # routes ride UserRateThrottle 1200/min (kernel family ports DRF rates).
 
@@ -31,6 +35,8 @@ covers = [
   "backend/apps/designs/models.py",
   "backend/apps/core/pagination.py",
   "backend/apps/assets/ordering.py",
+  "backend/apps/presets/views.py",
+  "backend/apps/presets/models.py",
 ]
 
 [env]
@@ -209,3 +215,96 @@ path = "/api/v1/designs/?trashed=true"
 [[steps]]
 method = "GET"
 path = "/api/v1/size-presets/"
+
+# --- the signed-in person's size choices (0.2.0, /size-presets/mine/) ---
+# GET before anything is pinned: pinned null, collapsed [], recent = the
+# presets of this scenario's designs (newest first, each once).
+[[steps]]
+method = "GET"
+path = "/api/v1/size-presets/mine/"
+
+# PATCH pins two slugs (the duplicate collapses) and folds two sections
+[[steps]]
+method = "PATCH"
+path = "/api/v1/size-presets/mine/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"pinned":["a4-portrait","ig.story","a4-portrait"],"collapsed":["formats","social"]}'
+
+[[steps]]
+method = "GET"
+path = "/api/v1/size-presets/mine/"
+
+# pinned null goes back to the popular sizes; collapsed is left alone
+[[steps]]
+method = "PATCH"
+path = "/api/v1/size-presets/mine/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"pinned":null}'
+
+# validator envelope: not slugs / too many
+[[steps]]
+method = "PATCH"
+path = "/api/v1/size-presets/mine/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"pinned":["not a slug"],"collapsed":["UP"]}'
+
+[[steps]]
+method = "PATCH"
+path = "/api/v1/size-presets/mine/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"collapsed":["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u"]}'
+
+# --- template fields + bulk actions (0.2.0 closure) ---
+# A design whose document tags a text box and carries an untagged photo
+# placeholder: one entry per key in first-use order, plus the placeholder
+# with key null.
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"title":"Fields design","width":800,"height":600,"document":{"schemaVersion":1,"width":800,"height":600,"pages":[{"id":"p1","objects":[{"id":"o1","type":"textbox","text":"Hello","field":{"key":"headline","type":"text","label":"Headline"}},{"id":"o2","type":"rect","fill":"#ffffff","field":{"key":"accent","type":"color"}},{"id":"o3","type":"image","isPlaceholder":true,"width":400,"height":300}]}]}}'
+capture = { fields_design = "\"id\":\"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" }
+
+[[steps]]
+method = "GET"
+path = "/api/v1/designs/{{capture:fields_design}}/fields/"
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/bulk/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"ids":["{{capture:fields_design}}"],"action":"star"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/bulk/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"ids":["{{capture:fields_design}}"],"action":"unstar"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/bulk/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"ids":["{{capture:fields_design}}"],"action":"move"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/bulk/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"action":"star"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/bulk/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"ids":["{{capture:fields_design}}"],"action":"trash"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/designs/bulk/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"ids":["{{capture:fields_design}}"],"action":"delete"}'
+
+[[steps]]
+method = "GET"
+path = "/api/v1/designs/{{capture:fields_design}}/"

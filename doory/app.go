@@ -74,6 +74,49 @@ func NewApp(s *Settings, db *sql.DB) *App {
 			Handler: a.meView,
 		},
 		Route{
+			// OidcStartView / OidcCallbackView: public GETs (AllowAny) that
+			// read the session (default SessionAuthentication -> Vary:
+			// Cookie). Without a configured provider they redirect to
+			// /login?sso_error=<code> (0.2.0; probes in test/parity).
+			Path: "/api/v1/auth/oidc/start/", Methods: []string{"GET"}, Style: AllowClass,
+			Session: SessionConsult, Require: RequireNever,
+			Handler: a.oidcStart,
+		},
+		Route{
+			Path: "/api/v1/auth/oidc/callback/", Methods: []string{"GET"}, Style: AllowClass,
+			Session: SessionConsult, Require: RequireNever,
+			Handler: a.oidcCallback,
+		},
+		Route{
+			// OidcConnectionView (AuthView -> CsrfProtectedMixin): connect
+			// (POST) and disconnect (DELETE), IsAuthenticated, CSRF always.
+			Path: "/api/v1/auth/oidc/connection/", Methods: []string{"POST", "DELETE"}, Style: AllowClass,
+			Csrf: CSRFAlways, Session: SessionConsult, Require: RequireAlways,
+			Handler: a.oidcConnection,
+		},
+		Route{
+			// PasswordReset/Confirm + EmailVerify (AuthView: AllowAny, CSRF
+			// always) and EmailResend (IsAuthenticated).
+			Path: "/api/v1/auth/password/reset/", Methods: []string{"POST"}, Style: AllowClass,
+			Csrf: CSRFAlways, Session: SessionConsult, Require: RequireNever,
+			Handler: a.passwordResetRequest,
+		},
+		Route{
+			Path: "/api/v1/auth/password/reset/confirm/", Methods: []string{"POST"}, Style: AllowClass,
+			Csrf: CSRFAlways, Session: SessionConsult, Require: RequireNever,
+			Handler: a.passwordResetConfirm,
+		},
+		Route{
+			Path: "/api/v1/auth/email/verify/", Methods: []string{"POST"}, Style: AllowClass,
+			Csrf: CSRFAlways, Session: SessionConsult, Require: RequireNever,
+			Handler: a.emailVerify,
+		},
+		Route{
+			Path: "/api/v1/auth/email/resend/", Methods: []string{"POST"}, Style: AllowClass,
+			Csrf: CSRFAlways, Session: SessionConsult, Require: RequireAlways,
+			Handler: a.emailResend,
+		},
+		Route{
 			Path: "/api/v1/auth/password/change/", Methods: []string{"POST"}, Style: AllowClass,
 			Csrf: CSRFAlways, Session: SessionConsult, Require: RequireAlways,
 			Handler: a.passwordChangeView,
@@ -118,6 +161,23 @@ func NewApp(s *Settings, db *sql.DB) *App {
 			Path: "/api/v1/designs/{uuid}/", Methods: []string{"GET", "PATCH", "DELETE"}, Style: AllowClass,
 			Csrf: CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
 			Handler: a.designsDetail,
+		},
+		Route{
+			// detail actions (DesignViewSet): fields is a plain GET, thumbnail
+			// a multipart PUT; bulk is the collection-level action.
+			Path: "/api/v1/designs/{uuid}/fields/", Methods: []string{"GET"}, Style: AllowClass,
+			Csrf: CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
+			Handler: a.designsFields,
+		},
+		Route{
+			Path: "/api/v1/designs/{uuid}/thumbnail/", Methods: []string{"PUT"}, Style: AllowClass,
+			Csrf: CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
+			Handler: a.designsThumbnail,
+		},
+		Route{
+			Path: "/api/v1/designs/bulk/", Methods: []string{"POST"}, Style: AllowClass,
+			Csrf: CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
+			Handler: a.designsBulk,
 		},
 		Route{
 			Path: "/api/v1/designs/{uuid}/restore/", Methods: []string{"POST"}, Style: AllowClass,
@@ -257,6 +317,23 @@ func NewApp(s *Settings, db *sql.DB) *App {
 			Handler: a.stockPhotoImport,
 		},
 		Route{
+			// Stock videos (0.2.0): the same @api_view/APIView shapes as the
+			// photo endpoints (IsAuthenticated, no CSRF on the GETs).
+			Path: "/api/v1/stock/videos/", Methods: []string{"GET"}, Style: AllowClass,
+			Session: SessionConsult, Require: RequireAlways,
+			Handler: a.stockVideosSearch,
+		},
+		Route{
+			Path: "/api/v1/stock/videos/providers/", Methods: []string{"GET"}, Style: AllowClass,
+			Session: SessionConsult, Require: RequireAlways,
+			Handler: a.stockVideosProviders,
+		},
+		Route{
+			Path: "/api/v1/stock/videos/import/", Methods: []string{"POST"}, Style: AllowClass,
+			Csrf: CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
+			Handler: a.stockVideoImport,
+		},
+		Route{
 			Path: "/api/v1/stock/audio/", Methods: []string{"GET"}, Style: AllowClass,
 			Session: SessionConsult, Require: RequireAlways,
 			Handler: a.stockAudioSearch,
@@ -355,6 +432,16 @@ func NewApp(s *Settings, db *sql.DB) *App {
 			Handler: a.HandleProviderDetail,
 		},
 		Route{
+			Path: "/api/v1/ai/providers/{uuid}/load-models/", Methods: []string{"POST"}, Style: AllowClass,
+			Csrf: CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
+			Handler: a.HandleProviderLoadModels,
+		},
+		Route{
+			Path: "/api/v1/ai/providers/{uuid}/test/", Methods: []string{"POST"}, Style: AllowClass,
+			Csrf: CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
+			Handler: a.HandleProviderTest,
+		},
+		Route{
 			Path: "/api/v1/ai/providers/{uuid}/models/", Methods: []string{"PUT"}, Style: AllowClass,
 			Csrf: CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
 			Handler: a.HandleProviderModels,
@@ -405,11 +492,26 @@ func NewApp(s *Settings, db *sql.DB) *App {
 			Handler: a.sitemap,
 		},
 		Route{
+			// ImageOptimizeView: multipart PNG in, the converted file out
+			// (IsAuthenticated; the optimize scope's throttle is pending with
+			// the kernel rate-limit slice).
+			Path: "/api/v1/exports/optimize/", Methods: []string{"POST"}, Style: AllowClass,
+			Csrf: CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
+			Handler: a.exportsOptimize,
+		},
+		Route{
 			// size_presets api_view: Allow "GET, OPTIONS", auth classes [] (no
 			// session consult); cache_control public max-age=60 from the handler
 			// (probe0004 step15).
 			Path: "/api/v1/size-presets/", Methods: []string{"GET"}, Style: AllowAPIView,
 			Handler: a.sizePresets,
+		},
+		Route{
+			// my_sizes (@api_view ["GET", "PATCH"] + IsAuthenticated): the
+			// signed-in person's pinned/recent/collapsed sizes (0.2.0).
+			Path: "/api/v1/size-presets/mine/", Methods: []string{"GET", "PATCH"}, Style: AllowAPIView,
+			Csrf: CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
+			Handler: a.mySizes,
 		},
 	)
 	a.Router = rt

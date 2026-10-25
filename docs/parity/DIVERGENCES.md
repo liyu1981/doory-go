@@ -303,3 +303,92 @@ Rules (PiG §6):
   lane) is test tooling and not affected by this record.
 - evidence: PLAN.md §5 #14 and §8 M14, the M14 log, README "Deploying it (no
   containers)", `deploy/doory.service`, `.env.example`.
+
+## D19 — the binary installs its embedded content on the first start
+
+- SCRUTINIZED: pending (owner-visible default: `entrypoint` seeds content)
+- status: active
+- summary: upstream gates every content bootstrap behind an env flag that
+  defaults to `false` (`DOORY_SEED_TEMPLATES`, `DOORY_SYNC_ELEMENTS`,
+  `DOORY_SYNC_AUDIO`), so a fresh upstream install has no templates, no
+  element library and no audio library until an operator runs the commands.
+  The Go binary embeds all three (pinned upstream artifacts, no download, the
+  same add-only/idempotent commands: `seed_gallery` categories come from the
+  gallery migration, `seed_templates`, `seed_elements` +
+  `sync_element_packs`, `sync_audio`), so `doory entrypoint` runs them by
+  default on every start and the editor is usable out of the box. Setting the
+  env vars to `false` restores upstream's flags exactly. The font catalogue
+  and the background-removal model keep upstream's `false` default: they
+  download from the internet.
+- remove-when: upstream (or the owner) makes the embedded content
+  first-start-only in the image, or decides the flags must keep their
+  upstream defaults in this port — then `prepareEnvFromOS` flips back to
+  `false` and the README tells operators to run the four commands.
+- evidence: `doory/entrypoint.go` (prepareEnvFromOS), `.env.example`
+  (DOORY_SYNC_ELEMENTS/DOORY_SYNC_AUDIO/DOORY_SEED_TEMPLATES), PLAN.md §11.
+
+## D20 — WebP is encoded in-process, never byte-identical to Pillow's
+
+- SCRUTINIZED: pending (image bytes are compared structurally, never byte-wise)
+- status: active
+- summary: upstream makes WebP with Pillow (design thumbnails, asset
+  thumbnails, `format=webp` downloads and exports). Go's standard library has
+  no WebP encoder, so the port uses a pure-Go lossless encoder
+  (`github.com/HugoSmits86/nativewebp`): files are valid WebP with the same
+  dimensions and alpha, but their bytes differ from Pillow's. Comparators
+  therefore compare WebP responses structurally (decoded pixels/dimensions,
+  media-tree digests excluded for generated thumbnails), and D15's
+  template-thumbnail rule stays in place for the pinned upstream files.
+- remove-when: a Go build with libwebp (cgo) is adopted, making encoder
+  output comparable with Pillow's — or the comparators grow a byte-level
+  WebP rule that the reason for this record disappears.
+- evidence: `doory/images.go` (encodeWebP), `go.mod` (nativewebp), D15,
+  PLAN.md §11.
+
+## D21 — AVIF is advertised away: no pure-Go encoder exists
+
+- SCRUTINIZED: pending (owner-visible: `/config/` offers fewer formats)
+- status: active
+- summary: upstream converts and exports AVIF when Pillow is built with
+  libavif (the pinned oracle is), so its `/config/`
+  `features.image_optimize.formats` ends with `avif` and
+  `POST /exports/optimize/` accepts `format=avif`. Go has no pure-Go AVIF
+  encoder (and the port deliberately stays dependency-free of libavif/cgo), so
+  the port advertises only the formats it can actually make
+  (`png`, `jpg`, `webp`) and answers `invalid_export` ("AVIF is not
+  supported on this server.") when asked for avif. The frontend reads
+  `formats`, so it never offers AVIF. The kernel scenario compares `/config/`
+  with `features.image_optimize.formats` excluded (recorded
+  `ignore_json_paths`, reason in the scenario header).
+- remove-when: a pure-Go (or cgo libavif) AVIF encoder lands: add it to
+  `imageFormats()`, drop the rejection, remove the scenario's
+  `ignore_json_paths`.
+- evidence: `doory/checks.go` (imageOptimizeConfig, imageFormats),
+  `doory/exports_optimize.go`, test/parity/scenarios/kernel/01-kernel-http.toml.
+
+## D22 — the built-in optimizer runs in process (no cjpeg/oxipng binaries)
+
+- SCRUTINIZED: pending (owner-visible: `optimize` works without external tools)
+- status: active
+- summary: upstream's built-in optimizer shells out to mozjpeg's `cjpeg` and
+  `oxipng`; where they are missing it reports "left out" (`exports.W002`) and
+  `/config/` omits `builtin`. The port implements the same contract in
+  process: JPG re-encoded with the standard library at the requested quality
+  (kept only when smaller; above quality 90 the converted file stands, as
+  upstream does), PNG recompressed losslessly by re-deflating its scanlines at
+  the highest level (`doory/optimizer.go`; the pure-Go Zopfli port writes a
+  broken zlib stream, so the standard library does it — sizes differ from
+  oxipng's, which is what the structural rule already covers). So `builtin` is always ready: `/config/` lists it
+  (`formats: [jpg, png]`, `default: "builtin"`) and
+  `POST /exports/optimize/` really optimizes where the oracle on the same host
+  would answer "no optimizer". For CLI parity the management-command warning
+  keeps upstream's PATH-based wording (it still says cjpeg/oxipng are missing),
+  and the kernel scenario excludes the two `image_optimize` optimizers/default
+  fields with a recorded `ignore_json_paths`. The off-site optimizers
+  (TinyPNG/Kraken/custom) keep their HTTP contract pending and refuse loudly.
+- remove-when: the port ships native cjpeg/oxipng (or upstream makes the
+  built-in optimizer pure-Python), and the config/check wording can follow the
+  binaries again; then drop the scenario's `ignore_json_paths`.
+- evidence: `doory/optimizer.go`, `doory/checks.go` (imageOptimizeConfig),
+  `doory/exports_optimize.go`, test/parity/scenarios/kernel/01-kernel-http.toml,
+  test/parity/scenarios/exports/13-exports.toml.

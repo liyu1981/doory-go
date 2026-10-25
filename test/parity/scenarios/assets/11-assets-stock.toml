@@ -8,7 +8,10 @@
 #
 # No-config stock: derived from the probed source paths (_not_configured
 # payloads, Freesound-specific messages, preview -> NotFound) — the pair
-# re-verifies live; no provider network is ever touched.
+# re-verifies live; no provider network is ever touched. Stock videos
+# (0.2.0) are covered the same way: the providers payload reports whether
+# this host can take clips at all, searches answer _not_configured, and an
+# import without ffmpeg answers video_unavailable.
 #
 # Deferred (PORT_MAP notes): SVG/audio uploads (loud notPorted), AVIF decode,
 # EXIF re-encode parity, WebP thumbnail file bytes (M14 — name/URL parity
@@ -182,3 +185,36 @@ path = "/api/v1/assets/{{capture:asset1}}/"
 method = "GET"
 path = "/media/nope.png"
 headers_only = true
+
+# --- stock videos (0.2.0): the no-configuration surface ---
+# The server takes clips only with ffmpeg/ffprobe installed; the payload
+# reports that, the limits, and no providers (no keys configured).
+[[steps]]
+method = "GET"
+path = "/api/v1/stock/videos/providers/"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/stock/videos/?q=ocean&orientation=landscape&duration=short"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/stock/videos/?provider=all"
+
+# serializer bounds (provider/orientation/duration choices, page range)
+[[steps]]
+method = "GET"
+path = "/api/v1/stock/videos/?provider=unsplash&orientation=diagonal&duration=tiny&page=0"
+
+# importing a clip on a server without ffmpeg: video_unavailable
+[[steps]]
+method = "POST"
+path = "/api/v1/stock/videos/import/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"provider":"pexels_video","id":"1234567"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/stock/videos/import/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"provider":"unsplash","id":"1234567"}'

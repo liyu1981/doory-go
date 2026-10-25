@@ -47,6 +47,10 @@ type Step struct {
 	// CSRF_COOKIE_NEEDS_UPDATE). Checked per side, never across sides:
 	// values are per-request randomness (shape rules cover the format).
 	CookieStable bool `toml:"cookie_stable"`
+	// IgnoreJSONPaths removes these dotted paths from BOTH JSON bodies
+	// before comparing (a recorded, per-step difference with a DIVERGENCES
+	// id, never a general comparator change).
+	IgnoreJSONPaths []string `toml:"ignore_json_paths"`
 	// Comparator selects the comparison mode for this step:
 	// "exact" (default) or "pdf" (PDF bytes carry per-render ids/times —
 	// compare the pdfscan canonical structure + headers minus

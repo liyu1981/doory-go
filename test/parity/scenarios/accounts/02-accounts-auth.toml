@@ -16,12 +16,14 @@
 #
 # Constraint (documented, kernel-family pending work): DRF rate throttles
 # (auth scope 20/min, anon 240/min) are oracle-side active but not yet
-# ported — this scenario stays under them (12 auth-scoped requests) so the
-# pair measures accounts behavior, not throttle presence. The throttle port
-# lands with the kernel family's remaining settings slice.
+# ported — this scenario stays under them so the pair measures accounts
+# behavior, not throttle presence. The throttle port lands with the kernel
+# family's remaining settings slice.
 #
 # Pending in family (PORT_MAP 🟡): password/reset+confirm, email/verify+
-# resend (D9), google, me DELETE, avatar upload.
+# resend (D9), google, me DELETE, avatar upload, and the OIDC provider flows
+# (start/callback/connection are covered for a server without a provider:
+# the redirects, `oidc_not_configured` and the disconnect envelope).
 
 name = "02-accounts-auth"
 description = "Register/login/logout/me/password-change match the oracle byte-for-byte: csrf enforcement by cause, password validators, session lifecycle, session death after password change."
@@ -179,4 +181,77 @@ path = "/api/v1/auth/me/"
 method = "POST"
 path = "/api/v1/auth/logout/"
 jar = "anon"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+
+# -- OpenID Connect (0.2.0): a server without a provider configured --
+# The public GETs land back on /login with sso_error; connecting answers
+# oidc_not_configured; disconnecting removes the stored identity (none here)
+# and returns the user envelope.
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/oidc/start/?next=%2Fdesigns%2Fabc"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/oidc/start/?next=//evil.example"
+
+[[steps]]
+method = "GET"
+path = "/api/v1/auth/oidc/callback/?state=unknown&code=x"
+
+# sign in again (the logout above cleared the session) for the authed routes
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/login/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"mira@example.com","password":"N3w&Secure-pass9x"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/oidc/connection/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"password":"N3w&Secure-pass9x"}'
+
+[[steps]]
+method = "DELETE"
+path = "/api/v1/auth/oidc/connection/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+
+# -- email verification + password reset (0.2.0 closure) --
+# With the console email backend nothing is delivered; the endpoints still
+# answer their contract: a reset request always 204, unknown links 400
+# invalid_token, and a resend within the cooldown is a 429.
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/password/reset/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"mira@example.com"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/password/reset/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"nobody@example.com"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/password/reset/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"email":"not-an-email"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/password/reset/confirm/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"uid":"bm9wZQ==","token":"bad-token","new_password":"N3w&Secure-pass9x"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/email/verify/"
+headers = { Content-Type = "application/json", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = '{"uid":"bm9wZQ==","token":"bad-token"}'
+
+[[steps]]
+method = "POST"
+path = "/api/v1/auth/email/resend/"
 headers = { X-CSRFToken = "{{cookie:csrftoken}}" }

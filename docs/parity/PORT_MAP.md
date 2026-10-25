@@ -29,7 +29,7 @@ behavioral verification).
 | `backend/.env.example` | `.env.example` (the single binary's knobs, same variable names; D4 data dir) | ✅ |
 | `backend/Dockerfile` | deferred: no container image (D18) — the binary is the release artifact; `deploy/doory.service` replaces the compose service | 🟡 |
 | `backend/conftest.py` | test/parity (paired scenarios replace the pytest harness; ledger dispositions) | 🟡 |
-| `backend/docker-entrypoint.sh` | doory/entrypoint.go (`doory entrypoint`: DB wait, migrate, env-gated bootstraps, never fatal) — behaviour kept for supervisors without containers | ✅ |
+| `backend/docker-entrypoint.sh` | doory/entrypoint.go (DB wait, migrate, env-gated bootstraps; embedded content on by default — D19) | ✅ |
 | `backend/healthcheck.py` | doory/entrypoint.go (`doory healthcheck`: HEALTH_PORT/HEALTH_PATH, ALLOWED_HOSTS host, 4 s) | ✅ |
 | `backend/manage.py` | cmd/doory/main.go + doory/cli.go (`doory <command>`; D13) | ✅ |
 | `backend/requirements-dev.txt` | (n/a: Go toolchain + pnpm gate ladder; see package.json) | ✅ |
@@ -44,18 +44,18 @@ behavioral verification).
 | `backend/apps/accounts/apps.py` |  | ⬜ |
 | `backend/apps/accounts/backends.py` |  | ⬜ |
 | `backend/apps/accounts/checks.py` | doory/checks.go (systemCheckWarnings: OIDC configuration problems as accounts.W001, printed before every management command) | ✅ |
-| `backend/apps/accounts/emails.py` |  | ⬜ |
-| `backend/apps/accounts/google.py` |  | ⬜ |
+| `backend/apps/accounts/emails.py` | doory/email.go (verify/reset templates, console/SMTP transport, async send; D9) | ✅ |
+| `backend/apps/accounts/google.py` | (pending: Google ID-token verification + link/create; the route answers 404 today) | ⬜ |
 | `backend/apps/accounts/lockout.py` | doory/lockout.go | ✅ |
 | `backend/apps/accounts/migrations/` |  | ⬜ |
 | `backend/apps/accounts/models.py` | doory/user.go (User row, create/get, name property, envelope); pending: check_password rebind, google_sub flows | 🟡 |
-| `backend/apps/accounts/oidc.py` | doory/checks.go (configuration_problems/enabled/button_label/button_icon for /config/ + checks); flows, metadata/JWKS, tokens and the callback pending | 🟡 |
+| `backend/apps/accounts/oidc.py` | doory/checks.go (configuration_problems/enabled/button_label/button_icon) + doory/oidc.go (start/callback redirects, connection delete, take_flow session touch, safe_next_path); discovery/PKCE/JWKS/token flows pending | 🟡 |
 | `backend/apps/accounts/serializers.py` | doory/views_auth.go (Register/Login/Profile/PasswordChange validation in declaration order) + doory/user.go (UserEnvelope shape incl. oidc_linked); pending: reset/verify/google/delete serializers, OIDC connect/redirect | 🟡 |
 | `backend/apps/accounts/services.py` |  | ⬜ |
 | `backend/apps/accounts/tests/` |  | ⬜ |
-| `backend/apps/accounts/tokens.py` |  | ⬜ |
-| `backend/apps/accounts/urls.py` | doory/router.go (auth routes; /auth/oidc/{start,callback,connection} pending) | 🟡 |
-| `backend/apps/accounts/views.py` | doory/views_auth.go (register, login, logout, me GET/PATCH, password/change, confirm_identity) + doory/views.go (CsrfView) + doory/router.go (CsrfProtectedMixin/session dispatch); pending: password/reset+confirm, email/verify+resend, google, me DELETE, oidc start/callback/connection | 🟡 |
+| `backend/apps/accounts/tokens.py` | doory/tokens.go (Django PasswordResetTokenGenerator port for reset + verification) | ✅ |
+| `backend/apps/accounts/urls.py` | doory/router.go + doory/app.go (auth routes incl. oidc/{start,callback,connection}) | 🟡 |
+| `backend/apps/accounts/views.py` | doory/views_auth.go (register, login, logout, me GET/PATCH, password/change, confirm_identity) + doory/accounts_email.go (password reset/confirm, email verify/resend) + doory/oidc.go (OidcStart/Callback/Connection) + doory/views.go (CsrfView); pending: google, me DELETE | 🟡 |
 
 ## `backend/apps/accounts/templates/accounts/email/`
 
@@ -88,7 +88,7 @@ behavioral verification).
 | `backend/apps/ai/throttling.py` | (AIRateThrottle - kernel rate limits pending) | ⬜ |
 | `backend/apps/ai/transport.py` | doory/ai_policy.go (policies, check_url form, refused dial -> ai_unreachable) | 🟡 |
 | `backend/apps/ai/urls.py` | doory/app.go (5 routes; load-models/test not registered - pending) | 🟡 |
-| `backend/apps/ai/views.py` | doory/ai_views.go + ai_taskview.go (gate, catalogue, contract, CRUD, task view) | 🟡 |
+| `backend/apps/ai/views.py` | doory/ai_views.go (providers/models/tasks + load-models/test routes with their row lookups); remote catalogue + sample call pending | 🟡 |
 
 ## `backend/apps/ai/styles/`
 
@@ -153,10 +153,10 @@ behavioral verification).
 | `backend/apps/assets/throttling.py` | (DRF rate scopes — kernel family pending) | ⬜ |
 | `backend/apps/assets/uploads.py` | doory/assets.go (oversize reject, clean_name/clean_tags/strip — shared with brand/fonts) | ✅ |
 | `backend/apps/assets/urls.py` |  | ⬜ |
-| `backend/apps/assets/video.py` |  | ⬜ |
+| `backend/apps/assets/video.py` | doory/stock.go (available(): VIDEO_ENABLED + ffmpeg/ffprobe on PATH); probe/work_dir/conversion pending | 🟡 |
 | `backend/apps/assets/video_jobs.py` |  | ⬜ |
-| `backend/apps/assets/video_providers.py` |  | ⬜ |
-| `backend/apps/assets/video_stock.py` |  | ⬜ |
+| `backend/apps/assets/video_providers.py` | doory/stock.go (registry order, per-provider keys with photo-key fallback, tab-order credits for /stock/videos/providers/) | 🟡 |
+| `backend/apps/assets/video_stock.py` | doory/stock.go (search/providers/import no-config paths + serializer bounds); live provider search/resolve/download and import pending | 🟡 |
 | `backend/apps/assets/views.py` | doory/assets.go + doory/app.go (list/create/retrieve/patch/delete/usage; 0.2.0 picture-kind default filter); video 202/processing pending | 🟡 |
 
 ## `backend/apps/assets/audiolib/`
@@ -244,7 +244,7 @@ behavioral verification).
 | `backend/apps/designs/apps.py` | — | ⬜ |
 | `backend/apps/designs/edits.py` | (pending: fill/fields actions) | ⬜ |
 | `backend/apps/designs/exceptions.py` | doory/document.go + doory/designs_views.go (invalid_document/inline_asset/document_too_large/design_trashed/not_in_trash codes + revision_conflict 409 body) | ✅ |
-| `backend/apps/designs/fill.py` | (pending: fill/bulk_fill actions) | ⬜ |
+| `backend/apps/designs/fill.py` |  | ⬜ |
 | `backend/apps/designs/folder_views.py` | doory/folders.go (list/create/detail/patch/delete + design_count annotation) | 🟡 |
 | `backend/apps/designs/folders.py` | doory/folders.go (depth/cycle/unique/reparent rules); pending: LimitReached 409 at500 folders | 🟡 |
 | `backend/apps/designs/management/` | doory/commands_seed.go + doory/designs_purge.go (purge_trash --days; full cascade delete + thumbnail files) | ✅ |
@@ -252,23 +252,23 @@ behavioral verification).
 | `backend/apps/designs/models.py` | doory/designs.go + doory/designs_versions.go + doory/folders.go (row ops, Meta ordering, thumbnail paths pending with assets) | 🟡 |
 | `backend/apps/designs/parsers.py` | doory/views_auth.go jsonBody (bounded); pending: DesignJSONParser media-type edge probes | 🟡 |
 | `backend/apps/designs/serializers.py` | doory/designs.go + doory/folders.go + doory/designs_versions.go (title/query/create/update/bulk pending, version+folder shapes) ; clean_text via doory/apitokens.go | 🟡 |
-| `backend/apps/designs/services.py` | doory/designs_views.go + doory/designs_versions.go (create/update/conflict/trash/restore/duplicate/purge/versions/prune); pending: template create, thumbnails, bulk_apply | 🟡 |
+| `backend/apps/designs/services.py` | doory/designs.go + designs_views.go + designs_actions.go (create/update/trash/restore/duplicate/versions, bulk_apply, set_thumbnail, purge); filling.create_from_template/fill pending | 🟡 |
 | `backend/apps/designs/signals.py` | (thumbnail file cleanup on delete — assets family) | ⬜ |
 | `backend/apps/designs/tests/` | (dispositions: ledger/test-mapping-v*.json) | 🟡 |
 | `backend/apps/designs/throttling.py` | (fill/bulk throttles — pending with fill actions; kernel ports DRF rates) | ⬜ |
 | `backend/apps/designs/urls.py` | doory/app.go (router: list/detail/actions/versions + {uuid}/{design_pk} templates) | ✅ |
 | `backend/apps/designs/validators.py` | doory/document.go (complete: structure/motion/audio/walk/size bound) | ✅ |
-| `backend/apps/designs/views.py` | doory/designs.go + doory/designs_views.go (list/create/retrieve/partial_update/destroy/restore/duplicate/trash-empty + conflict); pending: fields/fill/bulk_fill/thumbnail/bulk | 🟡 |
+| `backend/apps/designs/views.py` | doory/designs.go + doory/designs_views.go + doory/designs_actions.go (list/create/retrieve/patch/destroy/restore/duplicate/trash + fields/bulk/thumbnail); bulk-fill/fill pending | 🟡 |
 
 ## `backend/apps/designs/doc/`
 
 | upstream | go | status |
 |---|---|---|
-| `backend/apps/designs/doc/builders.py` |  | ⬜ |
+| `backend/apps/designs/doc/builders.py` | doory/design_fields.go (the text-estimate subset fields.py uses: estimate_text_lines/text_height/fit_font_size/valid_font_size/pos_float/_num/js_round); creators/ops pending | 🟡 |
 | `backend/apps/designs/doc/contract.py` |  | ⬜ |
-| `backend/apps/designs/doc/fields.py` |  | ⬜ |
+| `backend/apps/designs/doc/fields.py` | doory/design_fields.go (list_fields, read_field/read_fit, text_overflows) | ✅ |
 | `backend/apps/designs/doc/groups.py` |  | ⬜ |
-| `backend/apps/designs/doc/kinds.py` |  | ⬜ |
+| `backend/apps/designs/doc/kinds.py` | doory/design_fields.go (objectKind) | ✅ |
 | `backend/apps/designs/doc/ops.py` |  | ⬜ |
 | `backend/apps/designs/doc/summary.py` |  | ⬜ |
 
@@ -323,12 +323,12 @@ behavioral verification).
 | `backend/apps/exports/pdfmeta.py` | internal/pdfmeta (exact boxes anchored top-left, Trim/Bleed, /Lang, /Creator — pypdf round-6 number writing) | ✅ |
 | `backend/apps/exports/policy.py` | internal/renderpolicy (origin/prefix decisions, path traversal, fetch rules) | ✅ |
 | `backend/apps/exports/renderer.py` | doory/render.go (slots, worker model, env allowlist, report mapping) | 🟡 |
-| `backend/apps/exports/serializers.py` | doory/exports.go (PdfExport/ImageExport validation: finite bounds, sizes/fonts JSON, page ref) | 🟡 |
-| `backend/apps/exports/services.py` | doory/exports.go + doory/render.go (sanitize->layout->render pipeline, page picking, conversion) | 🟡 |
+| `backend/apps/exports/serializers.py` | doory/exports.go (PdfExport/ImageExport) + doory/exports_optimize.go (ImageOptimizeSerializer), D21 for avif | 🟡 |
+| `backend/apps/exports/services.py` | doory/exports.go + doory/render.go + doory/exports_optimize.go (sanitize->layout->render pipeline, optimize_image for png/jpg/webp, max_bytes search, palette, D21 for avif); multi-page/video pending | 🟡 |
 | `backend/apps/exports/tests/` | (dispositions: ledger/test-mapping-v*.json) | 🟡 |
 | `backend/apps/exports/throttling.py` | (ExportRateThrottle — kernel rate limits pending) | ⬜ |
 | `backend/apps/exports/urls.py` |  | ⬜ |
-| `backend/apps/exports/views.py` | doory/exports.go (pdf/image/download views, validation, disabled gates in oracle order) | 🟡 |
+| `backend/apps/exports/views.py` | doory/exports.go + doory/exports_optimize.go (pdf/image/download + optimize view) | 🟡 |
 
 ## `backend/apps/exports/optimizers/`
 
@@ -424,11 +424,11 @@ behavioral verification).
 | `backend/apps/presets/importer.py` | doory/migrations/0002_presets.seed.sqlite.sql (row dump via pnpm seedgen — content parity without porting write()); FORMAT_VERSION via doory/presets.go | ✅ |
 | `backend/apps/presets/management/` | doory/commands_seed.go + doory/presets_import.go (seed_size_presets --update; import_size_presets paths --mode --dry-run with the full validator) | ✅ |
 | `backend/apps/presets/migrations/` | (schema + seed via generated migrations, digest-proven) | ✅ |
-| `backend/apps/presets/models.py` | doory/presets.go (row reads + width_px/height_px as to_px properties; SizeChoices pending with /size-presets/mine/) | 🟡 |
+| `backend/apps/presets/models.py` | doory/presets.go (row reads + width_px/height_px as to_px properties) + doory/presets.go my_sizes (SizeChoices row) | 🟡 |
 | `backend/apps/presets/tests/` | (dispositions: ledger/test-mapping-v*.json) | 🟡 |
-| `backend/apps/presets/urls.py` | doory/app.go (/size-presets/; /size-presets/mine/ pending) | 🟡 |
+| `backend/apps/presets/urls.py` | doory/app.go (/size-presets/ + /size-presets/mine/) | ✅ |
 | `backend/apps/presets/validators.py` | doory/presets.go (to_px + UNITS exact big.Rat rounding); pending: check_size (import-path validation) | 🟡 |
-| `backend/apps/presets/views.py` | doory/presets.go (size_presets: tree, ordering, raw JSON passthrough, cache header); my_sizes pending | 🟡 |
+| `backend/apps/presets/views.py` | doory/presets.go (size_presets tree + my_sizes GET/PATCH: pinned/recent/collapsed, slug validation, updated_at) | ✅ |
 
 ## `backend/apps/sharing/`
 

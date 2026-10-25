@@ -45,6 +45,7 @@
 package runner
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -158,6 +159,13 @@ func compare(stepIdx int, step Step, oracle, goSide *capture) []string {
 		delete(oh, "content-length")
 		delete(gh, "content-length")
 	}
+	// A recorded per-step JSON exclusion changes the body's length: its
+	// Content-Length describes the excluded difference (same reason as the
+	// headers_only comparator's content-length skip).
+	if len(step.IgnoreJSONPaths) > 0 {
+		delete(oh, "content-length")
+		delete(gh, "content-length")
+	}
 	names := map[string]bool{}
 	for n := range oh {
 		names[n] = true
@@ -203,6 +211,10 @@ func compare(stepIdx int, step Step, oracle, goSide *capture) []string {
 	// Body: byte-exact after the recorded shape rules.
 	ob := normalizeBody(oracle.Body)
 	gb := normalizeBody(goSide.Body)
+	if len(step.IgnoreJSONPaths) > 0 {
+		ob = dropJSONPaths(ob, step.IgnoreJSONPaths)
+		gb = dropJSONPaths(gb, step.IgnoreJSONPaths)
+	}
 	if string(ob) != string(gb) {
 		kind := "binary/bytes"
 		if oj, gj := jsonOK(oracle.Body), jsonOK(goSide.Body); oj && gj {
@@ -420,4 +432,45 @@ func abbrev(b []byte) string {
 func newJar() http.CookieJar {
 	jar, _ := cookiejar.New(nil)
 	return jar
+}
+
+// dropJSONPaths deletes dotted paths (e.g. "features.image_optimize.formats")
+// from a JSON body, rewriting it compactly; a body that is not JSON (or a
+// path that does not exist) is left untouched. Used by steps whose difference
+// is recorded in DIVERGENCES (e.g. D21: no AVIF encoder).
+func dropJSONPaths(body []byte, paths []string) []byte {
+	var doc any
+	dec := json.NewDecoder(bytes.NewReader(body))
+	dec.UseNumber()
+	if err := dec.Decode(&doc); err != nil {
+		return body
+	}
+	for _, path := range paths {
+		segments := strings.Split(path, ".")
+		deleteJSONPath(doc, segments)
+	}
+	out, err := json.Marshal(doc)
+	if err != nil {
+		return body
+	}
+	return out
+}
+
+func deleteJSONPath(node any, segments []string) {
+	if len(segments) == 0 {
+		return
+	}
+	object, ok := node.(map[string]any)
+	if !ok {
+		return
+	}
+	if len(segments) == 1 {
+		delete(object, segments[0])
+		return
+	}
+	child, ok := object[segments[0]]
+	if !ok {
+		return
+	}
+	deleteJSONPath(child, segments[1:])
 }

@@ -13,11 +13,16 @@
 package doory
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
+	"errors"
+	"io"
 	"math/big"
 	"net/http"
+	"regexp"
 	"strconv"
+	"strings"
 )
 
 // formatVersion mirrors presets/importer.FORMAT_VERSION (probed: 1).
@@ -312,4 +317,255 @@ func numFromString(s string) int {
 		return 0
 	}
 	return int(f + 0.5)
+}
+
+// ---- the signed-in person's size choices (0.2.0) ------------------------------------------------
+
+// MAX_PINNED/MAX_COLLAPSED/MAX_RECENT and RECENT_DESIGNS mirror
+// apps/presets/views.py.
+const (
+	maxPinnedSizes       = 24
+	maxCollapsedSections = 20
+	maxRecentSizes       = 8
+	recentDesigns        = 50
+	maxPresetSlugLen     = 64 // designs.validators.MAX_PRESET_LENGTH
+)
+
+// mySizes ports views.my_sizes (GET/PATCH /size-presets/mine/): the sizes
+// the signed-in person pinned, used recently, and the picker sections they
+// folded. `pinned` is null until they pin or unpin something.
+func (a *App) mySizes(w http.ResponseWriter, r *http.Request) {
+	u := currentUser(r)
+
+	var pinnedRaw sql.NullString
+	collapsedRaw := ""
+	hasRow := true
+	err := a.DB.QueryRow(`SELECT pinned, collapsed FROM presets_sizechoices WHERE user_id = ?`,
+		u.ID).Scan(&pinnedRaw, &collapsedRaw)
+	if err == sql.ErrNoRows {
+		hasRow = false
+		collapsedRaw = ""
+	} else if err != nil {
+		logerr(err, "mySizes.select")
+		writeDRF(w, http.StatusInternalServerError, "server_error", "Something went wrong on our side.")
+		return
+	}
+
+	if r.Method == http.MethodPatch {
+		// request.data: a JSON object, or {} for anything else (a list body
+		// is not a dict and changes nothing).
+		body, perr := readJSONObjectBody(r)
+		if perr != nil {
+			writeDRF(w, http.StatusBadRequest, "parse_error", "Malformed request body.")
+			return
+		}
+		var (
+			pinnedSet    bool
+			pinnedNull   bool
+			pinned       []string
+			collapsedSet bool
+			collapsed    []string
+		)
+		if raw, ok := body["pinned"]; ok {
+			pinnedSet = true
+			if string(raw) == "null" {
+				pinnedNull = true
+			} else {
+				values, ok := jsonStringList(raw)
+				if !ok || !allMatch(values, presetSlugPattern) {
+					writeDRFValidation(w, []FieldError{SimpleField("pinned",
+						"`pinned` must be a list of slugs.", "invalid")})
+					return
+				}
+				pinned = uniqueStrings(values)
+				if len(pinned) > maxPinnedSizes {
+					writeDRFValidation(w, []FieldError{SimpleField("pinned",
+						"`pinned` can hold at most 24 items.", "invalid")})
+					return
+				}
+			}
+		}
+		if raw, ok := body["collapsed"]; ok {
+			collapsedSet = true
+			values, ok := jsonStringList(raw)
+			if !ok || !allMatch(values, groupSlugPattern) {
+				writeDRFValidation(w, []FieldError{SimpleField("collapsed",
+					"`collapsed` must be a list of slugs.", "invalid")})
+				return
+			}
+			collapsed = uniqueStrings(values)
+			if len(collapsed) > maxCollapsedSections {
+				writeDRFValidation(w, []FieldError{SimpleField("collapsed",
+					"`collapsed` can hold at most 20 items.", "invalid")})
+				return
+			}
+		}
+		now := formatDjangoDateTime(timeNowUTC())
+		switch {
+		case !hasRow:
+			// update_or_create: a row exists after any PATCH, with the
+			// model defaults for the keys it doesn't set.
+			var pinnedJSON any
+			if pinnedSet && !pinnedNull {
+				pinnedJSON = mustMarshalString(pinned)
+			}
+			if !collapsedSet {
+				collapsed = []string{}
+			}
+			if _, err := a.DB.Exec(`INSERT INTO presets_sizechoices
+				(id, user_id, pinned, collapsed, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`,
+				newUUID4Hex(), u.ID, pinnedJSON, mustMarshalString(collapsed), now, now); err != nil {
+				logerr(err, "mySizes.insert")
+				writeDRF(w, http.StatusInternalServerError, "server_error", "Something went wrong on our side.")
+				return
+			}
+			hasRow = true
+			if pinnedSet && !pinnedNull {
+				pinnedRaw = sql.NullString{String: mustMarshalString(pinned), Valid: true}
+			}
+			collapsedRaw = mustMarshalString(collapsed)
+		case pinnedSet || collapsedSet:
+			if pinnedSet {
+				if pinnedNull {
+					pinnedRaw = sql.NullString{}
+				} else {
+					pinnedRaw = sql.NullString{String: mustMarshalString(pinned), Valid: true}
+				}
+			}
+			if collapsedSet {
+				collapsedRaw = mustMarshalString(collapsed)
+			}
+			var pinnedValue any
+			if pinnedRaw.Valid {
+				pinnedValue = pinnedRaw.String
+			}
+			if _, err := a.DB.Exec(`UPDATE presets_sizechoices SET pinned = ?, collapsed = ?, updated_at = ?
+				WHERE user_id = ?`, pinnedValue, collapsedRaw, now, u.ID); err != nil {
+				logerr(err, "mySizes.update")
+				writeDRF(w, http.StatusInternalServerError, "server_error", "Something went wrong on our side.")
+				return
+			}
+		}
+	}
+
+	// Response: {pinned, recent, collapsed} in that order.
+	var pinnedOut any
+	if pinnedRaw.Valid {
+		pinnedOut = json.RawMessage(compactStoredJSON([]byte(pinnedRaw.String)))
+	}
+	collapsedOut := json.RawMessage("[]")
+	if strings.TrimSpace(collapsedRaw) != "" {
+		collapsedOut = json.RawMessage(compactStoredJSON([]byte(collapsedRaw)))
+	}
+	recent, rerr := a.recentSizes(u.ID)
+	if rerr != nil {
+		logerr(rerr, "mySizes.recent")
+		writeDRF(w, http.StatusInternalServerError, "server_error", "Something went wrong on our side.")
+		return
+	}
+	payload := struct {
+		Pinned    any      `json:"pinned"`
+		Recent    []string `json:"recent"`
+		Collapsed any      `json:"collapsed"`
+	}{Pinned: pinnedOut, Recent: recent, Collapsed: collapsedOut}
+	writeJSON(w, http.StatusOK, payload)
+}
+
+// recentSizes ports views._recent: the sizes of the person's latest designs,
+// newest first, each once (at most 8, read from the latest 50).
+func (a *App) recentSizes(ownerID string) ([]string, error) {
+	rows, err := a.DB.Query(`SELECT preset FROM designs_design
+		WHERE owner_id = ? AND trashed_at IS NULL AND preset <> ''
+		ORDER BY created_at DESC LIMIT ?`, ownerID, recentDesigns)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []string{}
+	seen := map[string]bool{}
+	for rows.Next() {
+		var slug string
+		if err := rows.Scan(&slug); err != nil {
+			return nil, err
+		}
+		if seen[slug] {
+			continue
+		}
+		seen[slug] = true
+		out = append(out, slug)
+		if len(out) == maxRecentSizes {
+			break
+		}
+	}
+	return out, rows.Err()
+}
+
+// Preset/group slug rules live in presets_import.go (PRESET_SLUG/GROUP_SLUG).
+
+func allMatch(values []string, pattern *regexp.Regexp) bool {
+	for _, value := range values {
+		if !pattern.MatchString(value) {
+			return false
+		}
+	}
+	return true
+}
+
+func uniqueStrings(values []string) []string {
+	out := make([]string, 0, len(values))
+	seen := map[string]bool{}
+	for _, value := range values {
+		if seen[value] {
+			continue
+		}
+		seen[value] = true
+		out = append(out, value)
+	}
+	return out
+}
+
+// readJSONObjectBody decodes a JSON body into its raw object members; a
+// non-object body (list, scalar) yields an empty map, like DRF's
+// `isinstance(request.data, dict)` guard in my_sizes.
+func readJSONObjectBody(r *http.Request) (map[string]json.RawMessage, error) {
+	raw, err := io.ReadAll(io.LimitReader(r.Body, maxJSONBody+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(raw) > maxJSONBody {
+		return nil, errors.New("too large")
+	}
+	trimmed := bytes.TrimSpace(raw)
+	if len(trimmed) == 0 {
+		return map[string]json.RawMessage{}, nil
+	}
+	if trimmed[0] != '{' {
+		var anyValue any
+		if err := json.Unmarshal(trimmed, &anyValue); err != nil {
+			return nil, err
+		}
+		return map[string]json.RawMessage{}, nil
+	}
+	var members map[string]json.RawMessage
+	if err := json.Unmarshal(trimmed, &members); err != nil {
+		return nil, err
+	}
+	return members, nil
+}
+
+// jsonStringList reports the members of a JSON array of strings.
+func jsonStringList(raw json.RawMessage) ([]string, bool) {
+	var values []any
+	if err := json.Unmarshal(raw, &values); err != nil {
+		return nil, false
+	}
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		text, ok := value.(string)
+		if !ok {
+			return nil, false
+		}
+		out = append(out, text)
+	}
+	return out, true
 }

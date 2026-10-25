@@ -302,3 +302,39 @@ func (a *App) HandleProviderModels(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(orderedProviderJSON(a, &loaded[0]))
 }
+
+// HandleProviderLoadModels ports ProviderLoadModelsView (POST
+// /ai/providers/{uuid}/load-models/): a Doory-compatible server's model list
+// is fetched and added for the provider's tasks. The row lookup is ported;
+// the remote catalogue call (catalog.list_remote_models over the provider
+// transport) is pending, so the request is refused loudly instead of
+// pretending nothing happened.
+func (a *App) HandleProviderLoadModels(w http.ResponseWriter, r *http.Request) {
+	u, ok := a.aiGate(w, r)
+	if !ok {
+		return
+	}
+	p := a.ownProvider404(w, r, u)
+	if p == nil {
+		return
+	}
+	writeDRF(w, http.StatusInternalServerError, "server_error",
+		"route registered but not ported: ai.catalog.list_remote_models (remote model catalogue pending)")
+}
+
+// HandleProviderTest ports ProviderTestView (POST /ai/providers/{uuid}/test/):
+// send the built-in sample picture and report the outcome. The row lookup is
+// ported; the sample call (services.test_provider) is pending with the
+// provider transport, so the request is refused loudly.
+func (a *App) HandleProviderTest(w http.ResponseWriter, r *http.Request) {
+	u, ok := a.aiGate(w, r)
+	if !ok {
+		return
+	}
+	p := a.ownProvider404(w, r, u)
+	if p == nil {
+		return
+	}
+	writeDRF(w, http.StatusInternalServerError, "server_error",
+		"route registered but not ported: ai.services.test_provider (provider test call pending)")
+}

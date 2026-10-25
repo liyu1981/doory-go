@@ -1488,16 +1488,34 @@ Ported in this catch-up (parity restored, `pnpm parity` 21/21 green):
   `backend/data/size_presets.json` refreshed (the only seed fixture that
   changed).
 
-Pending (0.2.0 features — unported routes answer 404, PORT_MAP rows are 🟡/⬜):
-- **OIDC sign-in**: `accounts/oidc.py` flows (discovery, PKCE, JWKS/JWT
-  verification, state/session storage), `oidc_identities` writes, the three
-  routes `/auth/oidc/{start,callback,connection}/`, `OidcConnectSerializer`,
-  `OIDC_TRUST_EMAIL`. Config surfacing only is ported.
-- **Video**: `assets/video.py`, `video_jobs.py`, `video_providers.py`,
-  `video_stock.py`, the `ingest_video_upload` path (202 processing, poster/
-  filmstrip/audio derivatives, ffmpeg/ffprobe availability), the three stock
-  video routes (`/stock/videos/{,import/,providers/}`), `sweep_video_jobs`,
-  and video export in `exports/`.
+Ported after the first catch-up pass — the endpoints the rebuilt frontend
+calls that used to answer 404 (`doory/oidc.go`, `doory/presets.go`,
+`doory/stock.go`; scenario steps added to 02-accounts-auth, 05-designs and
+11-assets-stock, which are green with them):
+- ✅ `/api/v1/size-presets/mine/` (GET/PATCH): the `SizeChoices` row
+  (pinned/collapsed), `_recent` from the person's latest designs, the slug
+  rules and validator envelopes — byte-identical to the oracle.
+- ✅ OIDC surface for a server without a provider: `/auth/oidc/start/` and
+  `/auth/oidc/callback/` answer the same `302 -> SITE_URL/login?sso_error=…`
+  redirects (`safe_next_path`, `_login_failed`, `_app_redirect`), the
+  callback reproduces `take_flow`'s session write (a fresh anonymous
+  sessionid cookie when the browser has none), `POST /auth/oidc/connection/`
+  answers `oidc_not_configured`, and `DELETE` disconnects (identity row
+  removed, `last_sign_in_method` guard) returning the user envelope.
+- ✅ Stock videos: `/stock/videos/providers/` (enabled from VIDEO_ENABLED +
+  ffmpeg/ffprobe on PATH, limits, tab-order credits), `/stock/videos/`
+  (serializer bounds + the `_not_configured` payloads), and
+  `/stock/videos/import/` (`video_unavailable` without the tools).
+
+Pending (0.2.0 features — PORT_MAP rows are 🟡/⬜):
+- **OIDC sign-in flows**: discovery, PKCE, JWKS/JWT verification,
+  `oidc_identities` writes, `OidcConnectSerializer`/`OIDC_TRUST_EMAIL`, and
+  the callback's provider exchange (with a provider configured the port
+  answers a loud notPorted instead of a broken redirect).
+- **Video**: `assets/video.py` probe/convert, `video_jobs.py`,
+  `ingest_video_upload` (202 processing, poster/filmstrip/audio
+  derivatives), the live stock-video provider search/resolve/download and
+  import, `sweep_video_jobs`, and video export in `exports/`.
 - **Image optimizers**: the shrink pipeline (`base.py`/`builtin.py`/
   `custom.py`/`http.py`/`kraken.py`/`tinypng.py`), `POST /exports/optimize/`,
   `optimize` on image exports and the MCP export tool; only detection +
@@ -1509,3 +1527,83 @@ Pending (0.2.0 features — unported routes answer 404, PORT_MAP rows are 🟡/�
   tool's new options; `accounts/services.py` OIDC sign-in/connect paths; the
   new settings knobs the port doesn't read yet (VIDEO_*, STOCK_VIDEO_*,
   EXPORT_VIDEO_*, OIDC_*, `REST_FRAMEWORK` throttle scopes).
+
+### 0.2.0 endpoint closure (this section's plan, executed below)
+
+The rebuilt frontend calls eleven routes the port did not serve. Closing them
+in this order (each probed against the oracle first, then scenario-covered):
+
+1. `/designs/{uuid}/fields/` — `doc/fields.list_fields` (pure document read:
+   kinds + field tags + shrink-to-fit overflow estimate).
+2. `/designs/bulk/` — `BulkSerializer` + `services.bulk_apply`
+   (trash/restore/delete/star/unstar/move).
+3. `/designs/{uuid}/thumbnail/` — upload → decode → 480 px WebP (D20).
+4. `/designs/{uuid}/bulk-fill/` — `BulkFillSerializer` + `filling.bulk_fill`
+   (one design per row, text/image/colour values; URL images need the remote
+   fetch, which the port has for the AI transport only).
+5. `/exports/optimize/` — `optimize_image` for png/jpg/webp (D20); AVIF is
+   advertised away (D21).
+6. `/auth/email/verify/`, `/auth/email/resend/`,
+   `/auth/password/reset/`, `/auth/password/reset/confirm/` — Django's
+   token generator, the email templates (D9) and an SMTP sender.
+7. `/auth/google/` — the no-client-id path plus the token exchange.
+8. `/ai/providers/{uuid}/test/`, `/ai/providers/{uuid}/load-models/` — the
+   operator/user provider rows and the same outbound call path as the rest of
+   the AI family.
+
+Defaults first (D19): `doory entrypoint` now installs the embedded element,
+audio and starter-template content on every start (add-only, no download),
+which is what makes a fresh binary show templates at all.
+
+### 0.2.0 endpoint closure — what landed
+
+The eleven routes the rebuilt frontend called, plus the content bootstrap:
+
+- ✅ D19: `doory entrypoint` installs the embedded element catalogue, audio
+  library and starter templates on every start (add-only, no download); the
+  env flags still switch each one off. A fresh binary now shows templates.
+- ✅ `/designs/{uuid}/fields/` (`doory/design_fields.go`: `list_fields`,
+  kinds, the text-estimate builders), `/designs/bulk/`
+  (`services.bulk_apply` for trash/restore/delete/star/unstar/move with the
+  serializer's validation) and `/designs/{uuid}/thumbnail/` (decode →
+  `thumbnailMaxPixels` → 480 px WebP via the new in-process encoder, D20),
+  all scenario-covered in 05-designs.
+- ✅ `/exports/optimize/` (`doory/exports_optimize.go`): png/jpg/webp/auto,
+  quality presets, `max_bytes` search, transparency flattening, `png_colors`
+  median-cut palette, the `X-Doory-*` response headers and the serializer's
+  field errors; AVIF is advertised away (D21) and the off-site optimizers
+  refuse loudly until their shrink pipeline lands. Error paths are covered in
+  13-exports; the happy path is unit-tested (image bytes are compared
+  structurally, never byte-wise).
+- ✅ `/auth/password/reset/`, `/auth/password/reset/confirm/`,
+  `/auth/email/verify/`, `/auth/email/resend/`: Django's
+  `PasswordResetTokenGenerator` ported exactly (`doory/tokens.go`), the email
+  transports (console/SMTP, async) and the two templates (D9) in
+  `doory/email.go`, the per-address cooldown for resends, and the reset's
+  side effects (verify the address, end the lockout, revoke API tokens).
+  Covered in 02-accounts-auth (204s, invalid_token, the 429 cooldown).
+- 🟡 Still open, recorded in PORT_MAP: `/designs/{uuid}/bulk-fill/` (needs the
+  document-mutation engine: `doc/ops.py` + `fill.py` + `edits.apply_edit`),
+  `/auth/google/` (Google ID-token verification), and the AI
+  `/ai/providers/{uuid}/{test,load-models}/` internals (remote model catalogue
+  + sample call) — their routes now exist and answer the ported row lookups,
+  then a loud notPorted for the network work, so the frontend gets a clear
+  error instead of a bare 404.
+
+### Embedded content and the optimizer (this round)
+
+- ✅ The starter templates' 11 font families are **embedded** (`doory/data/fonts`,
+  126 woff2 files, 2.1 MB, pinned Fontsource output) and installed by
+  `sync_fonts --from-embedded`; `doory entrypoint` runs it before
+  `seed_templates` (D19), so a fresh binary has templates *with* their fonts and
+  no "these fonts are not installed" fallback warning. The Fontsource client's
+  metadata shape (variants is a weight→style→subset dict) and its versioned CDN
+  path were fixed while producing the bundle.
+- ✅ The built-in optimizer is now implemented **in process** (D22): JPG
+  re-encoded with the standard library at the requested quality (kept when
+  smaller; above 90 the converted file stands) and PNG losslessly re-deflated at
+  the highest level, guarded by "never larger". `/config/` lists `builtin`
+  (`formats: [jpg, png]`, `default: "builtin"`) and `POST /exports/optimize/`
+  really optimizes; the management-command warning keeps upstream's PATH-based
+  wording for CLI parity, and the kernel scenario excludes the two rebuilt
+  `image_optimize` fields with a recorded `ignore_json_paths`.

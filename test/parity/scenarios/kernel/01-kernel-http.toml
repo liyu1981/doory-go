@@ -46,6 +46,16 @@ path = "/api/v1/health/"
 [[steps]]
 method = "GET"
 path = "/api/v1/config/"
+# D21: no pure-Go AVIF encoder, so features.image_optimize.formats omits
+# "avif" (this server never offers a format it cannot make). D22: the
+# built-in optimizer runs in process, so optimizers/default say "builtin"
+# where the oracle (no cjpeg/oxipng on this host) offers none. Every other
+# byte of the config payload is compared exactly.
+ignore_json_paths = [
+  "features.image_optimize.formats",
+  "features.image_optimize.optimizers",
+  "features.image_optimize.default",
+]
 
 [[steps]]
 method = "GET"

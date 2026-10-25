@@ -360,9 +360,10 @@ func (s *Settings) oidcButtonIcon() string {
 	return name
 }
 
-// imageOptimizerFormats is the full contract surface (optimizers.custom.CONTRACT_FORMATS
-// order, images/services.IMAGE_FORMATS order): what an optimizer accepts.
-var imageOptimizerFormats = []string{"png", "jpg", "webp", "avif"}
+// imageOptimizerFormats is what this server can actually convert to:
+// upstream's list without AVIF (no pure-Go AVIF encoder, D21). Optimizers
+// that accept more formats report their own list (D20/D21 notes).
+var imageOptimizerFormats = []string{"png", "jpg", "webp"}
 
 // imageOptimizeConfig ports core/views.image_optimize_config() and the
 // optimizer registry (available() + default_optimizer()).
@@ -374,18 +375,14 @@ func (a *App) imageOptimizeConfig() configImageOptimize {
 	for _, name := range s.optimizerListed() {
 		switch name {
 		case "builtin":
-			formats := []string{}
-			if cjpeg != "" {
-				formats = append(formats, "jpg")
-			}
-			if oxipng != "" {
-				formats = append(formats, "png")
-			}
-			if len(formats) == 0 {
-				continue
-			}
+			// The port's built-in optimizer runs in process (Go JPEG
+			// re-encode + Zopfli PNG recompression), so it is always ready
+			// (D22); the management-command warning keeps upstream's
+			// PATH-based wording for CLI parity.
+			_ = cjpeg
+			_ = oxipng
 			available = append(available, configImageOptimizer{
-				ID: "builtin", Name: "Built-in", Formats: formats,
+				ID: "builtin", Name: "Built-in", Formats: optimizerBuiltinFormats,
 			})
 			ids["builtin"] = true
 		case "tinypng":
@@ -393,7 +390,7 @@ func (a *App) imageOptimizeConfig() configImageOptimize {
 				continue
 			}
 			available = append(available, configImageOptimizer{
-				ID: "tinypng", Name: "TinyPNG", Formats: imageOptimizerFormats, SendsOffsite: true,
+				ID: "tinypng", Name: "TinyPNG", Formats: optimizerOffsiteFormats, SendsOffsite: true,
 			})
 			ids["tinypng"] = true
 		case "kraken":
@@ -401,7 +398,7 @@ func (a *App) imageOptimizeConfig() configImageOptimize {
 				continue
 			}
 			available = append(available, configImageOptimizer{
-				ID: "kraken", Name: "Kraken.io", Formats: imageOptimizerFormats, SendsOffsite: true,
+				ID: "kraken", Name: "Kraken.io", Formats: optimizerOffsiteFormats, SendsOffsite: true,
 			})
 			ids["kraken"] = true
 		case "custom":
@@ -418,7 +415,7 @@ func (a *App) imageOptimizeConfig() configImageOptimize {
 				name = "Custom"
 			}
 			available = append(available, configImageOptimizer{
-				ID: "custom", Name: name, Formats: imageOptimizerFormats, SendsOffsite: true,
+				ID: "custom", Name: name, Formats: optimizerOffsiteFormats, SendsOffsite: true,
 			})
 			ids["custom"] = true
 		}
@@ -434,6 +431,11 @@ func (a *App) imageOptimizeConfig() configImageOptimize {
 		Default:    defaultID,
 	}
 }
+
+// optimizerOffsiteFormats is the contract surface the off-site optimizers
+// advertise (their service accepts AVIF even though this server does not
+// make it locally: the file they return is theirs).
+var optimizerOffsiteFormats = []string{"png", "jpg", "webp", "avif"}
 
 // optimizerListed ports optimizers.listed(): stripped lowercased known ids,
 // in order and without repeats.

@@ -42,6 +42,7 @@ func WaitForDatabase(db *sql.DB, out io.Writer) error {
 // prepareEnv is the subset of the entrypoint's environment the bootstraps use.
 type prepareEnv struct {
 	SyncFonts       bool
+	TemplateFonts   bool
 	SyncElements    bool
 	SyncModels      bool
 	SyncAudio       bool
@@ -56,11 +57,20 @@ type prepareEnv struct {
 
 func prepareEnvFromOS() prepareEnv {
 	env := prepareEnv{
-		SyncFonts:       envBool("DOORY_SYNC_FONTS", false),
-		SyncElements:    envBool("DOORY_SYNC_ELEMENTS", false),
+		// The template fonts are embedded (no download): installing them on
+		// every start keeps the starter templates from falling back to a
+		// system face (D19). DOORY_SEED_TEMPLATE_FONTS=false switches it off.
+		SyncFonts:     envBool("DOORY_SYNC_FONTS", false),
+		TemplateFonts: envBool("DOORY_SEED_TEMPLATE_FONTS", true),
+		// The embedded content (elements + generated artwork, audio library,
+		// starter templates) needs no download and is add-only, so the
+		// binary installs it on the first start by default (D19); the
+		// font catalogue and the background-removal model stay opt-in
+		// because they download from the internet.
+		SyncElements:    envBool("DOORY_SYNC_ELEMENTS", true),
 		SyncModels:      envBool("DOORY_SYNC_MODELS", false),
-		SyncAudio:       envBool("DOORY_SYNC_AUDIO", false),
-		SeedTemplates:   envBool("DOORY_SEED_TEMPLATES", false),
+		SyncAudio:       envBool("DOORY_SYNC_AUDIO", true),
+		SeedTemplates:   envBool("DOORY_SEED_TEMPLATES", true),
 		SizePresetsFile: envStr("DOORY_SIZE_PRESETS_FILE", ""),
 		SizePresetsMode: envStr("DOORY_SIZE_PRESETS_MODE", "extend"),
 		SyncFontsArgs:   splitArgs(envStr("DOORY_SYNC_FONTS_ARGS", "--popular 100")),
@@ -124,6 +134,13 @@ func PrepareApp(app *App, out io.Writer) error {
 		fmt.Fprintln(out, "Installing the audio library (music loops and sound effects)...")
 		if !run("sync_audio", env.SyncAudioArgs) {
 			fmt.Fprintln(os.Stderr, "Audio sync failed; the server starts anyway. Run 'doory sync_audio' again later.")
+		}
+	}
+	if env.TemplateFonts && HasCommand("sync_fonts") {
+		// Fast and offline: the embedded bundle covers the families the
+		// starter templates name.
+		if !run("sync_fonts", []string{"--from-embedded"}) {
+			fmt.Fprintln(os.Stderr, "Template font install failed; the server starts anyway.")
 		}
 	}
 	if env.SeedTemplates && HasCommand("seed_templates") {

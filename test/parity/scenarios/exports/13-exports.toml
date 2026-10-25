@@ -145,3 +145,31 @@ body = '{"format":"png"}'
 [[steps]]
 method = "GET"
 path = "/api/v1/exports/image/not-a-real-token/"
+
+# --- POST /exports/optimize/ (0.2.0): the validation paths ---
+# No file at all: the serializer's field error (the multipart body is empty).
+[[steps]]
+method = "POST"
+path = "/api/v1/exports/optimize/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+
+# A PNG file, but an out-of-range option set: field errors, nothing converted.
+[[steps]]
+method = "POST"
+path = "/api/v1/exports/optimize/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+multipart = [
+  { name = "file", filename = "fixture.png", path = "test/parity/testdata/assets/fixture.png" },
+  { name = "format", value = "tiff" },
+  { name = "quality", value = "101" },
+  { name = "png_colors", value = "1" },
+]
+
+# Not a PNG: the oracle answers invalid_image ("Send the image as a PNG.").
+[[steps]]
+method = "POST"
+path = "/api/v1/exports/optimize/"
+headers = { X-CSRFToken = "{{cookie:csrftoken}}" }
+multipart = [
+  { name = "file", filename = "fixture.svg", path = "test/parity/testdata/svgs/basic.svg" },
+]

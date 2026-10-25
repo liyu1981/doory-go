@@ -11,7 +11,7 @@ package doory
 
 import (
 	"crypto/tls"
-	_ "embed"
+	"embed"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -32,6 +32,14 @@ var popularFontsJSON []byte
 
 //go:embed data/unicode_ranges.json
 var unicodeRangesJSON []byte
+
+// templateFontsFS is the pinned, embedded font bundle the starter templates
+// use (the 11 families their documents name): the files the Fontsource
+// download produced, named <id>-<subset>-<weight>-<style>.woff2. It is the
+// offline source of `sync_fonts --from-embedded` (no network).
+//
+//go:embed data/fonts
+var templateFontsFS embed.FS
 
 const (
 	fontMaxWOFF2Bytes  = 5 * 1024 * 1024
@@ -389,6 +397,7 @@ func runSyncFonts(c *CLI, argv []string) error {
 		{name: "all", kind: "bool"},
 		{name: "popular", kind: "int"},
 		{name: "from-dir", kind: "string", dest: "from_dir"},
+		{name: "from-embedded", kind: "bool", dest: "from_embedded"},
 		{name: "subsets", kind: "string"},
 		{name: "weights", kind: "string"},
 		{name: "styles", kind: "string"},
@@ -397,6 +406,45 @@ func runSyncFonts(c *CLI, argv []string) error {
 	})
 	if err != nil {
 		return err
+	}
+	if args.bool("from_embedded") {
+		// The embedded bundle: extract it to a scratch directory and feed it
+		// through the same importer `--from-dir` uses.
+		dir, err := os.MkdirTemp("", "doory-fonts-")
+		if err != nil {
+			return commandErrorf("%v", err)
+		}
+		defer os.RemoveAll(dir)
+		entries, err := fs.ReadDir(templateFontsFS, "data/fonts")
+		if err != nil {
+			return commandErrorf("%v", err)
+		}
+		for _, entry := range entries {
+			if entry.IsDir() || filepath.Ext(entry.Name()) != ".woff2" {
+				continue
+			}
+			data, rerr := templateFontsFS.ReadFile("data/fonts/" + entry.Name())
+			if rerr != nil {
+				return commandErrorf("%v", rerr)
+			}
+			if werr := os.WriteFile(filepath.Join(dir, entry.Name()), data, 0o644); werr != nil {
+				return commandErrorf("%v", werr)
+			}
+		}
+		licenseName := args.str("license")
+		if licenseName == "" {
+			licenseName = "OFL-1.1"
+		}
+		report, ierr := c.App.importFontDirectory(dir, licenseName, c.Println)
+		if ierr != nil {
+			return commandErrorf("%v", ierr)
+		}
+		c.Printf("Done: %d files imported from the embedded bundle, %d already stored, %d rejected.\n",
+			report.Downloaded, report.Existing, len(report.Failures))
+		if len(report.Failures) > 0 {
+			return commandErrorf("%d file(s) were rejected.", len(report.Failures))
+		}
+		return nil
 	}
 	if fromDir := args.str("from_dir"); fromDir != "" {
 		st, serr := os.Stat(fromDir)
@@ -844,6 +892,7 @@ type fontFamilyMeta struct {
 	styles        []string
 	unicodeRanges map[string]string
 	available     map[fontTriple]bool
+	version       string
 }
 
 func (m *fontFamilyMeta) hasWeight(weight int) bool {
@@ -926,6 +975,9 @@ func newFontHTTPClient() *fontHTTPClient {
 
 const fontsourceAPI = "https://api.fontsource.org/v1"
 
+// fontVersionPattern mirrors sources._VERSION.
+var fontVersionPattern = regexp.MustCompile(`^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$`)
+
 // metadata fetches /v1/fonts/<id> and maps the fields the pipeline uses.
 func (s *fontHTTPClient) metadata(fontID string) (*fontFamilyMeta, error) {
 	body, err := s.get(fontsourceAPI + "/fonts/" + url.PathEscape(fontID))
@@ -942,11 +994,10 @@ func (s *fontHTTPClient) metadata(fontID string) (*fontFamilyMeta, error) {
 		Weights    []int             `json:"weights"`
 		Styles     []string          `json:"styles"`
 		UnicodeRng map[string]string `json:"unicodeRange"`
-		Variants   []struct {
-			Subset string `json:"subset"`
-			Weight int    `json:"weight"`
-			Style  string `json:"style"`
-		} `json:"variants"`
+		// Fontsource's variants is a dict: weight -> style -> subset -> urls
+		// (sources._available walks it the same way).
+		Variants map[string]map[string]map[string]any `json:"variants"`
+		Version  string                               `json:"version"`
 	}
 	if jerr := json.Unmarshal(body, &payload); jerr != nil {
 		return nil, &fontSourceUnavailable{message: "The font source answered unexpectedly."}
@@ -964,15 +1015,28 @@ func (s *fontHTTPClient) metadata(fontID string) (*fontFamilyMeta, error) {
 	}
 	meta := &fontFamilyMeta{
 		id: payload.ID, family: payload.Family, category: normalizeFontCategory(payload.Category),
-		license: license, isFont: payload.Type == "" || payload.Type == "font",
+		// sources.load: everything but icon sets counts as a text font (the
+		// API's `type` is the source, e.g. "google", not "font").
+		license: license, isFont: payload.Type != "icons" && payload.Category != "icons",
 		subsets: payload.Subsets, weights: payload.Weights, styles: payload.Styles,
 		unicodeRanges: payload.UnicodeRng,
 	}
 	if len(payload.Variants) > 0 {
 		meta.available = map[fontTriple]bool{}
-		for _, variant := range payload.Variants {
-			meta.available[fontTriple{variant.Weight, variant.Style, variant.Subset}] = true
+		for weight, styles := range payload.Variants {
+			for style, subsets := range styles {
+				for subset := range subsets {
+					if n, err := strconv.Atoi(weight); err == nil {
+						meta.available[fontTriple{n, style, subset}] = true
+					}
+				}
+			}
 		}
+	}
+	// sources.load: only a semver-ish version is usable in the CDN path
+	// (Fontsource's API also says "v27", which resolves to no package).
+	if fontVersionPattern.MatchString(strings.TrimSpace(payload.Version)) {
+		meta.version = strings.TrimSpace(payload.Version)
 	}
 	return meta, nil
 }
@@ -980,8 +1044,12 @@ func (s *fontHTTPClient) metadata(fontID string) (*fontFamilyMeta, error) {
 // fetch downloads one subset/weight/style file from jsDelivr.
 func (s *fontHTTPClient) fetch(meta *fontFamilyMeta, subset string, weight int, style string) ([]byte, error) {
 	fileName := fmt.Sprintf("%s-%s-%d-%s.woff2", meta.id, subset, weight, style)
-	endpoint := fmt.Sprintf("https://cdn.jsdelivr.net/fontsource/fonts/%s@latest/%s",
-		url.PathEscape(meta.id), url.PathEscape(fileName))
+	version := meta.version
+	if version == "" {
+		version = "5"
+	}
+	endpoint := fmt.Sprintf("https://cdn.jsdelivr.net/npm/@fontsource/%s@%s/files/%s",
+		url.PathEscape(meta.id), url.PathEscape(version), url.PathEscape(fileName))
 	body, err := s.get(endpoint)
 	if err != nil {
 		var unavailable *fontSourceUnavailable

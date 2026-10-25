@@ -18,26 +18,43 @@ import (
 // the config/kernel behavior it drives. Grow it as families need it.
 type Settings struct {
 	// Env contract (base.py env reads).
-	GoogleClientID           string
-	Debug                    bool     // DJANGO_DEBUG (base.py env, default FALSE; dev.py sets it in-process)
-	OIDCIssuer               string   // OIDC_ISSUER (base.py env, default "")
-	OIDCClientID             string   // OIDC_CLIENT_ID
-	OIDCClientSecret         string   // OIDC_CLIENT_SECRET
-	OIDCButtonLabel          string   // OIDC_BUTTON_LABEL (default "Sign in with SSO")
-	OIDCButtonIcon           string   // OIDC_BUTTON_ICON (default "")
-	OIDCScopes               string   // OIDC_SCOPES (default "openid email profile")
-	OIDCTrustEmail           bool     // OIDC_TRUST_EMAIL (default false)
-	UnsplashAccessKey        string
-	PexelsAccessKey          string
-	PixabayAccessKey         string
-	FreesoundAccessKey       string
+	GoogleClientID     string
+	Debug              bool   // DJANGO_DEBUG (base.py env, default FALSE; dev.py sets it in-process)
+	OIDCIssuer         string // OIDC_ISSUER (base.py env, default "")
+	OIDCClientID       string // OIDC_CLIENT_ID
+	OIDCClientSecret   string // OIDC_CLIENT_SECRET
+	OIDCButtonLabel    string // OIDC_BUTTON_LABEL (default "Sign in with SSO")
+	OIDCButtonIcon     string // OIDC_BUTTON_ICON (default "")
+	OIDCScopes         string // OIDC_SCOPES (default "openid email profile")
+	OIDCTrustEmail     bool   // OIDC_TRUST_EMAIL (default false)
+	UnsplashAccessKey  string
+	PexelsAccessKey    string
+	PixabayAccessKey   string
+	FreesoundAccessKey string
+	// Stock videos (0.2.0): their own keys, falling back to the photo key
+	// of the same provider; listed in STOCK_VIDEO_PROVIDERS tab order.
+	PexelsVideoAPIKey   string
+	PixabayVideoAPIKey  string
+	StockVideoProviders []string
+	// Video clips: on when VIDEO_ENABLED and both commands exist; the
+	// upload/stock endpoints report availability and limits from here.
+	VideoEnabled            bool
+	FFmpegPath              string
+	FFprobePath             string
+	MaxVideoUploadBytes     int
+	MaxVideoDurationSeconds int
+	// Transactional email (base.py EMAIL_URL/EMAIL_SEND_ASYNC +
+	// AUTH_EMAIL_COOLDOWN_SECONDS); D9 for the template rendering.
+	EmailURL                 string
+	EmailSendAsync           bool
+	AuthEmailCooldownSeconds int
 	ServerPDFEnabled         bool
 	ExportFilenameStyle      string
 	ExportFilenameTS         bool
 	MediaRoot                string
 	BulkFillMaxRows          int
 	MCPEnabled               bool
-	McpPath                   string // MCP_PATH (default /mcp)
+	McpPath                  string // MCP_PATH (default /mcp)
 	AIUserProviders          string
 	AIOffsiteNotice          string
 	AIProvidersEnabled       bool
@@ -76,11 +93,12 @@ type Settings struct {
 	ImageOptimizerCustomName string   // IMAGE_OPTIMIZER_CUSTOM_NAME (default "Custom")
 	ImageOptimizerCustomURL  string   // IMAGE_OPTIMIZER_CUSTOM_URL (default "")
 	ImageOptimizerCustomKey  string   // IMAGE_OPTIMIZER_CUSTOM_KEY (default "")
+	ImageOptimizerMaxBytes   int      // IMAGE_OPTIMIZER_MAX_BYTES (default 25 MiB)
 	McpExportURLTTLSeconds   int      // MCP_EXPORT_URL_TTL_SECONDS (default 600)
-	McpCallsPerMinute         int      // MCP_CALLS_PER_MINUTE (default 120; 0 = unlimited)
-	McpMaxRequestBytes        int      // MCP_MAX_REQUEST_BYTES (default 4MB)
+	McpCallsPerMinute        int      // MCP_CALLS_PER_MINUTE (default 120; 0 = unlimited)
+	McpMaxRequestBytes       int      // MCP_MAX_REQUEST_BYTES (default 4MB)
 	McpExportInlineMaxBytes  int      // MCP_EXPORT_INLINE_MAX_BYTES (default 1MB)
-	McpExportURLUploads       bool     // URL_IMAGE_UPLOADS (default true; MCP_URL_UPLOADS legacy)
+	McpExportURLUploads      bool     // URL_IMAGE_UPLOADS (default true; MCP_URL_UPLOADS legacy)
 	BackgroundRemovalDefault string   // AI_TASK_DEFAULTS[background-removal] (base.py env, default "device")
 	AIProviderEnvProvider    []AIEnvProvider
 
@@ -103,19 +121,19 @@ type Settings struct {
 // AIEnvProvider mirrors one AI_PROVIDER_<n>_* row from base.py (env-driven
 // operator provider declarations; field list AI_ENV_PROVIDER_FIELDS).
 type AIEnvProvider struct {
-	index          string
-	URL            string
-	STYLE          string
-	TASKS          string
-	MODELS         string
+	index           string
+	URL             string
+	STYLE           string
+	TASKS           string
+	MODELS          string
 	AUTH_HEADER     string
-	AUTH_VALUE     string
-	STYLE_CONFIG   string
-	LABEL          string
-	SENDS_OFFSITE  string
+	AUTH_VALUE      string
+	STYLE_CONFIG    string
+	LABEL           string
+	SENDS_OFFSITE   string
 	TIMEOUT_SECONDS string
 	MAX_IMAGE_BYTES string
-	DAILY_QUOTA    string
+	DAILY_QUOTA     string
 }
 
 // DjangoNonDeliveringEmailBackends is the set in apps/core/views.py
@@ -138,75 +156,87 @@ func (s *Settings) EmailDelivers() bool {
 // names/defaults as base.py. Missing vars take the upstream defaults.
 func FromEnv() *Settings {
 	settings := &Settings{
-		GoogleClientID:           envStr("GOOGLE_CLIENT_ID", ""),
-		Debug:                    envBool("DJANGO_DEBUG", false),
-		OIDCIssuer:               envStr("OIDC_ISSUER", ""),
-		OIDCClientID:             envStr("OIDC_CLIENT_ID", ""),
-		OIDCClientSecret:         envStr("OIDC_CLIENT_SECRET", ""),
-		OIDCButtonLabel:          envStr("OIDC_BUTTON_LABEL", "Sign in with SSO"),
-		OIDCButtonIcon:           envStr("OIDC_BUTTON_ICON", ""),
-		OIDCScopes:               envStr("OIDC_SCOPES", "openid email profile"),
-		OIDCTrustEmail:           envBool("OIDC_TRUST_EMAIL", false),
-		UnsplashAccessKey:        envStr("UNSPLASH_ACCESS_KEY", ""),
-		PexelsAccessKey:          envStr("PEXELS_API_KEY", ""),
-		PixabayAccessKey:         envStr("PIXABAY_API_KEY", ""),
-		FreesoundAccessKey:       envStr("FREESOUND_ACCESS_KEY", ""),
-		ServerPDFEnabled:         envBool("SERVER_PDF_ENABLED", true),
-		ExportFilenameStyle:      envStr("EXPORT_FILENAME_STYLE", "simple"),
-		ExportFilenameTS:         envBool("EXPORT_FILENAME_TIMESTAMP", false),
-		MediaRoot:                envStr("MEDIA_ROOT", defaultDataPath("media")),
-		BulkFillMaxRows:          envInt("BULK_FILL_MAX_ROWS", 100),
-		MCPEnabled:               envBool("MCP_ENABLED", false),
-		McpPath:                   envStr("MCP_PATH", "/mcp"),
-		AIUserProviders:          envStr("AI_USER_PROVIDERS", "off"),
-		AIOffsiteNotice:          strings.TrimSpace(envStr("AI_OFFSITE_NOTICE", "")),
-		AIProvidersEnabled:       envBool("AI_PROVIDERS_ENABLED", true),
-		AIUserProvidersAllowHTTP: envBool("AI_USER_PROVIDERS_ALLOW_HTTP", false),
+		GoogleClientID:              envStr("GOOGLE_CLIENT_ID", ""),
+		Debug:                       envBool("DJANGO_DEBUG", false),
+		OIDCIssuer:                  envStr("OIDC_ISSUER", ""),
+		OIDCClientID:                envStr("OIDC_CLIENT_ID", ""),
+		OIDCClientSecret:            envStr("OIDC_CLIENT_SECRET", ""),
+		OIDCButtonLabel:             envStr("OIDC_BUTTON_LABEL", "Sign in with SSO"),
+		OIDCButtonIcon:              envStr("OIDC_BUTTON_ICON", ""),
+		OIDCScopes:                  envStr("OIDC_SCOPES", "openid email profile"),
+		OIDCTrustEmail:              envBool("OIDC_TRUST_EMAIL", false),
+		UnsplashAccessKey:           envStr("UNSPLASH_ACCESS_KEY", ""),
+		PexelsAccessKey:             envStr("PEXELS_API_KEY", ""),
+		PixabayAccessKey:            envStr("PIXABAY_API_KEY", ""),
+		FreesoundAccessKey:          envStr("FREESOUND_ACCESS_KEY", ""),
+		PexelsVideoAPIKey:           envStr("PEXELS_VIDEO_API_KEY", ""),
+		PixabayVideoAPIKey:          envStr("PIXABAY_VIDEO_API_KEY", ""),
+		StockVideoProviders:         envList("STOCK_VIDEO_PROVIDERS", []string{"pexels_video", "pixabay_video"}),
+		VideoEnabled:                envBool("VIDEO_ENABLED", true),
+		FFmpegPath:                  envStr("FFMPEG_PATH", "ffmpeg"),
+		FFprobePath:                 envStr("FFPROBE_PATH", "ffprobe"),
+		MaxVideoUploadBytes:         envInt("MAX_VIDEO_UPLOAD_BYTES", 200*1024*1024),
+		MaxVideoDurationSeconds:     envInt("MAX_VIDEO_DURATION_SECONDS", 600),
+		EmailURL:                    envStr("EMAIL_URL", "consolemail://"),
+		EmailSendAsync:              envBool("EMAIL_SEND_ASYNC", true),
+		AuthEmailCooldownSeconds:    envInt("AUTH_EMAIL_COOLDOWN_SECONDS", 60),
+		ServerPDFEnabled:            envBool("SERVER_PDF_ENABLED", true),
+		ExportFilenameStyle:         envStr("EXPORT_FILENAME_STYLE", "simple"),
+		ExportFilenameTS:            envBool("EXPORT_FILENAME_TIMESTAMP", false),
+		MediaRoot:                   envStr("MEDIA_ROOT", defaultDataPath("media")),
+		BulkFillMaxRows:             envInt("BULK_FILL_MAX_ROWS", 100),
+		MCPEnabled:                  envBool("MCP_ENABLED", false),
+		McpPath:                     envStr("MCP_PATH", "/mcp"),
+		AIUserProviders:             envStr("AI_USER_PROVIDERS", "off"),
+		AIOffsiteNotice:             strings.TrimSpace(envStr("AI_OFFSITE_NOTICE", "")),
+		AIProvidersEnabled:          envBool("AI_PROVIDERS_ENABLED", true),
+		AIUserProvidersAllowHTTP:    envBool("AI_USER_PROVIDERS_ALLOW_HTTP", false),
 		AIUserProvidersAllowedPorts: envIntList("AI_USER_PROVIDERS_ALLOWED_PORTS"),
-		AIAllowedPrivateHosts:    envList("AI_ALLOWED_PRIVATE_HOSTS", nil),
-		AISecretsKey:             envStr("AI_SECRETS_KEY", ""),
-		AISecretsKeyFallbacks:    envList("AI_SECRETS_KEY_FALLBACKS", nil),
-		AllowedHosts:             envList("DJANGO_ALLOWED_HOSTS", []string{"localhost", "127.0.0.1"}),
-		CSRFTrustedOrigins:       envList("CSRF_TRUSTED_ORIGINS", nil),
-		StockProviders:           envList("STOCK_PROVIDERS", []string{"unsplash", "pexels", "pixabay"}),
-		BackgroundRemovalPin:     envStr("BACKGROUND_REMOVAL_MODEL", ""),
-		RealtimeEnabled:          envBool("REALTIME_ENABLED", true),
-		RealtimeMaxConns:         envInt("REALTIME_MAX_CONNECTIONS_PER_DESIGN", 25),
-		SiteURL:                  envStr("SITE_URL", "http://localhost:5173"),
-		DatabaseURL:              envStr("DATABASE_URL", defaultDatabaseURL()),
-		DevProxyURL:              envStr("DOORY_DEV_PROXY", ""),
-		AllowedOrigins:           envList("CORS_ALLOWED_ORIGINS", nil),
-		SecureCookies:            envBool("SECURE_COOKIES", true),
-		SecretKey:                envStr("DJANGO_SECRET_KEY", "dev-insecure-secret-key-change-me"),
-		SecretKeyFallbacks:       envList("SECRET_KEY_FALLBACKS", nil),
-		MaxAPITokensPerUser:      envInt("MAX_API_TOKENS_PER_USER", 20),
-		ServerImageExportEnabled: envBool("SERVER_IMAGE_EXPORT_ENABLED", false),
-		ExportImageMaxPixels:     envInt("EXPORT_IMAGE_MAX_PIXELS", 40_000_000),
-		ExportImageMaxDocBytes:   envInt("EXPORT_IMAGE_MAX_DOCUMENT_BYTES", 5*1024*1024),
-		ExportMaxConcurrency:     envInt("EXPORT_MAX_CONCURRENCY", 2),
-		ExportTimeoutSeconds:     float64(envInt("EXPORT_TIMEOUT_SECONDS", 30)),
-		ExportChromiumPath:       envStr("EXPORT_CHROMIUM_PATH", ""),
-		ExportRenderPageURL:      envStr("EXPORT_RENDER_PAGE_URL", ""),
-		ExportAllowedOrigins:     envList("EXPORT_ALLOWED_ORIGINS", nil),
-		ExportChromiumNoSandbox:  envBool("EXPORT_CHROMIUM_NO_SANDBOX", false),
-		ExportWorkDir:            envStr("EXPORT_WORK_DIR", ""),
-		ExportStorageRoot:        envStr("EXPORT_STORAGE_ROOT", defaultDataPath("exports")),
-		ImageOptimizers:          envList("IMAGE_OPTIMIZERS", []string{"builtin"}),
-		ImageOptimizerDefault:    envStr("IMAGE_OPTIMIZER_DEFAULT", "builtin"),
-		TinyPngAPIKey:            envStr("TINYPNG_API_KEY", ""),
-		KrakenAPIKey:             envStr("KRAKEN_API_KEY", ""),
-		KrakenAPISecret:          envStr("KRAKEN_API_SECRET", ""),
-		ImageOptimizerCustomName: envStr("IMAGE_OPTIMIZER_CUSTOM_NAME", "Custom"),
-		ImageOptimizerCustomURL:  envStr("IMAGE_OPTIMIZER_CUSTOM_URL", ""),
-		ImageOptimizerCustomKey:  envStr("IMAGE_OPTIMIZER_CUSTOM_KEY", ""),
-		McpExportURLTTLSeconds:   envInt("MCP_EXPORT_URL_TTL_SECONDS", 600),
-		McpCallsPerMinute:         envInt("MCP_CALLS_PER_MINUTE", 120),
-		McpMaxRequestBytes:        envInt("MCP_MAX_REQUEST_BYTES", 4*1024*1024),
-		McpExportInlineMaxBytes:   envInt("MCP_EXPORT_INLINE_MAX_BYTES", 1024*1024),
-		McpExportURLUploads:       envBool("URL_IMAGE_UPLOADS", true),
-		MaxDesignsPerUser:        envInt("MAX_DESIGNS_PER_USER", 5000),
-		UserStorageQuotaBytes:    int64(envInt("USER_STORAGE_QUOTA_BYTES", 2*1024*1024*1024)),
-		BackgroundRemovalDefault: envStr("BACKGROUND_REMOVAL_DEFAULT", "device"),
+		AIAllowedPrivateHosts:       envList("AI_ALLOWED_PRIVATE_HOSTS", nil),
+		AISecretsKey:                envStr("AI_SECRETS_KEY", ""),
+		AISecretsKeyFallbacks:       envList("AI_SECRETS_KEY_FALLBACKS", nil),
+		AllowedHosts:                envList("DJANGO_ALLOWED_HOSTS", []string{"localhost", "127.0.0.1"}),
+		CSRFTrustedOrigins:          envList("CSRF_TRUSTED_ORIGINS", nil),
+		StockProviders:              envList("STOCK_PROVIDERS", []string{"unsplash", "pexels", "pixabay"}),
+		BackgroundRemovalPin:        envStr("BACKGROUND_REMOVAL_MODEL", ""),
+		RealtimeEnabled:             envBool("REALTIME_ENABLED", true),
+		RealtimeMaxConns:            envInt("REALTIME_MAX_CONNECTIONS_PER_DESIGN", 25),
+		SiteURL:                     envStr("SITE_URL", "http://localhost:5173"),
+		DatabaseURL:                 envStr("DATABASE_URL", defaultDatabaseURL()),
+		DevProxyURL:                 envStr("DOORY_DEV_PROXY", ""),
+		AllowedOrigins:              envList("CORS_ALLOWED_ORIGINS", nil),
+		SecureCookies:               envBool("SECURE_COOKIES", true),
+		SecretKey:                   envStr("DJANGO_SECRET_KEY", "dev-insecure-secret-key-change-me"),
+		SecretKeyFallbacks:          envList("SECRET_KEY_FALLBACKS", nil),
+		MaxAPITokensPerUser:         envInt("MAX_API_TOKENS_PER_USER", 20),
+		ServerImageExportEnabled:    envBool("SERVER_IMAGE_EXPORT_ENABLED", false),
+		ExportImageMaxPixels:        envInt("EXPORT_IMAGE_MAX_PIXELS", 40_000_000),
+		ExportImageMaxDocBytes:      envInt("EXPORT_IMAGE_MAX_DOCUMENT_BYTES", 5*1024*1024),
+		ExportMaxConcurrency:        envInt("EXPORT_MAX_CONCURRENCY", 2),
+		ExportTimeoutSeconds:        float64(envInt("EXPORT_TIMEOUT_SECONDS", 30)),
+		ExportChromiumPath:          envStr("EXPORT_CHROMIUM_PATH", ""),
+		ExportRenderPageURL:         envStr("EXPORT_RENDER_PAGE_URL", ""),
+		ExportAllowedOrigins:        envList("EXPORT_ALLOWED_ORIGINS", nil),
+		ExportChromiumNoSandbox:     envBool("EXPORT_CHROMIUM_NO_SANDBOX", false),
+		ExportWorkDir:               envStr("EXPORT_WORK_DIR", ""),
+		ExportStorageRoot:           envStr("EXPORT_STORAGE_ROOT", defaultDataPath("exports")),
+		ImageOptimizers:             envList("IMAGE_OPTIMIZERS", []string{"builtin"}),
+		ImageOptimizerDefault:       envStr("IMAGE_OPTIMIZER_DEFAULT", "builtin"),
+		TinyPngAPIKey:               envStr("TINYPNG_API_KEY", ""),
+		KrakenAPIKey:                envStr("KRAKEN_API_KEY", ""),
+		KrakenAPISecret:             envStr("KRAKEN_API_SECRET", ""),
+		ImageOptimizerCustomName:    envStr("IMAGE_OPTIMIZER_CUSTOM_NAME", "Custom"),
+		ImageOptimizerCustomURL:     envStr("IMAGE_OPTIMIZER_CUSTOM_URL", ""),
+		ImageOptimizerCustomKey:     envStr("IMAGE_OPTIMIZER_CUSTOM_KEY", ""),
+		ImageOptimizerMaxBytes:      envInt("IMAGE_OPTIMIZER_MAX_BYTES", 25*1024*1024),
+		McpExportURLTTLSeconds:      envInt("MCP_EXPORT_URL_TTL_SECONDS", 600),
+		McpCallsPerMinute:           envInt("MCP_CALLS_PER_MINUTE", 120),
+		McpMaxRequestBytes:          envInt("MCP_MAX_REQUEST_BYTES", 4*1024*1024),
+		McpExportInlineMaxBytes:     envInt("MCP_EXPORT_INLINE_MAX_BYTES", 1024*1024),
+		McpExportURLUploads:         envBool("URL_IMAGE_UPLOADS", true),
+		MaxDesignsPerUser:           envInt("MAX_DESIGNS_PER_USER", 5000),
+		UserStorageQuotaBytes:       int64(envInt("USER_STORAGE_QUOTA_BYTES", 2*1024*1024*1024)),
+		BackgroundRemovalDefault:    envStr("BACKGROUND_REMOVAL_DEFAULT", "device"),
 		// base.py hardcodes EMAIL_BACKEND = console (a settings-file
 		// constant, NOT an env read): upstream's deployed default never
 		// delivers mail, so features.email_verification is false on a
@@ -214,6 +244,9 @@ func FromEnv() *Settings {
 		// console too (smtp exists only in Django's global_settings,
 		// which base.py overrides).
 		EmailBackend: "django.core.mail.backends.console.EmailBackend",
+	}
+	if parsed := parseEmailURL(settings.EmailURL); parsed.Backend == "smtp" {
+		settings.EmailBackend = "django.core.mail.backends.smtp.EmailBackend"
 	}
 	settings.applyExportDefaults()
 	if len(settings.CSRFTrustedOrigins) == 0 {
@@ -417,3 +450,6 @@ func envFloat(name string, def float64) float64 {
 	}
 	return f
 }
+
+// emailConfig parses EMAIL_URL into the transport the sender uses.
+func (s *Settings) emailConfig() emailConfig { return parseEmailURL(s.EmailURL) }

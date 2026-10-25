@@ -69,9 +69,16 @@ func main() {
 		// --prepare: prepare and exit 0 (probe the bootstraps without serving);
 		// --prepare-only is accepted as an alias. Extra args are ignored.
 		prepareOnly := false
+		addr := envOr("DOORY_ADDR", ":8000")
 		for _, arg := range args {
 			if arg == "--prepare" || arg == "--prepare-only" {
 				prepareOnly = true
+				continue
+			}
+			// A positional address (deploy/doory.service runs
+			// `doory entrypoint :8080`), like `serve`.
+			if len(arg) > 0 && arg[0] != '-' && addr == envOr("DOORY_ADDR", ":8000") {
+				addr = arg
 			}
 		}
 		s := doory.FromEnv()
@@ -93,8 +100,8 @@ func main() {
 		if prepareOnly {
 			os.Exit(0)
 		}
-		fmt.Printf("doory: serving on %s (db: %s)\n", envOr("DOORY_ADDR", ":8000"), s.DatabaseURL)
-		if err := http.ListenAndServe(envOr("DOORY_ADDR", ":8000"), app.Handler()); err != nil {
+		fmt.Printf("doory: serving on %s (db: %s)\n", addr, s.DatabaseURL)
+		if err := http.ListenAndServe(addr, app.Handler()); err != nil {
 			fmt.Fprintln(os.Stderr, "serve:", err)
 			os.Exit(1)
 		}
@@ -114,6 +121,12 @@ func main() {
 		}
 		defer db.Close()
 		app := doory.NewApp(s, db)
+		// `serve` deliberately does not install content (parity runs against
+		// an unseeded oracle too); point at the one command that does.
+		var templates int
+		if err := db.QueryRow(`SELECT COUNT(*) FROM gallery_template`).Scan(&templates); err == nil && templates == 0 {
+			fmt.Println("doory: no starter templates yet — run 'doory seed_templates' (or use 'doory entrypoint', which installs the embedded content on start)")
+		}
 		fmt.Printf("doory: serving on %s (db: %s)\n", addr, s.DatabaseURL)
 		if err := http.ListenAndServe(addr, app.Handler()); err != nil {
 			fmt.Fprintln(os.Stderr, "serve:", err)
