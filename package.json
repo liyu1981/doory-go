@@ -13,7 +13,7 @@
     "oracle:setup": "set -e; mkdir -p .oracle; uv venv .oracle/venv --python python3.12 -q; uv pip install -q --python .oracle/venv/bin/python -r .upstream/current/backend/requirements-dev.txt; echo 'oracle: setup complete (.oracle/venv)'",
     "oracle:serve": "bash tools/oracle/serve.sh",
     "oracle:probe": "bash tools/oracle/probe.sh",
-    "build": "go build -trimpath -ldflags=\"-s -w\" -o dist/doory ./cmd/doory",
+    "build": "bash scripts/build.sh",
     "check": "${GO:-go} build ./... && ${GO:-go} vet ./... && ${GO:-go} test ./... && pnpm run port-map-drift && pnpm run divergence-consistency && pnpm run lint-scenarios",
     "verify": "pnpm run check && pnpm run parity-fast && echo 'TODO(M1): full parity + contracts' && exit 1",
     "parity": "go run ./test/parity/cmd/parrun test/parity/scenarios",

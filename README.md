@@ -35,6 +35,54 @@ Headline divergences (planned, ledgered in `docs/parity/DIVERGENCES.md`):
 - `test/parity/` — families, paired scenarios, drivers, unit evidence, probes
 - `automation/ci/` — drift gates and the divergence guard
 
+## Building a binary from a clone (no parity tooling)
+
+A release build is **only `go build`** — the frontend bundle, the element/audio/
+template content, the starter fonts and the migrations are committed in the
+tree, so nothing has to be generated, downloaded or probed first:
+
+```bash
+git clone https://github.com/<you>/doory-go && cd doory-go
+./scripts/build.sh            # -> dist/doory  (CGO off, host arch)
+# or, without the script:
+go build -trimpath -ldflags="-s -w" -o dist/doory ./cmd/doory
+```
+
+- **Needs:** Go ≥ 1.27 (see `go.mod`). No Node/pnpm, no Python, no oracle venv,
+  no `.upstream/` mirror, no network after the module cache is warm (the first
+  build downloads `go.sum`).
+- **Host arch only by default.** `GOOS=… GOARCH=… ./scripts/build.sh -o dist/doory-<os>-<arch>`
+  cross-compiles too (the stack is pure Go; `CGO_ENABLED=0` is the default in the
+  script). Chromium is a *runtime* dependency of the optional PDF/image export,
+  never a build one.
+- **First run still needs one command:** `doory entrypoint :8111` migrates the
+  database and installs the embedded content (templates, their fonts, elements,
+  audio). `doory serve :8111` alone does not install content — it prints a hint
+  (the default listen address is `:8111`, `DOORY_ADDR` overrides it).
+
+The pnpm targets below are the **development/parity** tooling (oracle mirror,
+scenario pairs, drift gates); none of them runs during a release build.
+
+### Installing it as a user service (`~/.doory`)
+
+No root needed: a systemd **user** unit keeps the binary in `~/.local/bin`, the
+data in `~/.doory/data`, the environment file in `~/.doory/doory.env` and the
+logs in `~/.doory/logs/doory.log`, serving on `:8111`:
+
+```bash
+./scripts/install-systemd.sh                # build, install, enable and start
+./scripts/install-systemd.sh --no-build     # reuse dist/doory
+./scripts/install-systemd.sh --port 9000    # another address
+./scripts/install-systemd.sh --uninstall    # stop and remove the unit, keep ~/.doory
+loginctl enable-linger "$USER"              # optional: keep running after logout
+systemctl --user status doory.service       # state
+tail -f ~/.doory/logs/doory.log             # output (entrypoint + serving)
+```
+
+Upgrade = copy a new binary over `~/.local/bin/doory` and
+`systemctl --user restart doory.service`; the data directory is migrated on
+start by `entrypoint`.
+
 ## Commands
 
 ```bash
@@ -58,10 +106,10 @@ frontend on one listener. With no configuration at all it keeps everything it
 needs under `./data` (SQLite database, media, exports):
 
 ```bash
-pnpm build               # -> dist/doory (46 MB, frontend embedded; no node needed)
+./scripts/build.sh        # -> dist/doory (~52 MB, frontend embedded; no node needed)
 dist/doory migrate       # or let `doory entrypoint` do it
-DJANGO_SECRET_KEY=$(openssl rand -base64 48) SITE_URL=http://localhost:8080 \
-  dist/doory serve :8080
+DJANGO_SECRET_KEY=$(openssl rand -base64 48) SITE_URL=http://localhost:8111 \
+  dist/doory serve :8111  # default address is :8111
 ```
 
 `dist/doory` with no arguments prints the command overview (`doory help` shows
@@ -106,7 +154,7 @@ Type=simple
 User=doory
 WorkingDirectory=/var/lib/doory
 EnvironmentFile=/etc/doory/doory.env      # DJANGO_SECRET_KEY, SITE_URL, ...
-ExecStart=/usr/local/bin/doory entrypoint :8080
+ExecStart=/usr/local/bin/doory entrypoint :8111
 Restart=on-failure
 # Server-side PDF export only: the port uses Chromium in a child process.
 # NoNewPrivileges=true

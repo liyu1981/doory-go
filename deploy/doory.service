@@ -24,8 +24,8 @@ Group=doory
 WorkingDirectory=/var/lib/doory
 EnvironmentFile=/etc/doory/doory.env
 # entrypoint: wait for the database, migrate, run the optional content
-# bootstraps (DOORY_SYNC_*), then serve on :8080.
-ExecStart=/usr/local/bin/doory entrypoint :8080
+# bootstraps (DOORY_SYNC_*), then serve on :8111.
+ExecStart=/usr/local/bin/doory entrypoint :8111
 Restart=on-failure
 RestartSec=2s
 # The healthcheck subcommand exits 0 only when /api/v1/health/ answers 200.

@@ -83,7 +83,7 @@ type Settings struct {
 	ExportChromiumPath       string   // EXPORT_CHROMIUM_PATH (empty: PATH lookup)
 	ExportChromiumNoSandbox  bool     // EXPORT_CHROMIUM_NO_SANDBOX (default false)
 	ExportWorkDir            string   // EXPORT_WORK_DIR (default os temp)
-	ExportAllowedOrigins     []string // EXPORT_ALLOWED_ORIGINS (default site origin + :8000)
+	ExportAllowedOrigins     []string // EXPORT_ALLOWED_ORIGINS (default site origin + :8111)
 	ExportStorageRoot        string   // EXPORT_STORAGE_ROOT (default ./exports)
 	ImageOptimizers          []string // IMAGE_OPTIMIZERS (base.py env.list, default ["builtin"])
 	ImageOptimizerDefault    string   // IMAGE_OPTIMIZER_DEFAULT (default "builtin")
@@ -292,7 +292,7 @@ func (s *Settings) applyExportDefaults() {
 		s.ExportRenderPageURL = originOf(s.SiteURL) + "/render.html"
 	}
 	if len(s.ExportAllowedOrigins) == 0 {
-		s.ExportAllowedOrigins = []string{originOf(s.SiteURL), "http://127.0.0.1:8000", "http://localhost:8000"}
+		s.ExportAllowedOrigins = []string{originOf(s.SiteURL), "http://127.0.0.1:8111", "http://localhost:8111"}
 	}
 }
 

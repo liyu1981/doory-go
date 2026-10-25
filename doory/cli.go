@@ -157,7 +157,7 @@ func PrintCLIHelp(w io.Writer) {
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Built-in commands:")
 	fmt.Fprintln(w)
-	fmt.Fprintln(w, "    serve         HTTP + WebSockets + MCP + the embedded frontend (default port :8000)")
+	fmt.Fprintln(w, "    serve         HTTP + WebSockets + MCP + the embedded frontend (default port :8111)")
 	fmt.Fprintln(w, "    entrypoint    wait for the database, migrate, optional content bootstraps, then serve")
 	fmt.Fprintln(w, "    migrate       apply the embedded schema for the DATABASE_URL dialect")
 	fmt.Fprintln(w, "    healthcheck   probe /api/v1/health/ (HEALTH_PORT, HEALTH_PATH); exit 0 on 200")

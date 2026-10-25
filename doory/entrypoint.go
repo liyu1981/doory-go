@@ -180,7 +180,7 @@ func Healthcheck() int {
 			break
 		}
 	}
-	port := envStr("HEALTH_PORT", "8000")
+	port := envStr("HEALTH_PORT", "8111")
 	path := envStr("HEALTH_PATH", "/api/v1/health/")
 	request, err := http.NewRequest(http.MethodGet, "http://127.0.0.1:"+port+path, nil)
 	if err != nil {

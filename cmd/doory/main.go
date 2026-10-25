@@ -69,7 +69,7 @@ func main() {
 		// --prepare: prepare and exit 0 (probe the bootstraps without serving);
 		// --prepare-only is accepted as an alias. Extra args are ignored.
 		prepareOnly := false
-		addr := envOr("DOORY_ADDR", ":8000")
+		addr := envOr("DOORY_ADDR", ":8111")
 		for _, arg := range args {
 			if arg == "--prepare" || arg == "--prepare-only" {
 				prepareOnly = true
@@ -77,7 +77,7 @@ func main() {
 			}
 			// A positional address (deploy/doory.service runs
 			// `doory entrypoint :8080`), like `serve`.
-			if len(arg) > 0 && arg[0] != '-' && addr == envOr("DOORY_ADDR", ":8000") {
+			if len(arg) > 0 && arg[0] != '-' && addr == envOr("DOORY_ADDR", ":8111") {
 				addr = arg
 			}
 		}
@@ -106,7 +106,7 @@ func main() {
 			os.Exit(1)
 		}
 	case "serve":
-		addr := envOr("DOORY_ADDR", ":8000")
+		addr := envOr("DOORY_ADDR", ":8111")
 		for _, a := range args {
 			if len(a) > 0 && a[0] != '-' {
 				addr = a
