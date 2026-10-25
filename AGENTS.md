@@ -32,6 +32,12 @@ session-level rules.
   the gate ladder). There is no Makefile.
 - Generated inventories/ledgers are never hand-edited; they are regenerated
   (`pnpm generate`).
+- **Open work is tracked in ONE place: `docs/parity/GAPS.md`** (stable `G<N>`
+  ids, one row per gap, route-level table kept honest by `pnpm gaps-check`).
+  `PORT_MAP.md` carries the per-file status, `DIVERGENCES.md` the deliberate
+  differences. A gap closes by moving its row to the Closed table with the
+  commit id, in the same change that ports it; a new `route registered but not
+  ported:` branch needs a row before it lands.
 - Parity is the law: probe the oracle before porting, never weaken a
   comparator, and every deliberate difference needs a `D<N>` entry in
   `docs/parity/DIVERGENCES.md` with a remove-when condition.

@@ -14,7 +14,7 @@
     "oracle:serve": "bash tools/oracle/serve.sh",
     "oracle:probe": "bash tools/oracle/probe.sh",
     "build": "bash scripts/build.sh",
-    "check": "${GO:-go} build ./... && ${GO:-go} vet ./... && ${GO:-go} test ./... && pnpm run port-map-drift && pnpm run divergence-consistency && pnpm run lint-scenarios",
+    "check": "${GO:-go} build ./... && ${GO:-go} vet ./... && ${GO:-go} test ./... && pnpm run port-map-drift && pnpm run gaps-check && pnpm run divergence-consistency && pnpm run lint-scenarios",
     "verify": "pnpm run check && pnpm run parity-fast && echo 'TODO(M1): full parity + contracts' && exit 1",
     "parity": "go run ./test/parity/cmd/parrun test/parity/scenarios",
     "parity-fast": "go run ./test/parity/cmd/parrun -fast test/parity/scenarios",
@@ -23,7 +23,8 @@
     "lint-scenarios": "go run ./test/parity/cmd/lintscenarios",
     "divergence-consistency": "go run ./automation/ci/divergencecheck",
     "frontend:build": "bash scripts/frontend-build.sh",
-    "pg-smoke": "go test ./test/pgsmoke/ -count=1"
+    "pg-smoke": "go test ./test/pgsmoke/ -count=1",
+    "gaps-check": "go run ./automation/ci/gapscheck"
   },
   "targets-help": {
     "help": "List the available targets",

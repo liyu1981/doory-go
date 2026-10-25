@@ -1507,6 +1507,9 @@ calls that used to answer 404 (`doory/oidc.go`, `doory/presets.go`,
   (serializer bounds + the `_not_configured` payloads), and
   `/stock/videos/import/` (`video_unavailable` without the tools).
 
+Open work for everything below (and the older family gaps) lives in
+`docs/parity/GAPS.md` — the single tracker, kept in sync by `pnpm gaps-check`.
+
 Pending (0.2.0 features — PORT_MAP rows are 🟡/⬜):
 - **OIDC sign-in flows**: discovery, PKCE, JWKS/JWT verification,
   `oidc_identities` writes, `OidcConnectSerializer`/`OIDC_TRUST_EMAIL`, and

@@ -1,6 +1,8 @@
 # PORT_MAP
 
-Where the Go port of the pinned doory backend lives. **Status here means code
+Where the Go port of the pinned doory backend lives. **Open work is indexed in
+`docs/parity/GAPS.md`** (stable gap ids, what closes each one); this file is the
+per-file view and `DIVERGENCES.md` the deliberate-difference ledger. **Status here means code
 mapping only, not parity proof.** Verification quality is tracked separately
 in test/parity/coverage.md (boot-only/smoke scenarios never count as
 behavioral verification).

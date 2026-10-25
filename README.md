@@ -30,7 +30,8 @@ Headline divergences (planned, ledgered in `docs/parity/DIVERGENCES.md`):
   `pnpm frontend:build`; provenance in D16)
 - `cmd/doory/` — the single binary (`serve`, `entrypoint`, `migrate`,
   `healthcheck`, `version` and the management commands)
-- `docs/parity/` — `PORT_MAP.md` (file denominator), `DIVERGENCES.md` (D\<N\> ledger)
+- `docs/parity/` — `GAPS.md` (open-work tracker), `PORT_MAP.md` (file
+  denominator), `DIVERGENCES.md` (D\<N\> ledger)
 - `ledger/` — compiler-derived inventories (routes, interfaces, env, migrations, tests)
 - `test/parity/` — families, paired scenarios, drivers, unit evidence, probes
 - `automation/ci/` — drift gates and the divergence guard
