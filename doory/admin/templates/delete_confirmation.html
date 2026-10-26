@@ -1,0 +1,12 @@
+{{define "content"}}
+<h1>Are you sure?</h1>
+<p>Are you sure you want to delete the {{.Model.Verbose}} “{{.Object.Repr}}”? All of the following related items will be deleted:</p>
+<ul><li>{{.Object.Repr}}</li></ul>
+<form method="post">
+<input type="hidden" name="csrfmiddlewaretoken" value="{{.CSRFToken}}">
+<div class="actions">
+<button type="submit" name="post" value="yes">Yes, I’m sure</button>
+<a class="button secondary" href="{{.BackURL}}">No, take me back</a>
+</div>
+</form>
+{{end}}

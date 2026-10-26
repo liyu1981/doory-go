@@ -1,0 +1,14 @@
+{{define "content"}}
+<h1>{{.Title}}</h1>
+<p>{{.Message}}</p>
+{{if .Detail}}<div>{{.Detail}}</div>{{end}}
+{{if .TestOK}}
+<h2>It works</h2>
+<p>{{.TestMessage}}</p>
+{{if .TestImage}}<p><img src="{{.TestImage}}" alt="test result" style="max-width:320px"></p>{{end}}
+{{else if .TestMessage}}<h2>Test failed</h2><p>{{.TestMessage}}</p>{{end}}
+<form method="post" action="{{.ActionURL}}">
+<input type="hidden" name="csrfmiddlewaretoken" value="{{.CSRFToken}}">
+<div class="actions"><button type="submit">{{.Confirm}}</button><a class="button secondary" href="{{.BackURL}}">Back</a></div>
+</form>
+{{end}}

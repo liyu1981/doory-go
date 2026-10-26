@@ -24,8 +24,8 @@ type CollabGrant struct {
 // Sentinel errors matching access.py's exception types (the consumer maps
 // them to close codes: Forbidden -> 4403, DesignGone -> 4404).
 var (
-	errCollabForbidden   = errors.New("collab: forbidden")
-	errCollabDesignGone  = errors.New("collab: design_trashed")
+	errCollabForbidden    = errors.New("collab: forbidden")
+	errCollabDesignGone   = errors.New("collab: design_trashed")
 	errCollabPasswordNeed = errors.New("collab: password_needed")
 )
 

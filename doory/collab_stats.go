@@ -27,7 +27,10 @@ func (a *App) collabStats(w http.ResponseWriter, r *http.Request) {
 	cutoff := collabStaleCutoff()
 
 	// rooms: designs by live connection count (desc, then design id).
-	type roomRow struct{ design string; connections int }
+	type roomRow struct {
+		design      string
+		connections int
+	}
 	var roomRows []roomRow
 	{
 		rows, err := a.DB.Query(`SELECT design_id, COUNT(*) FROM collab_roomconnection

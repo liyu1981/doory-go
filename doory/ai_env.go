@@ -1,10 +1,12 @@
 // env providers (apps/ai/env.py): AI_PROVIDER_<n>_* rows parsed into frozen
-// operator providers; invalid rows are dropped (manage.py check reports them
-// upstream).
+// operator providers; invalid rows are dropped and reported as one message
+// each (manage.py check reports the same strings upstream).
 package doory
 
 import (
 	"encoding/json"
+	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -25,39 +27,56 @@ type envProvider struct {
 	dailyQuota     int
 }
 
-// aiEnvProviders ports apps/ai.env.load().
+func (p *envProvider) hasSecret() bool { return p.authValue != "" }
+
+// aiEnvProviders ports apps/ai.env.env_providers() (load()[0]).
 func (s *Settings) aiEnvProviders() []envProvider {
-	var out []envProvider
-	for _, row := range s.AIProviderEnvProvider {
-		if p, ok := s.parseEnvProvider(row); ok {
-			out = append(out, p)
-		}
-	}
-	return out
+	providers, _ := s.aiEnvLoad()
+	return providers
 }
 
-func (s *Settings) parseEnvProvider(row AIEnvProvider) (envProvider, bool) {
-	if row.URL == "" {
-		return envProvider{}, false
+// aiEnvLoad ports apps/ai.env.load(): (the valid providers, a message per
+// invalid one).
+func (s *Settings) aiEnvLoad() ([]envProvider, []string) {
+	var providers []envProvider
+	var errors []string
+	for _, row := range s.AIProviderEnvProvider {
+		provider, message := s.parseEnvProvider(row)
+		if message != "" {
+			errors = append(errors, message)
+			continue
+		}
+		providers = append(providers, provider)
 	}
-	if _, terr := s.aiCheckURL(row.URL, s.aiOperatorPolicy(), false); terr != nil {
-		return envProvider{}, false
+	return providers, errors
+}
+
+// parseEnvProvider ports env.parse(): one EnvProvider or the ConfigError
+// message that leaves it out.
+func (s *Settings) parseEnvProvider(row AIEnvProvider) (envProvider, string) {
+	prefix := "AI_PROVIDER_" + row.index + "_"
+	url := strings.TrimRight(strings.TrimSpace(row.URL), "/")
+	if _, terr := s.aiCheckURL(url, s.aiOperatorPolicy(), false); terr != nil {
+		return envProvider{}, prefix + "URL: " + terr.message
 	}
-	style := row.STYLE
+	if strings.ContainsAny(url, "?#") {
+		return envProvider{}, prefix + "URL may not have a query or fragment."
+	}
+	style := strings.TrimSpace(row.STYLE)
 	if style == "" {
 		style = "doory"
 	}
 	if !aiStyleValid(style) {
-		return envProvider{}, false
+		return envProvider{}, prefix + "STYLE: unknown style " + jsonQuote(style) + "."
 	}
 	var styleConfig map[string]any
-	if row.STYLE_CONFIG != "" {
+	if strings.TrimSpace(row.STYLE_CONFIG) != "" {
 		if err := json.Unmarshal([]byte(row.STYLE_CONFIG), &styleConfig); err != nil {
-			return envProvider{}, false
+			return envProvider{}, prefix + "STYLE_CONFIG is not valid JSON."
 		}
 	}
 	if msg := aiStyleConfigError(style, styleConfig); msg != nil {
-		return envProvider{}, false
+		return envProvider{}, prefix + "STYLE_CONFIG: " + *msg
 	}
 	tasksSource := row.TASKS
 	if strings.TrimSpace(tasksSource) == "" {
@@ -70,20 +89,37 @@ func (s *Settings) parseEnvProvider(row AIEnvProvider) (envProvider, bool) {
 			continue
 		}
 		if !slicesContains(aiTaskIDs, t) {
-			return envProvider{}, false
+			return envProvider{}, prefix + "TASKS: unknown task " + t + "."
 		}
 		tasks = append(tasks, t)
 	}
 	if len(tasks) == 0 {
-		return envProvider{}, false
+		return envProvider{}, prefix + "TASKS: unknown task (none)."
 	}
 	header := strings.TrimSpace(row.AUTH_HEADER)
 	if header != "" && !aiHeaderNameOK(header) {
-		return envProvider{}, false
+		return envProvider{}, prefix + "AUTH_HEADER is not a valid HTTP header name."
 	}
 	value := row.AUTH_VALUE
 	if strings.ContainsAny(value, "\r\n") {
-		return envProvider{}, false
+		return envProvider{}, prefix + "AUTH_VALUE contains a line break."
+	}
+	sendsOffsite, ok := envStrictBool(row.SENDS_OFFSITE)
+	if !ok {
+		return envProvider{}, prefix + "SENDS_OFFSITE must be true or false."
+	}
+	timeout, message := envStrictInt(row.TIMEOUT_SECONDS, envInt("AI_DEFAULT_TIMEOUT_SECONDS", 60),
+		prefix+"TIMEOUT_SECONDS", 1, 300)
+	if message != "" {
+		return envProvider{}, message
+	}
+	maxImage, message := envStrictInt(row.MAX_IMAGE_BYTES, 0, prefix+"MAX_IMAGE_BYTES", 0, 1<<31)
+	if message != "" {
+		return envProvider{}, message
+	}
+	quota, message := envStrictInt(row.DAILY_QUOTA, 0, prefix+"DAILY_QUOTA", 0, 1000000000)
+	if message != "" {
+		return envProvider{}, message
 	}
 	label := strings.TrimSpace(row.LABEL)
 	if label == "" {
@@ -92,27 +128,72 @@ func (s *Settings) parseEnvProvider(row AIEnvProvider) (envProvider, bool) {
 		label = string([]rune(label)[:80])
 	}
 	return envProvider{
-		id: "env-" + row.index, name: label, baseURL: row.URL, style: style,
+		id: "env-" + row.index, name: label, baseURL: url, style: style,
 		styleConfig: styleConfig, tasks: tasks, models: parseEnvModels(row.MODELS),
 		authHeader: header, authValue: strings.TrimSpace(value),
-		sendsOffsite:   envBoolText(row.SENDS_OFFSITE),
-		timeoutSeconds: envIntRange(row.TIMEOUT_SECONDS, envInt("AI_DEFAULT_TIMEOUT_SECONDS", 60), 1, 300),
-		maxImageBytes:  int64(envIntRange(row.MAX_IMAGE_BYTES, 0, 0, 1<<31)),
-		dailyQuota:     envIntRange(row.DAILY_QUOTA, 0, 0, 1000000000),
-	}, true
+		sendsOffsite:   sendsOffsite,
+		timeoutSeconds: timeout,
+		maxImageBytes:  int64(maxImage),
+		dailyQuota:     quota,
+	}, ""
+}
+
+// envStrictBool ports env._bool: "", 0/no/off are false, 1/yes/on true,
+// anything else is an error.
+func envStrictBool(value string) (bool, bool) {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "", "0", "false", "no", "off":
+		return false, true
+	case "1", "true", "yes", "on":
+		return true, true
+	}
+	return false, false
+}
+
+// envStrictInt ports env._int (blank: the default).
+func envStrictInt(value string, def int, name string, low, high int) (int, string) {
+	if strings.TrimSpace(value) == "" {
+		return def, ""
+	}
+	number, err := strconv.Atoi(strings.TrimSpace(value))
+	if err != nil {
+		return 0, name + " must be a whole number."
+	}
+	if number < low || number > high {
+		return 0, fmt.Sprintf("%s must be between %d and %d.", name, low, high)
+	}
+	return number, ""
 }
 
 // parseEnvModels ports env.parse_models: "fast:Fast,best:Best" (the label
-// follows the last colon; here the first, matching the documented shape).
+// follows the last colon), deduplicated in order.
 func parseEnvModels(value string) [][2]string {
 	var out [][2]string
+	seen := map[[2]string]bool{}
 	for _, item := range strings.Split(value, ",") {
 		item = strings.TrimSpace(item)
 		if item == "" {
 			continue
 		}
-		name, label, _ := strings.Cut(item, ":")
-		out = append(out, [2]string{strings.TrimSpace(name), label})
+		name, label := item, ""
+		if at := strings.LastIndex(item, ":"); at >= 0 {
+			name, label = item[:at], item[at+1:]
+		}
+		pair := [2]string{envTruncateRunes(strings.TrimSpace(name), 200),
+			envTruncateRunes(strings.TrimSpace(label), 80)}
+		if seen[pair] {
+			continue
+		}
+		seen[pair] = true
+		out = append(out, pair)
 	}
 	return out
+}
+
+func envTruncateRunes(value string, limit int) string {
+	runes := []rune(value)
+	if len(runes) <= limit {
+		return value
+	}
+	return string(runes[:limit])
 }

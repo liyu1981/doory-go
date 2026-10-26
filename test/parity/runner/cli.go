@@ -109,6 +109,10 @@ func runSideCommand(side *Side, sc *Scenario, step StepCommand, sideName string)
 			"SECURE_SSL_REDIRECT=false",
 			"SECURE_COOKIES=false",
 		)
+		if sc.CollectStatic {
+			env = append(env, oracleSettingsEnv(side.RepoRoot,
+				filepath.Join(side.WorkDir, "oracle-static"))...)
+		}
 	} else {
 		cmd = exec.Command(side.Bin, append([]string{step.Command}, step.Args...)...)
 		cmd.Dir = side.RepoRoot

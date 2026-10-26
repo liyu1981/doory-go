@@ -1,0 +1,282 @@
+# Behavior family: admin (D2, G27-G31).
+#
+# The Go admin is server-rendered without django-unfold, so page markup is a
+# recorded difference (D2) and every HTML page step compares status + headers
+# only. Redirects, Set-Cookie shapes, Vary/Allow and the resulting database
+# rows are compared exactly.
+name = "22-admin"
+description = "Admin pages match the oracle's status/redirect/header/state semantics: bootstrap, login, index, changelists, add/change pages, actions and uploads."
+driver = "http"
+tags = []
+collectstatic = true
+dialects = ["sqlite"]
+# Thumbnails are derived images: the oracle re-encodes them through Pillow's
+# WebP encoder, the Go port through its own (D20). Files in these directories
+# compare by decoded dimensions instead of bytes.
+media_structural = ["templates/", "elements/packs/"]
+covers = [
+  "backend/apps/accounts/admin.py",
+  "backend/apps/ai/admin.py",
+  "backend/apps/apitokens/admin.py",
+  "backend/apps/assets/admin.py",
+  "backend/apps/brand/admin.py",
+  "backend/apps/designs/admin.py",
+  "backend/apps/elements/admin.py",
+  "backend/apps/fonts/admin.py",
+  "backend/apps/gallery/admin.py",
+  "backend/apps/presets/admin.py",
+  "backend/apps/sharing/admin.py",
+  "backend/doory/urls.py",
+]
+
+[env]
+DJANGO_SECRET_KEY = "parity-oracle-secret-key-0123456789"
+SECURE_COOKIES = "false"
+DJANGO_SUPERUSER_PASSWORD = "root-pass-12345"
+
+# Bootstrap: both sides seed the same superuser row.
+[[steps]]
+command = "createsuperuser"
+args = ["--noinput", "--email", "root@example.com"]
+
+# Content the admin pages list: gallery templates + categories, size presets
+# and the built-in element packs (all deterministic, compared row by row).
+[[steps]]
+command = "seed_gallery"
+
+[[steps]]
+command = "seed_size_presets"
+
+[[steps]]
+command = "seed_elements"
+
+# Anonymous admin pages: login form, then the staff gate on the index.
+[[steps]]
+method = "GET"
+path = "/admin/login/"
+headers_only = true
+
+[[steps]]
+method = "GET"
+path = "/admin/"
+
+# Login with the CSRF token from the login page cookie.
+headers_only = true
+[[steps]]
+method = "POST"
+path = "/admin/login/"
+headers = { Content-Type = "application/x-www-form-urlencoded", X-CSRFToken = "{{cookie:csrftoken}}" }
+body = "username=root%40example.com&password=root-pass-12345&next=%2Fadmin%2F"
+headers_only = true
+
+# The index and the per-app pages.
+[[steps]]
+method = "GET"
+path = "/admin/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/accounts/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/accounts/user/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/designs/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/gallery/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/fonts/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/sharing/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/ai/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/elements/"
+headers_only = true
+
+# ---- site routes ----
+[[steps]]
+method = "GET"
+path = "/admin/jsi18n/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/password_change/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/password_change/done/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/autocomplete/?app_label=gallery&model_name=template&field_name=category&term=x&page=1"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/autocomplete/?app_label=foo&model_name=bar&field_name=baz&term=x"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/r/1/1/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/accounts/user"
+headers_only = true
+
+# ---- per-model changelists (all 20+ models) ----
+[[steps]]
+method = "GET"
+path = "/admin/designs/design/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/designs/designversion/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/designs/folder/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/assets/asset/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/assets/elementpack/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/assets/element/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/fonts/fontfamily/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/fonts/fontvariant/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/gallery/template/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/gallery/templatecategory/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/elements/element/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/elements/elementpack/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/presets/sizepresetgroup/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/presets/sizepreset/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/brand/brandkit/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/sharing/sharelink/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/sharing/comment/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/apitokens/apitoken/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/ai/provider/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/ai/userprovider/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/ai/aicall/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/auth/group/"
+headers_only = true
+
+# ---- add pages (GET) ----
+[[steps]]
+method = "GET"
+path = "/admin/accounts/user/add/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/assets/asset/add/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/assets/elementpack/add/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/fonts/fontfamily/add/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/gallery/template/add/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/gallery/templatecategory/add/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/elements/element/add/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/elements/elementpack/add/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/presets/sizepresetgroup/add/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/presets/sizepreset/add/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/brand/brandkit/add/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/ai/provider/add/"
+headers_only = true
+[[steps]]
+method = "GET"
+path = "/admin/auth/group/add/"
+headers_only = true

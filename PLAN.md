@@ -299,6 +299,14 @@ Admin site: see D2 — a gated sub-phase inside #14.
   export renders PNG/PDF, the binary itself runs the full stack (no container
   image, D18), `pnpm parity` green, coverage report embedded in AGENTS.md with
   no weak-only routes counted as verified.
+- **M15 — admin (D2, approved 2026-10-26).** Every admin ledger route shape answers
+  with upstream-compatible status/redirect/state semantics (markup deliberately not
+  Unfold's), all 19 registered models + `auth.Group` have working changelist/add/
+  change/delete/history/action pages, uploads/derived fields match upstream, the 73
+  `test_admin.py` behaviours are ported to Go integration tests, scenario `22-admin`
+  covers the 11 `admin.py` rows + 4 admin templates, and `createsuperuser`/
+  `changepassword`/`make-admin` are documented for self-hosting. Tracked as
+  GAPS G27–G31.
 
 ## 9. Acceptance ladder (what "faithful" means, in strength order)
 

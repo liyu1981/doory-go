@@ -111,7 +111,7 @@ func (a *App) validateProvider(inst *aiProviderRow, body *aiProviderBody, u *Use
 		} else if msg := aiStyleConfigError(row.style, raw); msg != nil {
 			fields = append(fields, FieldError{Name: "style_config",
 				Messages: []string{*msg}, Codes: []string{"invalid"},
-				Raw:      "[" + jsonStr(*msg) + "]", RawCodes: `["invalid"]`})
+				Raw: "[" + jsonStr(*msg) + "]", RawCodes: `["invalid"]`})
 		} else {
 			compact, _ := json.Marshal(raw)
 			row.styleConfig = string(compact)
@@ -252,7 +252,7 @@ func (a *App) validateProvider(inst *aiProviderRow, body *aiProviderBody, u *Use
 	if secretMsg != "" {
 		return row, []FieldError{{Name: "secret",
 			Messages: []string{secretMsg}, Codes: []string{"invalid"},
-			Raw:      "[" + jsonStr(secretMsg) + "]", RawCodes: `["invalid"]`}}, false
+			Raw: "[" + jsonStr(secretMsg) + "]", RawCodes: `["invalid"]`}}, false
 	}
 	return row, nil, true
 }

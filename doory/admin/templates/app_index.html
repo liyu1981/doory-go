@@ -1,0 +1,11 @@
+{{define "content"}}
+<h1>{{.Title}}</h1>
+<div class="applist">
+{{range .Apps}}
+<section>
+<h2>{{.Label}}</h2>
+<ul>{{range .Models}}<li><a href="{{.URL}}">{{.Label}}</a></li>{{end}}</ul>
+</section>
+{{end}}
+</div>
+{{end}}

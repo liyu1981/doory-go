@@ -22,10 +22,10 @@ type McpToolSpec struct {
 	Idempotent  bool
 	Annotations struct {
 		Title           string `json:"title"`
-		ReadOnlyHint   bool   `json:"readOnlyHint"`
-		DestructiveHint bool  `json:"destructiveHint"`
-		IdempotentHint bool   `json:"idempotentHint"`
-		OpenWorldHint  bool   `json:"openWorldHint"`
+		ReadOnlyHint    bool   `json:"readOnlyHint"`
+		DestructiveHint bool   `json:"destructiveHint"`
+		IdempotentHint  bool   `json:"idempotentHint"`
+		OpenWorldHint   bool   `json:"openWorldHint"`
 	} `json:"annotations"`
 	Handler func(args map[string]any) (any, error)
 }
@@ -50,15 +50,15 @@ type McpPromptSpec struct {
 
 // McpServer is the doory MCP server (registry.build_server -> MCPServer).
 type McpServer struct {
-	Name          string
-	Title         string
-	Description   string
+	Name         string
+	Title        string
+	Description  string
 	Instructions string
-	Version       string
-	WebsiteURL    string
-	Tools         []McpToolSpec
-	Resources     []McpResourceSpec
-	Prompts       []McpPromptSpec
+	Version      string
+	WebsiteURL   string
+	Tools        []McpToolSpec
+	Resources    []McpResourceSpec
+	Prompts      []McpPromptSpec
 }
 
 // NewMcpServer builds the doory MCP server from the probed registry surface
@@ -66,12 +66,12 @@ type McpServer struct {
 // slice and attach here).
 func NewMcpServer() *McpServer {
 	s := &McpServer{
-		Name:          "doory",
-		Title:         "Doory",
+		Name:         "doory",
+		Title:        "Doory",
 		Description:  "Create and edit designs in Doory.",
 		Instructions: "Doory is a design editor (posters, social posts, slides, cards...). These tools act on the signed-in user's designs.",
-		Version:       "1",
-		WebsiteURL:    "http://localhost:5173",
+		Version:      "1",
+		WebsiteURL:   "http://localhost:5173",
 	}
 	for i := range mcpToolDefs() {
 		d := mcpToolDefs()[i]
@@ -99,10 +99,10 @@ func NewMcpServer() *McpServer {
 
 // jsonrpcMessage is the MCP JSON-RPC 2.0 envelope we accept.
 type jsonrpcMessage struct {
-	JSONRPC string         `json:"jsonrpc"`
+	JSONRPC string          `json:"jsonrpc"`
 	ID      json.RawMessage `json:"id"`
-	Method  string         `json:"method"`
-	Params  map[string]any `json:"params"`
+	Method  string          `json:"method"`
+	Params  map[string]any  `json:"params"`
 }
 
 // isNotification reports whether the envelope carries no id (MCP
@@ -129,7 +129,7 @@ func (s *McpServer) handleMcpJSONRPC(w http.ResponseWriter, msg jsonrpcMessage) 
 		}
 		result := map[string]any{
 			"capabilities": map[string]any{
-				"prompts": map[string]any{"listChanged": false},
+				"prompts":   map[string]any{"listChanged": false},
 				"resources": map[string]any{"listChanged": false, "subscribe": false},
 				"tools":     map[string]any{"listChanged": false},
 			},
@@ -158,8 +158,8 @@ func (s *McpServer) handleMcpJSONRPC(w http.ResponseWriter, msg jsonrpcMessage) 
 			tools = append(tools, map[string]any{
 				"name":         t.Name,
 				"title":        t.Title,
-				"description": t.Description,
-				"inputSchema": map[string]any{"type": "object", "properties": map[string]any{}},
+				"description":  t.Description,
+				"inputSchema":  map[string]any{"type": "object", "properties": map[string]any{}},
 				"outputSchema": map[string]any{"type": "object", "additionalProperties": true},
 				"annotations": map[string]any{
 					"title":           t.Annotations.Title,
@@ -198,7 +198,7 @@ func (s *McpServer) handleMcpJSONRPC(w http.ResponseWriter, msg jsonrpcMessage) 
 		}
 		if handler == nil {
 			writeMcpJSON(w, http.StatusOK, map[string]any{"jsonrpc": "2.0", "id": msg.ID, "result": map[string]any{
-				"content":  []map[string]any{{"type": "text", "text": "Unknown tool."}},
+				"content": []map[string]any{{"type": "text", "text": "Unknown tool."}},
 				"isError": true,
 			}})
 			return true
@@ -206,7 +206,7 @@ func (s *McpServer) handleMcpJSONRPC(w http.ResponseWriter, msg jsonrpcMessage) 
 		out, terr := handler.Handler(args)
 		if terr != nil {
 			writeMcpJSON(w, http.StatusOK, map[string]any{"jsonrpc": "2.0", "id": msg.ID, "result": map[string]any{
-				"content":  []map[string]any{{"type": "text", "text": terr.Error()}},
+				"content": []map[string]any{{"type": "text", "text": terr.Error()}},
 				"isError": true,
 			}})
 			return true

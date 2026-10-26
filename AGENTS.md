@@ -54,25 +54,25 @@ session-level rules.
 
 | family | rows | scenario-covered | reviewed | uncovered | test files (ported/partial/pending) |
 |---|---|---|---|---|---|
-| accounts | 19 | 4 | 9 | 15 | 0/7/5 |
-| ai | 29 | 12 | 16 | 17 | 0/3/6 |
-| apitokens | 10 | 5 | 7 | 5 | 0/1/0 |
-| assets | 33 | 9 | 20 | 24 | 0/5/15 |
-| brand | 9 | 4 | 4 | 5 | 0/1/1 |
+| accounts | 19 | 5 | 9 | 14 | 0/7/5 |
+| ai | 29 | 13 | 16 | 16 | 0/3/6 |
+| apitokens | 10 | 6 | 7 | 4 | 0/1/0 |
+| assets | 33 | 10 | 20 | 23 | 0/5/15 |
+| brand | 9 | 5 | 4 | 4 | 0/1/1 |
 | collab | 21 | 9 | 21 | 12 | 0/18/8 |
 | core | 19 | 9 | 13 | 10 | 0/0/0 |
-| designs | 26 | 8 | 16 | 18 | 0/7/9 |
-| elements | 24 | 3 | 17 | 21 | 0/5/18 |
+| designs | 26 | 9 | 16 | 17 | 0/7/9 |
+| elements | 24 | 4 | 17 | 20 | 0/5/18 |
 | exports | 25 | 12 | 19 | 13 | 0/6/10 |
-| fonts | 18 | 8 | 10 | 10 | 0/4/8 |
-| gallery | 15 | 6 | 6 | 9 | 0/4/4 |
+| fonts | 18 | 9 | 10 | 9 | 0/4/8 |
+| gallery | 15 | 7 | 6 | 8 | 0/4/4 |
 | kernel | 14 | 2 | 8 | 12 | 0/0/0 |
 | mcp | 21 | 0 | 0 | 21 | 0/0/0 |
 | ops | 34 | 10 | 13 | 24 | 0/0/0 |
-| presets | 10 | 3 | 8 | 7 | 0/1/1 |
-| sharing | 11 | 5 | 7 | 6 | 0/5/4 |
+| presets | 10 | 4 | 8 | 6 | 0/1/1 |
+| sharing | 11 | 6 | 7 | 5 | 0/5/4 |
 
-**Totals:** 109 of 338 PORT_MAP rows (32%) are covered by at least one scenario; 85 reviewed rows have no scenario that covers them (review-only: they do NOT count as verified).
+**Totals:** 120 of 338 PORT_MAP rows (36%) are covered by at least one scenario; 74 reviewed rows have no scenario that covers them (review-only: they do NOT count as verified).
 
 Review-only rows (weak evidence, not counted as verified):
 

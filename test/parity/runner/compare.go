@@ -18,6 +18,10 @@
 //     order varies per process (PYTHONHASHSEED): the same request
 //     has produced both "GET, OPTIONS" and "OPTIONS, GET" across
 //     runs — set equality is the only stable contract
+//   - location      compared after replacing dashed UUIDs with <uuid>:
+//     redirects from admin add/change views name the row each side
+//     just created (per-side randomness; the uuid shape is the
+//     assertion — a target without one still compares byte-exact)
 //   - content-length on 204 responses (D11): wsgiref emits
 //     Content-Length: 0; Go's net/http strips Content-Length from
 //     bodyless statuses — a server-layer invariant not reachable
@@ -25,7 +29,12 @@
 //   - set-cookie    parsed per cookie: name/attrs exact (expires must parse
 //     and be within skew), values compared by shape rule
 //     (reason: csrf secrets are per-request randomness;
-//     stability across steps is asserted by cookie_stable)
+//     stability across steps is asserted by cookie_stable).
+//     The `messages` cookie is a TimestampSigner payload: its
+//     signature covers the timestamp, so two sides that flash the
+//     SAME message still produce different bytes; its shape is
+//     asserted here and the message text is covered by the Go
+//     integration tests (admin_behavior_test.go).
 //   - body          byte-exact AFTER the shape rules below; when bytes
 //     still differ the report also notes structural JSON equality so
 //     formatting-only drift is classified, never hidden
@@ -71,6 +80,11 @@ var (
 	volatileHeaders = map[string]bool{"date": true, "server": true, "expires": true}
 	csrfShape       = regexp.MustCompile(`^[A-Za-z0-9]{32}$`)
 	sessionKeyShape = regexp.MustCompile(`^[a-z0-9]{32}$`)
+	// messages: CookieStorage's TimestampSigner payload (compressed-object
+	// marker "." + urlsafe base64 + ":" + timestamp + ":" + signature).
+	messagesShape = regexp.MustCompile(`^\.?[A-Za-z0-9_=-]+:[0-9A-Za-z]+:[A-Za-z0-9_-]+$`)
+	// location: dashed uuid rows that each side minted for itself.
+	locationUUID = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
 
 	// Body shape rules (documented above; each regex IS the shape assert).
 	bodyShapeRules = []struct {
@@ -80,6 +94,8 @@ var (
 	}{
 		{regexp.MustCompile(`"id":"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"`),
 			`"id":"<uuid>"`, "per-row random uuid; each side mints its own (format asserted by the match)"},
+		{regexp.MustCompile(`"id": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"`),
+			`"id": "<uuid>"`, "admin autocomplete JsonResponse (json.dumps default separators): per-row random uuid; format asserted by the match"},
 		{regexp.MustCompile(`"design_id":"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"`),
 			`"design_id":"<uuid>"`, "per-side design row id in the shared payload (dashed-uuid format asserted)"},
 		{regexp.MustCompile(`"created_at":"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z"`),
@@ -200,6 +216,15 @@ func compare(stepIdx int, step Step, oracle, goSide *capture) []string {
 		if name == "vary" || name == "allow" {
 			if !equalTokens(ov[0], gv[0]) {
 				add("%s: oracle=%q go=%q", name, ov[0], gv[0])
+			}
+			continue
+		}
+		if name == "location" {
+			// Recorded rule: redirect targets embed the row id each side
+			// minted; uuid SHAPE stays asserted (non-uuid targets compare
+			// byte-exact because the regex does not match them).
+			if normalizeLocation(ov[0]) != normalizeLocation(gv[0]) {
+				add("header %q: oracle=%q go=%q", name, ov, gv)
 			}
 			continue
 		}
@@ -361,6 +386,13 @@ func compareCookies(oVals, gVals []string) []string {
 			if !csrfShape.MatchString(gc.Value) {
 				problems = append(problems, fmt.Sprintf("csrftoken value shape: go %q not 32 alnum", gc.Value))
 			}
+		case "messages":
+			if !messagesShape.MatchString(oc.Value) {
+				problems = append(problems, fmt.Sprintf("messages value shape: oracle %q not a TimestampSigner payload", oc.Value))
+			}
+			if !messagesShape.MatchString(gc.Value) {
+				problems = append(problems, fmt.Sprintf("messages value shape: go %q not a TimestampSigner payload", gc.Value))
+			}
 		default:
 			if oc.Value != gc.Value {
 				problems = append(problems, fmt.Sprintf("%s value: oracle=%q go=%q (no shape rule for this cookie)", name, oc.Value, gc.Value))
@@ -378,6 +410,13 @@ func parseCookies(vals []string) []*http.Cookie {
 		}
 	}
 	return out
+}
+
+// normalizeLocation applies the recorded per-side-id rule to a Location
+// header: every dashed UUID becomes <uuid>. The regex match IS the shape
+// assertion; a target that contains no UUID is compared verbatim.
+func normalizeLocation(v string) string {
+	return locationUUID.ReplaceAllString(v, "<uuid>")
 }
 
 func equalTokens(a, b string) bool {

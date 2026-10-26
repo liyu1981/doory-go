@@ -26,6 +26,7 @@ type UserRow struct {
 	IsEmailVerified bool
 	IsActive        bool
 	IsStaff         bool
+	IsSuperuser     bool
 	Password        string
 	OidcLinked      bool
 	LastLogin       sql.NullString
@@ -38,7 +39,7 @@ type UserRow struct {
 func getUserByEmail(db *sql.DB, email string) (*UserRow, error) {
 	return scanUser(db.QueryRow(
 		`SELECT id, email, display_name, avatar, google_sub, is_email_verified, is_active,
-		        is_staff, password,
+		        is_staff, is_superuser, password,
 		        EXISTS(SELECT 1 FROM accounts_oidcidentity WHERE user_id = accounts_user.id),
 		        last_login, created_at, updated_at
 		 FROM accounts_user WHERE email = ?`, strings.ToLower(strings.TrimSpace(email))))
@@ -47,7 +48,7 @@ func getUserByEmail(db *sql.DB, email string) (*UserRow, error) {
 func getUserByID(db *sql.DB, id string) (*UserRow, error) {
 	return scanUser(db.QueryRow(
 		`SELECT id, email, display_name, avatar, google_sub, is_email_verified, is_active,
-		        is_staff, password,
+		        is_staff, is_superuser, password,
 		        EXISTS(SELECT 1 FROM accounts_oidcidentity WHERE user_id = accounts_user.id),
 		        last_login, created_at, updated_at
 		 FROM accounts_user WHERE id = ?`, id))
@@ -56,8 +57,8 @@ func getUserByID(db *sql.DB, id string) (*UserRow, error) {
 func scanUser(row *sql.Row) (*UserRow, error) {
 	var u UserRow
 	err := row.Scan(&u.ID, &u.Email, &u.DisplayName, &u.Avatar, &u.GoogleSub,
-		&u.IsEmailVerified, &u.IsActive, &u.IsStaff, &u.Password, &u.OidcLinked, &u.LastLogin,
-		&u.CreatedAt, &u.UpdatedAt)
+		&u.IsEmailVerified, &u.IsActive, &u.IsStaff, &u.IsSuperuser, &u.Password, &u.OidcLinked,
+		&u.LastLogin, &u.CreatedAt, &u.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}

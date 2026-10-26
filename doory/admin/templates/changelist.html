@@ -1,0 +1,69 @@
+{{define "content"}}
+<h1>{{.PageTitle}}</h1>
+{{if .EnvProviders}}
+<div class="env-panel">
+<h2>Providers from the environment</h2>
+<p class="muted">Set with AI_PROVIDER_n_* in .env; change them there. Their secrets are never shown.</p>
+<table>
+<thead><tr><th>Id</th><th>Name</th><th>Style</th><th>Tasks</th><th>Models</th><th>Quota per day</th><th></th></tr></thead>
+<tbody>
+{{range .EnvProviders}}
+<tr>
+<td class="mono">{{.ID}}</td>
+<td>{{.Name}}</td>
+<td>{{.Style}}</td>
+<td>{{.Tasks}}</td>
+<td>{{.Models}}</td>
+<td>{{.Quota}}</td>
+<td><form method="post" action="{{.TestURL}}" style="display:inline">
+<input type="hidden" name="csrfmiddlewaretoken" value="{{$.CSRFToken}}">
+<button type="submit">Test</button>
+</form></td>
+</tr>
+{{end}}
+</tbody>
+</table>
+</div>
+{{end}}
+{{range .EnvErrors}}<p class="error">{{.}} This provider is left out.</p>{{end}}
+{{if .ShowResultCount}}<p class="muted">{{.ResultCount}} {{.ObjectName}}{{if ne .ResultCount 1}}s{{end}}</p>{{end}}
+{{if .Filters}}
+<div class="filters">
+{{range .Filters}}
+<div><h3>{{.Label}}</h3><ul>{{range .Choices}}<li{{if .Selected}} class="selected"{{end}}><a href="{{.URL}}">{{.Label}}</a></li>{{end}}</ul></div>
+{{end}}
+</div>
+{{end}}
+{{if .DateLinks}}<p>{{range .DateLinks}}<a href="{{.URL}}">{{.Label}}</a> {{end}}</p>{{end}}
+{{if .ShowSearch}}<form method="get" class="searchbar"><input type="search" name="q" value="{{.SearchValue}}" placeholder="Search"><button type="submit">Search</button></form>{{end}}
+{{if .ShowAdd}}<p><a class="button" href="{{.AddURL}}">Add {{.ObjectName}}</a></p>{{end}}
+<form method="post" id="changelist-form">
+<input type="hidden" name="csrfmiddlewaretoken" value="{{.CSRFToken}}">
+{{if .ShowActions}}<div class="actions">
+<label>Action: <select name="action"><option value="">---------</option>{{range .Actions}}<option value="{{.Name}}">{{.Label}}</option>{{end}}</select></label>
+<input type="hidden" name="select_across" value="0">
+<input type="hidden" name="index" value="0">
+<button type="submit">Go</button>
+</div>{{end}}
+<table id="result_list">
+<thead><tr>{{if .ShowActions}}<th><input type="checkbox" id="action-toggle"></th>{{end}}{{range .Columns}}<th>{{.Label}}</th>{{end}}</tr></thead>
+<tbody>
+{{range $row := .Rows}}
+<tr>
+{{if $.ShowActions}}<td><input type="checkbox" name="_selected_action" value="{{$row.ID}}" class="action-select"></td>{{end}}
+{{range $col := $.Columns}}
+<td>{{$cell := index $row.Cells $col.Name}}{{if $col.Link}}<a href="{{$.ChangeURL $row.ID}}">{{$cell.Render}}</a>{{else}}{{$cell.Render}}{{end}}</td>
+{{end}}
+</tr>
+{{end}}
+</tbody>
+</table>
+{{if .ShowListForm}}<p class="muted">Editable columns: {{range .EditableFields}}{{.Label}} {{end}}</p>{{end}}
+{{if .ShowActions}}<p class="muted">Select rows, choose an action, then press Go.</p>{{end}}
+</form>
+{{if .Pagination.Show}}<div class="paginator">
+{{if .Pagination.PrevURL}}<a href="{{.Pagination.PrevURL}}">&lsaquo; previous</a>{{end}}
+<span>{{.Pagination.Page}} / {{.Pagination.Pages}}</span>
+{{if .Pagination.NextURL}}<a href="{{.Pagination.NextURL}}">next &rsaquo;</a>{{end}}
+</div>{{end}}
+{{end}}

@@ -145,23 +145,23 @@ type CollabAccessReport struct {
 
 // collabCloseCodes is room.CLOSE_FOR_REASON (shared with the room/consumer).
 var collabCloseCodes = map[string]int{
-	"link_revoked":    4403,
-	"link_expired":    4403,
-	"role_changed":    4403,
+	"link_revoked":     4403,
+	"link_expired":     4403,
+	"role_changed":     4403,
 	"account_disabled": 4403,
-	"session_ended":   4401,
-	"design_trashed":  4404,
-	"design_deleted":  4404,
+	"session_ended":    4401,
+	"design_trashed":   4404,
+	"design_deleted":   4404,
 }
 
 // CollabCheckAccess ports store.check_access.
 func (a *App) CollabCheckAccess(designID string, members []CollabMemberCheck) CollabAccessReport {
 	closed := map[string]string{}
 	var (
-		title     string
-		revision  int64
-		ownerID   sql.NullString
-		trashed   sql.NullString
+		title    string
+		revision int64
+		ownerID  sql.NullString
+		trashed  sql.NullString
 	)
 	err := a.DB.QueryRow(`SELECT title, revision, owner_id, trashed_at FROM designs_design WHERE id = ?`,
 		designID).Scan(&title, &revision, &ownerID, &trashed)

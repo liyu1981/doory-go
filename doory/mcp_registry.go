@@ -20,10 +20,10 @@ const (
 // mcpAnnotations is the ToolAnnotations wire shape.
 type mcpAnnotations struct {
 	Title           string `json:"title"`
-	ReadOnlyHint   bool   `json:"readOnlyHint"`
-	DestructiveHint bool  `json:"destructiveHint"`
-	IdempotentHint bool   `json:"idempotentHint"`
-	OpenWorldHint  bool   `json:"openWorldHint"`
+	ReadOnlyHint    bool   `json:"readOnlyHint"`
+	DestructiveHint bool   `json:"destructiveHint"`
+	IdempotentHint  bool   `json:"idempotentHint"`
+	OpenWorldHint   bool   `json:"openWorldHint"`
 }
 
 // mcpToolDef is one probed MCP tool (registry.ToolSpec).

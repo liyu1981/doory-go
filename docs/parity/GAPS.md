@@ -65,7 +65,7 @@ which upstream function is missing — never a silent wrong answer.
 
 | id | divergence | status |
 |---|---|---|
-| G17 | **D2 — Django admin** | `/admin/` answers 404. Implementing a minimal Go admin is a sub-project; **waiting on the owner's go/no-go** (the only gap blocked on a decision, not work). |
+| G17 | **D2 — Django admin** | Owner approved the Go admin on 2026-10-26: full route-shape coverage, server-rendered (no-Unfold) HTML, staff read + superuser writes until per-model permissions land. Work is split into G27–G31. |
 | G18 | **D20 — WebP/JPEG bytes** | In-process encoders (lossless WebP, stdlib JPEG) instead of Pillow/mozjpeg: valid files, different bytes. Image responses are compared structurally (D15/D20). Closes if a libwebp/libjpeg build is adopted. |
 | G19 | **D21 — AVIF** | Not made at all (no pure-Go encoder); `/config/` advertises `png,jpg,webp` and the endpoint rejects `avif`. Closes with an AVIF encoder. |
 | G20 | **D7 — S3 media storage** | Local media only; the `storages` seam is not ported. |
@@ -80,6 +80,16 @@ which upstream function is missing — never a silent wrong answer.
 | G24 | Scenario coverage | 109 of 338 PORT_MAP rows are covered by ≥1 scenario (85 reviewed-but-uncovered). Weakest: `mcp` 0/21, `ops` 10/34, `elements` 3/24 — see the AGENTS.md table (`pnpm coverage`). |
 | G25 | `ledger/test-mapping` dispositions | Pending/partial entries remain for mcp, ops, elements, gallery, design-doc and the 0.2.0 files (video, optimizers, OIDC, my-sizes). Each needs evidence or a named missing case. |
 | G26 | PORT_MAP staleness | Some cells lag the code (e.g. `exports/optimizers/builtin.py` is implemented in process per D22 but still says "shrink pending"). Rule: whoever touches an upstream file updates its row in the same commit. |
+
+## F. Admin program (D2 — owner-approved 2026-10-26)
+
+| id | slice | what closes it |
+|---|---|---|
+| G27 | Admin kernel and CLI | Staff gate (`is_active && is_staff`), session/CSRF login and logout, index/app index/search/object redirect/autocomplete/jsi18n, own password change, `never_cache`/`Vary` semantics, `django_admin_log` + history plumbing, `createsuperuser`/`changepassword`/`make-admin`, and the `django_content_type`/`auth_permission` seed. Evidence: probe `0018-admin` + scenario `22-admin` (kernel steps). |
+| G28 | Admin model engine and moderation | Descriptor-driven changelist/add/change/delete/history/actions engine; User + auth.Group, ApiToken, Asset, BrandKit, Design/DesignVersion/Folder, ShareLink, Comment; upstream action semantics (mark-verified/activate/deactivate never self, revoke, trash/restore, link toggle, comment delete) and the delete-file cleanup those paths need. |
+| G29 | Admin content authoring | TemplateCategory/Template (JSON document + thumbnail + validate/duplicate/feature), ElementPack/Element (SVG + bulk upload + publish), FontFamily/FontVariant inline upload, SizePresetGroup/SizePreset (tags/aliases/meta + activate clash check); post_delete cleanup for template thumbnails, element SVGs, pack thumbnails and font files. |
+| G30 | Admin AI pages | Operator Provider CRUD (secret keep/clear/host-change drop, tasks/style validation, allowed users, provider-model inline), env-provider panel, UserProvider/AICall read-only; `load-models`/`test` confirm + result pages. The transport-dependent half waits on G9; until then those two actions answer a tracked not-ported page. |
+| G31 | Admin verification and bookkeeping | Port the 73 upstream `test_admin.py` behaviours to Go integration tests; scenario `22-admin` covers all 11 `admin.py` rows + 4 admin templates with shared wire/state assertions; admin CRUD smoke in `test/pgsmoke`; PORT_MAP/test-mapping/coverage updates; self-hosting docs; D2 evidence (markup stays a recorded difference). |
 
 ## Closed (with the commit that closed it)
 

@@ -98,7 +98,7 @@ func (r *Run) bootPair(sc *Scenario, renderURL string) (*Side, *Side, error) {
 	oracle := &Side{Name: "oracle", Base: fmt.Sprintf("http://127.0.0.1:%d", oraclePort),
 		DatabaseURL: "sqlite:///" + oracleDB,
 		MediaRoot:   media, ExportRoot: exports, WorkDir: r.WorkDir, RepoRoot: r.Repo,
-		Python: filepath.Join(r.Repo, ".oracle", "venv", "bin", "python"),
+		Python:     filepath.Join(r.Repo, ".oracle", "venv", "bin", "python"),
 		BackendDir: filepath.Join(r.Repo, ".upstream", "current", "backend")}
 	oracleLog := filepath.Join(r.WorkDir, "oracle.log")
 	oracle.log, _ = os.Create(oracleLog)
@@ -110,6 +110,23 @@ func (r *Run) bootPair(sc *Scenario, renderURL string) (*Side, *Side, error) {
 	// 404 was this, not a design-scoped route miss).
 	pythonBin := filepath.Join(r.Repo, ".oracle", "venv", "bin", "python")
 	oracleBackend := filepath.Join(r.Repo, ".upstream", "current", "backend")
+	// The admin templates use {% static %}, and prod settings pin a manifest
+	// static storage: build the manifest into the workdir (the shim settings
+	// module below points STATIC_ROOT there) before booting the oracle.
+	staticRoot := filepath.Join(r.WorkDir, "oracle-static")
+	if sc.CollectStatic {
+		if err := os.MkdirAll(staticRoot, 0o755); err != nil {
+			return nil, nil, err
+		}
+		collect := exec.Command(pythonBin, "manage.py", "collectstatic", "--noinput")
+		collect.Dir = oracleBackend
+		collect.Env = append(os.Environ(), oracleSettingsEnv(r.Repo, staticRoot)...)
+		collect.Env = append(collect.Env, scenarioEnv(sc)...)
+		if out, err := collect.CombinedOutput(); err != nil {
+			return nil, nil, fmt.Errorf("oracle collectstatic: %v\n%s", err, out)
+		}
+	}
+
 	oracleMigrate := exec.Command(pythonBin, "manage.py", "migrate", "--noinput")
 	oracleMigrate.Dir = oracleBackend
 	oracleMigrate.Env = append(os.Environ(),
@@ -145,6 +162,9 @@ func (r *Run) bootPair(sc *Scenario, renderURL string) (*Side, *Side, error) {
 		"SECURE_COOKIES=false",
 	)
 	oracleCmd.Env = append(oracleCmd.Env, scenarioEnv(sc)...)
+	if sc.CollectStatic {
+		oracleCmd.Env = append(oracleCmd.Env, oracleSettingsEnv(r.Repo, staticRoot)...)
+	}
 	if renderURL != "" {
 		oracleCmd.Env = append(oracleCmd.Env,
 			"EXPORT_RENDER_PAGE_URL="+renderURL,
@@ -213,6 +233,20 @@ func originOf(raw string) string {
 }
 
 // scenarioAllowed preserves any scenario-declared extra origins.
+// oracleSettingsEnv points the oracle at test/parity/oracle_settings.py: prod
+// settings with STATIC_ROOT redirected to the scenario workdir.
+func oracleSettingsEnv(repo, staticRoot string) []string {
+	path := filepath.Join(repo, "test", "parity")
+	if existing := os.Getenv("PYTHONPATH"); existing != "" {
+		path += string(os.PathListSeparator) + existing
+	}
+	return []string{
+		"PYTHONPATH=" + path,
+		"PARITY_STATIC_ROOT=" + staticRoot,
+		"DJANGO_SETTINGS_MODULE=parity_oracle_settings",
+	}
+}
+
 func scenarioAllowed(sc *Scenario) []string {
 	if v, ok := sc.Env["EXPORT_ALLOWED_ORIGINS"]; ok && v != "" {
 		return strings.Split(v, ",")

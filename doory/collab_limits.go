@@ -68,8 +68,8 @@ func (b *TokenBucket) Allow(size int) bool {
 // --------------------------------------------------- account windows -------
 
 var (
-	collabMu       sync.Mutex
-	collabWindows  = map[string]*collabWindow{}
+	collabMu      sync.Mutex
+	collabWindows = map[string]*collabWindow{}
 )
 
 type collabWindow struct {

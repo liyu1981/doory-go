@@ -142,6 +142,8 @@ func Execute(repo string, sc *Scenario, renderURL string) ([]string, error) {
 			}
 			applyCaptures(step, captures["oracle"], o.Body)
 			applyCaptures(step, captures["go"], g.Body)
+			applyLocationCaptures(step, captures["oracle"], o.Header.Get("Location"))
+			applyLocationCaptures(step, captures["go"], g.Header.Get("Location"))
 			for _, m := range []map[string]string{captures["oracle"], captures["go"]} {
 				for k, v := range m {
 					if _, ok := vars[k]; !ok {
@@ -149,7 +151,7 @@ func Execute(repo string, sc *Scenario, renderURL string) ([]string, error) {
 					}
 				}
 			}
-			if len(step.Capture) > 0 {
+			if len(step.Capture) > 0 || len(step.CaptureLocation) > 0 {
 				fmt.Printf("      capture oracle=%v go=%v\n", captures["oracle"], captures["go"])
 			}
 
@@ -195,6 +197,20 @@ func applyCaptures(step Step, vars map[string]string, body []byte) {
 		re := regexp.MustCompile(pattern)
 		if m := re.FindSubmatch(body); len(m) > 1 {
 			vars[name] = string(m[1])
+		}
+	}
+}
+
+// applyLocationCaptures extracts named groups from the Location header (the
+// only place an admin add view exposes the row id it created).
+func applyLocationCaptures(step Step, vars map[string]string, location string) {
+	if location == "" {
+		return
+	}
+	for name, pattern := range step.CaptureLocation {
+		re := regexp.MustCompile(pattern)
+		if m := re.FindStringSubmatch(location); len(m) > 1 {
+			vars[name] = m[1]
 		}
 	}
 }

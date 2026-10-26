@@ -21,6 +21,10 @@ type Scenario struct {
 	Covers      []string          `toml:"covers"`
 	Dialects    []string          `toml:"dialects"`
 	Env         map[string]string `toml:"env"` // applied to BOTH sides
+	// CollectStatic builds the oracle's static manifest (prod settings require
+	// one) into the scenario workdir before boot. The Go admin does not serve
+	// Django's static assets, so this only makes the pinned oracle renderable.
+	CollectStatic bool `toml:"collectstatic"`
 	// MediaStructural lists storage directories whose files are DERIVED IMAGES
 	// (re-encoded by the oracle's Pillow pipeline): those compare by decoded
 	// dimensions instead of bytes (the documented WebP-encoder gap). Files in
@@ -29,7 +33,7 @@ type Scenario struct {
 	Steps           []Step   `toml:"steps"`
 	// Ws is the scenario-level WebSocket interaction (dial/send/expect/
 	// close) when the scenario is not an HTTP replay.
-	Ws          *WsStep           `toml:"ws"`
+	Ws *WsStep `toml:"ws"`
 }
 
 // Step is one request replayed against both sides.
@@ -67,6 +71,10 @@ type Step struct {
 	// per-side variables for later {{capture:name}} substitutions (each
 	// side consumes its OWN values — e.g. delete the id it created).
 	Capture map[string]string `toml:"capture"`
+	// CaptureLocation does the same against the response's Location header
+	// (admin add views answer 302 to the new row's change page; the body is
+	// empty, so the id is only addressable there).
+	CaptureLocation map[string]string `toml:"capture_location"`
 	// Ws is a WebSocket interaction (dial/send/expect/close) instead of
 	// the plain HTTP replay for this step.
 	Ws *WsStep `toml:"ws"`

@@ -102,20 +102,20 @@ type CollabMember struct {
 	ConnectionID string
 	Transport    CollabTransport
 
-	CanWrite        bool
-	lastSeen        time.Time
-	controlled      map[uint64]bool
-	introduced      map[uint64]bool
-	outbox          chan outbound
-	done            chan struct{}
-	closing         bool
+	CanWrite         bool
+	lastSeen         time.Time
+	controlled       map[uint64]bool
+	introduced       map[uint64]bool
+	outbox           chan outbound
+	done             chan struct{}
+	closing          bool
 	notifiedReadOnly bool
 }
 
 type outbound struct {
-	kind    byte // 'b' bytes, 't' text
-	bytes   []byte
-	text    string
+	kind  byte // 'b' bytes, 't' text
+	bytes []byte
+	text  string
 }
 
 // CollabAwarenessSlot is room.AwarenessSlot.
@@ -196,10 +196,10 @@ type collabRoom struct {
 
 	closing bool
 
-	lastFlush    time.Time
-	lastRecheck  time.Time
-	behind       int
-	warned       map[string]bool
+	lastFlush   time.Time
+	lastRecheck time.Time
+	behind      int
+	warned      map[string]bool
 
 	// flush lifecycle: a background goroutine converts + persists, then
 	// posts the outcome back into the inbox (room never blocks on flush).
@@ -303,7 +303,7 @@ func (r *CollabRoomRegistry) acquire(designID string) (*collabRoom, error) {
 		}
 		r.opening[designID] = true
 		r.mu.Unlock()
-			room, err := r.open(designID)
+		room, err := r.open(designID)
 		r.mu.Lock()
 		delete(r.opening, designID)
 		if err == nil {

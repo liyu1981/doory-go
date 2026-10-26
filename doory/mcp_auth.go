@@ -11,20 +11,22 @@
 package doory
 
 import (
+	"crypto/subtle"
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 )
 
 // mcpNotFoundBody is the off-switch refusal shape (auth.py).
 type mcpNotFoundBody struct {
-	Error           string `json:"error"`
+	Error            string `json:"error"`
 	ErrorDescription string `json:"error_description"`
 }
 
 // mcpInvalidTokenBody is the bearer refusal shape (auth.py).
 type mcpInvalidTokenBody struct {
-	Error           string `json:"error"`
+	Error            string `json:"error"`
 	ErrorDescription string `json:"error_description"`
 }
 
@@ -76,7 +78,7 @@ func writeMcpInvalidToken(w http.ResponseWriter) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(http.StatusUnauthorized)
 	b, _ := json.Marshal(mcpInvalidTokenBody{
-		Error:           "invalid_token",
+		Error:            "invalid_token",
 		ErrorDescription: "Send a Doory personal access token: Authorization: Bearer doory_…",
 	})
 	_, _ = w.Write(b)
@@ -161,35 +163,57 @@ func lowerStr(s string) string {
 }
 
 // lookupMcpToken ports apps/apitokens/services.authenticate: bearer plaintext
-// -> token row (prefix + whole-token sha256 digest) -> owner user id.
+// -> token row (prefix + whole-token sha256 digest + the owner's password
+// digest) -> owner user id.
 func (a *App) lookupMcpToken(plaintext string) (string, *apiTokenRow, bool) {
-	parts := strings.SplitN(strings.TrimSpace(plaintext), "_", 3)
+	plaintext = strings.TrimSpace(plaintext)
+	parts := strings.SplitN(plaintext, "_", 3)
 	if len(parts) != 3 || parts[0] != tokenPrefix || parts[1] == "" || parts[2] == "" {
 		return "", nil, false
 	}
 	prefix := parts[1]
 	var row apiTokenRow
-	var scopesRaw string
+	var scopesRaw, secretHash, ownerID string
 	err := a.DB.QueryRow(
-		`SELECT id, name, prefix, scopes, created_at, last_used_at, expires_at, revoked_at, password_digest
+		`SELECT id, name, prefix, scopes, created_at, last_used_at, expires_at, revoked_at,
+		        password_digest, secret_hash, owner_id
 		 FROM apitokens_apitoken WHERE prefix = ?`, prefix).Scan(
 		&row.ID, &row.Name, &row.Prefix, &scopesRaw, &row.CreatedAt,
-		&row.LastUsedAt, &row.ExpiresAt, &row.RevokedAt, &row.PasswordDigest)
+		&row.LastUsedAt, &row.ExpiresAt, &row.RevokedAt, &row.PasswordDigest, &secretHash, &ownerID)
 	if err != nil {
 		return "", nil, false
 	}
-	if tokenDigest(plaintext) != row.PasswordDigest {
+	if subtle.ConstantTimeCompare([]byte(tokenDigest(plaintext)), []byte(secretHash)) != 1 {
 		return "", nil, false
 	}
-	if row.RevokedAt.Valid || row.ExpiresAt.Valid {
+	if row.RevokedAt.Valid {
 		return "", nil, false
+	}
+	if row.ExpiresAt.Valid && row.ExpiresAt.String != "" {
+		if exp, perr := parseDjangoDateTime(row.ExpiresAt.String); perr == nil && !time.Now().UTC().Before(exp) {
+			return "", nil, false
+		}
+	}
+	owner, uerr := getUserByID(a.DB, ownerID)
+	if uerr != nil || owner == nil || !owner.IsActive {
+		return "", nil, false
+	}
+	matched := false
+	for _, digest := range a.acceptedDigests(owner.Password) {
+		if subtle.ConstantTimeCompare([]byte(row.PasswordDigest), []byte(digest)) == 1 {
+			matched = true
+			break
+		}
+	}
+	if !matched {
+		return "", nil, false // the password changed since the token was made
 	}
 	var scopes []string
 	if jsonErr := json.Unmarshal([]byte(scopesRaw), &scopes); jsonErr != nil {
 		scopes = []string{}
 	}
 	row.Scopes = scopes
-	return row.ID, &row, true
+	return ownerID, &row, true
 }
 
 // dbReachable is the MCP health DB probe (auth._database_ok).

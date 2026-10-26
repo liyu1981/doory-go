@@ -45,6 +45,15 @@ type elementImportEntry struct {
 }
 
 // elementImportSummary is importer.ImportSummary.
+// skipLabel names an entry the way its source does: the file label when the
+// import came from files (admin bulk upload, directory walk), else the key.
+func (e elementImportEntry) skipLabel() string {
+	if e.Label != "" {
+		return e.Label
+	}
+	return e.Key
+}
+
 type elementImportSummary struct {
 	Created   int
 	Updated   int
@@ -653,15 +662,15 @@ func (a *App) bulkImportWithOutcomes(packID, packSlug string, entries []elementI
 		var prepared []preparedBatchItem
 		for _, entry := range batch {
 			if entry.Key == "" || len(entry.Key) > elementMaxKeyLength {
-				summary.Skipped = append(summary.Skipped, [2]string{entry.Key, "the key is empty or too long"})
+				summary.Skipped = append(summary.Skipped, [2]string{entry.skipLabel(), "the key is empty or too long"})
 				continue
 			}
 			if strings.TrimSpace(entry.Name) == "" {
-				summary.Skipped = append(summary.Skipped, [2]string{entry.Key, "the name is empty"})
+				summary.Skipped = append(summary.Skipped, [2]string{entry.skipLabel(), "the name is empty"})
 				continue
 			}
 			if seen[entry.Key] {
-				summary.Skipped = append(summary.Skipped, [2]string{entry.Key, "duplicate key"})
+				summary.Skipped = append(summary.Skipped, [2]string{entry.skipLabel(), "duplicate key"})
 				continue
 			}
 			kind := entry.Kind
@@ -669,18 +678,18 @@ func (a *App) bulkImportWithOutcomes(packID, packSlug string, entries []elementI
 				kind = packKind
 			}
 			if !containsString(elementKindValues, kind) {
-				summary.Skipped = append(summary.Skipped, [2]string{entry.Key,
+				summary.Skipped = append(summary.Skipped, [2]string{entry.skipLabel(),
 					fmt.Sprintf("unknown kind %q", kind)})
 				continue
 			}
 			if entry.Style != "" && !containsString(elementStyleValues, entry.Style) {
-				summary.Skipped = append(summary.Skipped, [2]string{entry.Key,
+				summary.Skipped = append(summary.Skipped, [2]string{entry.skipLabel(),
 					fmt.Sprintf("unknown style %q", entry.Style)})
 				continue
 			}
 			clean, err := processSVG(entry.SVG)
 			if err != nil {
-				summary.Skipped = append(summary.Skipped, [2]string{entry.Key, err.Error()})
+				summary.Skipped = append(summary.Skipped, [2]string{entry.skipLabel(), err.Error()})
 				continue
 			}
 			sum := sha256.Sum256(clean.Data)

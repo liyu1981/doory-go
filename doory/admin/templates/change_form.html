@@ -1,0 +1,95 @@
+{{define "content"}}
+<h1>{{.Title}}</h1>
+{{if .Errors}}<ul class="errorlist"><li>Please correct the errors below.</li></ul>{{end}}
+<form method="post" enctype="multipart/form-data" id="{{.Model.Model}}_form">
+<input type="hidden" name="csrfmiddlewaretoken" value="{{.CSRFToken}}">
+{{range .Fieldsets}}
+<fieldset>
+{{if .Title}}<h2>{{.Title}}</h2>{{end}}
+{{range .Fields}}
+{{$field := .}}
+<div class="form-row{{if .Wide}} wide{{end}}">
+<label>{{.Label}}:</label>
+<div>
+{{if eq .Kind 11}}
+<span class="readonly">{{$.DisplayValue .}}</span>
+{{else if eq .Kind 12}}
+{{else if eq .Kind 3}}
+<input type="checkbox" name="{{.Name}}" id="id_{{.Name}}"{{if $.Checked .Name}} checked{{end}}>
+{{else if eq .Kind 4}}
+<select name="{{.Name}}" id="id_{{.Name}}">
+{{range .Choices}}<option value="{{.Value}}"{{if eq .Value ($.Value $field.Name)}} selected{{end}}>{{.Label}}</option>{{end}}
+</select>
+{{else if eq .Kind 13}}
+<select name="{{.Name}}" id="id_{{.Name}}" multiple size="8">
+{{range .Choices}}<option value="{{.Value}}"{{if index ($.SelectedValues $field.Name) .Value}} selected{{end}}>{{.Label}}</option>{{end}}
+</select>
+{{else if eq .Kind 14}}
+<div>{{range .Choices}}<label style="min-width:0;font-weight:400"><input type="checkbox" name="{{$field.Name}}" value="{{.Value}}"{{if index ($.SelectedValues $field.Name) .Value}} checked{{end}}> {{.Label}}</label><br>{{end}}</div>
+{{else if eq .Kind 9}}
+<input type="password" name="{{.Name}}" id="id_{{.Name}}" autocomplete="new-password">
+{{else if eq .Kind 10}}
+<input type="file" name="{{.Name}}" id="id_{{.Name}}">
+{{else if eq .Kind 1}}
+<textarea name="{{.Name}}" id="id_{{.Name}}">{{$.Value .Name}}</textarea>
+{{else if eq .Kind 8}}
+<input type="text" name="{{.Name}}" id="id_{{.Name}}" value="{{$.Value .Name}}">
+{{else if eq .Kind 5}}
+<input type="number" name="{{.Name}}" id="id_{{.Name}}" value="{{$.Value .Name}}">
+{{else if eq .Kind 6}}
+<input type="text" name="{{.Name}}" id="id_{{.Name}}" value="{{$.Value .Name}}">
+{{else if eq .Kind 2}}
+<input type="email" name="{{.Name}}" id="id_{{.Name}}" value="{{$.Value .Name}}">
+{{else if eq .Kind 7}}
+<textarea name="{{.Name}}" id="id_{{.Name}}">{{$.Value .Name}}</textarea>
+{{else}}
+<input type="text" name="{{.Name}}" id="id_{{.Name}}" value="{{$.Value .Name}}">
+{{end}}
+{{range $.FieldErrors .Name}}<ul class="errorlist"><li>{{.}}</li></ul>{{end}}
+{{if .Help}}<div class="help">{{.Help}}</div>{{end}}
+</div>
+</div>
+{{end}}
+</fieldset>
+{{end}}
+
+{{range .Inlines}}
+{{$inline := .}}
+<div class="inline-table">
+<h2>{{.Title}}</h2>
+<table>
+<thead><tr><th></th>{{range .Columns}}<th>{{.Label}}</th>{{end}}{{if .CanDelete}}<th>Delete?</th>{{end}}</tr></thead>
+<tbody>
+{{range $row := .Rows}}
+<tr>
+<td>{{if $row.ID}}<span class="muted">{{$row.ID}}</span>{{end}}</td>
+{{range $inline.Columns}}
+<td>{{if eq .Kind 11}}{{$inline.DisplayValue $row.ID .Name}}{{else}}{{$inline.Value $row.ID .Name}}{{end}}</td>
+{{end}}
+{{if $inline.CanDelete}}<td><input type="checkbox" name="{{$inline.Prefix}}-{{$row.Index}}-DELETE"></td>{{end}}
+</tr>
+{{end}}
+{{range $row := .ExtraRows}}
+<tr>
+<td></td>
+{{range $inline.Columns}}<td>{{$inline.RenderExtraInput .Name $row.Index}}</td>{{end}}
+{{if $inline.CanDelete}}<td></td>{{end}}
+</tr>
+{{end}}
+</tbody>
+</table>
+<input type="hidden" name="{{.Prefix}}-TOTAL_FORMS" value="{{.TotalForms}}">
+<input type="hidden" name="{{.Prefix}}-INITIAL_FORMS" value="{{len .Rows}}">
+<input type="hidden" name="{{.Prefix}}-MIN_NUM_FORMS" value="0">
+<input type="hidden" name="{{.Prefix}}-MAX_NUM_FORMS" value="1000">
+</div>
+{{end}}
+
+<div class="actions">
+<button type="submit" name="_save" value="1">{{if .SubmitLabel}}{{.SubmitLabel}}{{else}}Save{{end}}</button>
+{{if .ShowDelete}}<a class="button danger" href="{{.DeleteURL}}">Delete</a>{{end}}
+{{if .ShowHistory}}<a class="button secondary" href="{{.HistoryURL}}">History</a>{{end}}
+{{if .PasswordURL}}<a class="button secondary" href="{{.PasswordURL}}">Change password</a>{{end}}
+</div>
+</form>
+{{end}}

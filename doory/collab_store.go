@@ -27,13 +27,13 @@ func beginSavingFromRoom() func() {
 
 // CollabLoadedState is store.LoadedState.
 type CollabLoadedState struct {
-	Snapshot      []byte
-	Updates       [][]byte
-	Version       int64
+	Snapshot       []byte
+	Updates        [][]byte
+	Version        int64
 	FlushedVersion int64
-	BaseRevision  int64
-	Title         string
-	Revision      int64
+	BaseRevision   int64
+	Title          string
+	Revision       int64
 }
 
 // collabStaleCutoff is store.stale_cutoff: heartbeats older than this belong

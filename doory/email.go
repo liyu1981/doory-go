@@ -22,14 +22,14 @@ import (
 
 // emailConfig is what EMAIL_URL configures (env.email()).
 type emailConfig struct {
-	Backend string // "console" | "smtp"
-	Host    string
-	Port    int
-	User    string
+	Backend  string // "console" | "smtp"
+	Host     string
+	Port     int
+	User     string
 	Password string
-	UseTLS  bool
-	UseSSL  bool
-	From    string
+	UseTLS   bool
+	UseSSL   bool
+	From     string
 }
 
 // parseEmailURL ports django-environ's env.email for the schemes the port

@@ -236,19 +236,19 @@ func (cc *collabConn) enter(grant *CollabGrant) bool {
 	member := &CollabMember{
 		ID: newUUID4Hex(), UserID: cc.user.ID, Name: publicName(cc.user),
 		AvatarURL: avatar, Role: grant.Role, LinkID: grant.LinkID,
-		SessionKey: cc.sessionKey(),
+		SessionKey:   cc.sessionKey(),
 		ConnectionID: admission.ConnectionID,
-		Transport:  cc.transport,
-		CanWrite:   collabWriterRoles[grant.Role],
-		controlled: map[uint64]bool{}, introduced: map[uint64]bool{},
+		Transport:    cc.transport,
+		CanWrite:     collabWriterRoles[grant.Role],
+		controlled:   map[uint64]bool{}, introduced: map[uint64]bool{},
 		outbox: make(chan outbound, collabOutboxLimit),
 		done:   make(chan struct{}),
 	}
 	// The ready frame first, then the room's welcome (probe0012 order).
 	ready := map[string]any{
 		"type": "ready", "role": grant.Role, "canWrite": member.CanWrite,
-		"user": map[string]any{"id": member.UserID, "name": member.Name, "avatar_url": avatar},
-		"title":  grant.Title, // the room shows the same title at join time
+		"user":     map[string]any{"id": member.UserID, "name": member.Name, "avatar_url": avatar},
+		"title":    grant.Title, // the room shows the same title at join time
 		"revision": grant.Revision,
 		"limits": map[string]any{
 			"maxFrameBytes":   envInt("REALTIME_MAX_FRAME_BYTES", 1024*1024),

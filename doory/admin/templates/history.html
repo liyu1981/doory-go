@@ -1,0 +1,12 @@
+{{define "content"}}
+<h1>Change history: {{.Object.Repr}}</h1>
+<p><a class="button secondary" href="{{.BackURL}}">Back</a></p>
+<table>
+<thead><tr><th>Date/time</th><th>User</th><th>Action</th><th>Change message</th></tr></thead>
+<tbody>
+{{range .Entries}}
+<tr><td>{{.Time}}</td><td>{{.User}}</td><td>{{.Action}}</td><td>{{.Message}}</td></tr>
+{{end}}
+</tbody>
+</table>
+{{end}}

@@ -24,6 +24,10 @@ type App struct {
 	// webapp: the embedded frontend + /static + /media (M14, family 14).
 	webappOnce sync.Once
 	webapp     *webappHandler
+
+	// admin: the Django-admin-compatible site (D2, G27–G31).
+	adminOnce sync.Once
+	adminSite *adminSite
 }
 
 // NewApp builds the route table. M2 slice of the 214-route ledger
@@ -532,6 +536,10 @@ func (a *App) notPorted(view string) http.HandlerFunc {
 // notFound ports handler404 for /api/ paths, plus CommonMiddleware's
 // APPEND_SLASH redirect (GET/HEAD to the slashed form, 301, query kept).
 func (a *App) notFound(w http.ResponseWriter, r *http.Request) {
+	if isAdminPath(r.URL.Path) {
+		a.adminDispatch(w, r)
+		return
+	}
 	if (r.Method == http.MethodGet || r.Method == http.MethodHead) &&
 		!strings.HasSuffix(r.URL.Path, "/") {
 		if _, slashed := a.Router.find(r.URL.Path + "/"); slashed {

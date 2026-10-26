@@ -97,6 +97,12 @@ func Migrate(db *sql.DB, driver string) error {
 			return fmt.Errorf("%s (record): %w", name, err)
 		}
 	}
+	// Django's post_migrate receivers create the content types and the
+	// add/change/delete/view permissions; the admin and auth permission
+	// checks read them.
+	if err := seedAuthRows(ctx, conn); err != nil {
+		return err
+	}
 	return nil
 }
 

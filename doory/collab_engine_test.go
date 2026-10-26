@@ -15,22 +15,22 @@ import (
 // engine fixture file (engine_fixtures.py, oracle apply_client_updates).
 type engineFixtures struct {
 	Batch struct {
-		Base         string   `json:"base"`
-		Updates      []string `json:"updates"`
-		InitialSize  int      `json:"initial_size"`
-		Client       uint64   `json:"client"`
-		Introduced   [][]uint64 `json:"introduced"`
-		Outcomes     []struct {
+		Base        string     `json:"base"`
+		Updates     []string   `json:"updates"`
+		InitialSize int        `json:"initial_size"`
+		Client      uint64     `json:"client"`
+		Introduced  [][]uint64 `json:"introduced"`
+		Outcomes    []struct {
 			Kind   string `json:"kind"`
 			Reason string `json:"reason"`
 			Detail string `json:"detail"`
 		} `json:"outcomes"`
-		SV          map[string]uint64 `json:"sv"`
-		Size        int               `json:"size"`
-		Merged      string            `json:"merged"`
-		AppliedCount int              `json:"applied_count"`
-		PagesGone   bool              `json:"pages_gone"`
-		Poisoned    bool              `json:"poisoned"`
+		SV           map[string]uint64 `json:"sv"`
+		Size         int               `json:"size"`
+		Merged       string            `json:"merged"`
+		AppliedCount int               `json:"applied_count"`
+		PagesGone    bool              `json:"pages_gone"`
+		Poisoned     bool              `json:"poisoned"`
 	} `json:"batch"`
 	Noop struct {
 		MergedState string `json:"merged_state"`
@@ -41,9 +41,9 @@ type engineFixtures struct {
 			Reason string `json:"reason"`
 			Detail string `json:"detail"`
 		} `json:"outcomes"`
-		SV       map[string]uint64 `json:"sv"`
-		Size     int               `json:"size"`
-		PagesGone bool             `json:"pages_gone"`
+		SV        map[string]uint64 `json:"sv"`
+		Size      int               `json:"size"`
+		PagesGone bool              `json:"pages_gone"`
 	} `json:"noop"`
 }
 

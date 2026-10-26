@@ -62,8 +62,11 @@ type cliCommand struct {
 
 // cliCommands is the registry. Order is the help listing order (alphabetical).
 var cliCommands = []cliCommand{
+	{name: "changepassword", usage: "changepassword [-h] [--database {default}] [username]", run: runChangePassword},
 	{name: "collab_maintenance", usage: "collab_maintenance [-h]", run: runCollabMaintenance},
+	{name: "createsuperuser", usage: "createsuperuser [-h] [--email EMAIL] [--noinput] [--database {default}]", run: runCreateSuperuser},
 	{name: "import_size_presets", usage: "import_size_presets [-h] [--mode {extend,replace}] [--dry-run] paths [paths ...]", run: runImportSizePresets},
+	{name: "make-admin", usage: "make-admin [-h] [--superuser] email", run: runMakeAdmin},
 	{name: "purge_exports", usage: "purge_exports [-h]", run: runPurgeExports},
 	{name: "purge_trash", usage: "purge_trash [-h] [--days DAYS]", run: runPurgeTrash},
 	{name: "reencrypt_ai_secrets", usage: "reencrypt_ai_secrets [-h] [--dry-run]", run: runReencryptAISecrets},

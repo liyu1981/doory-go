@@ -1,0 +1,10 @@
+{{define "content"}}
+<h1>Upload SVGs to {{.Pack.Repr}}</h1>
+{{if .Error}}<ul class="errorlist"><li>{{.Error}}</li></ul>{{end}}
+<form method="post" enctype="multipart/form-data" action="{{.Action}}">
+<input type="hidden" name="csrfmiddlewaretoken" value="{{.CSRFToken}}">
+<div class="form-row"><label>SVG files:</label><div><input type="file" name="files" multiple accept=".svg,image/svg+xml"><div class="help">At most {{.MaxFile}} files.</div></div></div>
+<div class="form-row"><label>Kind:</label><div><select name="kind"><option value="">Same as the pack</option><option value="shape">Shape</option><option value="line">Line</option><option value="icon">Icon</option><option value="sticker">Sticker</option><option value="illustration">Illustration</option><option value="frame">Frame</option><option value="graphic">Graphic</option></select></div></div>
+<div class="actions"><button type="submit">Upload</button><a class="button secondary" href="{{.Cancel}}">Cancel</a></div>
+</form>
+{{end}}

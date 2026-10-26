@@ -38,10 +38,10 @@ type configResponse struct {
 	OIDCButtonLabel string         `json:"oidc_button_label"`
 	OIDCButtonIcon  string         `json:"oidc_button_icon"`
 	Features        configFeatures `json:"features"`
-	Exports        configExports  `json:"exports"`
-	Limits         configLimits   `json:"limits"`
-	Assets         configAssets   `json:"assets"`
-	AI             aiConfig       `json:"ai"`
+	Exports         configExports  `json:"exports"`
+	Limits          configLimits   `json:"limits"`
+	Assets          configAssets   `json:"assets"`
+	AI              aiConfig       `json:"ai"`
 }
 
 type configFeatures struct {
@@ -61,9 +61,9 @@ type configFeatures struct {
 // POST /exports/optimize/ converts a PNG to, the optimizers people may pick
 // (listed and ready) and the one `optimize: true` uses.
 type configImageOptimize struct {
-	Formats    []string              `json:"formats"`
+	Formats    []string               `json:"formats"`
 	Optimizers []configImageOptimizer `json:"optimizers"`
-	Default    *string               `json:"default"`
+	Default    *string                `json:"default"`
 }
 
 type configImageOptimizer struct {
@@ -234,6 +234,14 @@ func (a *App) csrf(w http.ResponseWriter, r *http.Request) {
 	} else {
 		secret = newCSRFSecret()
 	}
+	a.setCSRFCookie(w, secret)
+	patchVary(w, "Cookie") // _set_csrf_cookie patches Vary: Cookie
+	w.Header().Set("Content-Length", "0")
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// setCSRFCookie is CsrfViewMiddleware._set_csrf_cookie's cookie shape.
+func (a *App) setCSRFCookie(w http.ResponseWriter, secret string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     csrfCookieName,
 		Value:    secret,
@@ -243,9 +251,6 @@ func (a *App) csrf(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 		Secure:   a.Settings.SessionCookieSecure(),
 	})
-	patchVary(w, "Cookie") // _set_csrf_cookie patches Vary: Cookie
-	w.Header().Set("Content-Length", "0")
-	w.WriteHeader(http.StatusNoContent)
 }
 
 func validCSRFSecret(v string) bool {

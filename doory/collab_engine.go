@@ -21,8 +21,8 @@ import (
 
 // engine.py constants.
 const (
-	smallUpdate = 1024          // bytes
-	slack       = 256 * 1024    // bytes the size estimate may exceed the limit by
+	smallUpdate = 1024       // bytes
+	slack       = 256 * 1024 // bytes the size estimate may exceed the limit by
 	// Budgets the writers of one room may use beyond the scanner's per-update checks.
 	maxNewClients         = 4
 	maxOriginlessPerEntry = 32
@@ -52,11 +52,11 @@ type CollabOutcome struct {
 
 // BatchResult is engine.BatchResult.
 type BatchResult struct {
-	Outcomes []CollabOutcome
-	SV       map[uint64]uint64
-	Size     int
-	Merged   []byte
-	Applied  [][]byte
+	Outcomes  []CollabOutcome
+	SV        map[uint64]uint64
+	Size      int
+	Merged    []byte
+	Applied   [][]byte
 	PagesGone bool
 	Poisoned  bool
 }

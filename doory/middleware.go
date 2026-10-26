@@ -201,6 +201,22 @@ func permissionsPolicy(next http.Handler) http.Handler {
 func appendSlashRedirect(rt *Router) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Bare /admin: CommonMiddleware's APPEND_SLASH sends the
+			// bodyless 301 before the admin catch-all runs, so the response
+			// lacks the admin stack's X-Frame-Options and Permissions-Policy
+			// (probe 0018). The admin dispatch keeps the same 301 as a
+			// fallback for direct callers.
+			if r.URL.Path == "/admin" {
+				target := "/admin/"
+				if r.URL.RawQuery != "" {
+					target += "?" + r.URL.RawQuery
+				}
+				w.Header().Set("Location", target)
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
+				w.Header().Set("Content-Length", "0")
+				w.WriteHeader(http.StatusMovedPermanently)
+				return
+			}
 			if (r.Method == http.MethodGet || r.Method == http.MethodHead) &&
 				!strings.HasSuffix(r.URL.Path, "/") {
 				_, selfRouted := rt.find(r.URL.Path)
