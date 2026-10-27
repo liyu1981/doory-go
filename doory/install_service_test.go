@@ -50,7 +50,12 @@ func TestRunInstallServiceWritesBinaryConfigAndUnit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("config: %v", err)
 	}
-	for _, want := range []string{"template-version:", "SITE_URL=http://localhost:9000", "DJANGO_ALLOWED_HOSTS="} {
+	for _, want := range []string{
+		"template-version:",
+		"SITE_URL=http://localhost:9000",
+		"DJANGO_ALLOWED_HOSTS=",
+		"DOORY_DATA_DIR=" + filepath.Join(home, ".doory", "data"),
+	} {
 		if !strings.Contains(string(config), want) {
 			t.Errorf("config missing %q", want)
 		}
@@ -125,6 +130,7 @@ func TestRunInstallServiceMigratesLegacyEnv(t *testing.T) {
 		"DJANGO_SECRET_KEY=old-secret",
 		"SITE_URL=https://old.example.test",
 		"template-version:",
+		"DOORY_DATA_DIR=" + filepath.Join(home, ".doory", "data"),
 	} {
 		if !strings.Contains(string(config), want) {
 			t.Errorf("migrated config missing %q", want)

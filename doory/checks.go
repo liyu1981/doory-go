@@ -7,7 +7,7 @@
 //	System check identified some issues:
 //
 //	WARNINGS:
-//	?: (exports.W002) MESSAGE
+//	?: (exports.W001) MESSAGE
 //		HINT: HINT
 //
 // The `-h/--help` shapes (`manage.py check`) and the remaining check modules
@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"io"
 	"net/url"
-	"os/exec"
 	"sort"
 	"strings"
 )
@@ -183,27 +182,6 @@ func (a *App) exportsChecks() []systemCheckWarning {
 		return false
 	}
 
-	cjpeg, oxipng := a.builtinOptimizerTools()
-	if hasListed("builtin") && (cjpeg == "" || oxipng == "") {
-		var missing []string
-		if cjpeg == "" {
-			missing = append(missing, "mozjpeg (cjpeg)")
-		}
-		if oxipng == "" {
-			missing = append(missing, "oxipng")
-		}
-		tail := "; it is left out."
-		if cjpeg != "" || oxipng != "" {
-			tail = "; those files are left as they are."
-		}
-		out = append(out, systemCheckWarning{
-			ID: "exports.W002",
-			Message: "IMAGE_OPTIMIZERS: the built-in optimizer can't find " +
-				strings.Join(missing, " and ") + tail,
-			Hint: "The Docker image installs both (INSTALL_IMAGE_OPTIMIZERS=true).",
-		})
-	}
-
 	needs := []struct {
 		name string
 		odd  string
@@ -260,22 +238,6 @@ func (a *App) exportsChecks() []systemCheckWarning {
 		})
 	}
 	return out
-}
-
-// builtinOptimizerTools ports optimizers.builtin.cjpeg()/oxipng(): mozjpeg's
-// cjpeg (named in its -version banner) and oxipng on PATH.
-func (a *App) builtinOptimizerTools() (cjpeg, oxipng string) {
-	if path, err := exec.LookPath("cjpeg"); err == nil {
-		probe := exec.Command(path, "-version")
-		if answer, err := probe.CombinedOutput(); err == nil &&
-			strings.Contains(strings.ToLower(string(answer)), "mozjpeg") {
-			cjpeg = path
-		}
-	}
-	if path, err := exec.LookPath("oxipng"); err == nil {
-		oxipng = path
-	}
-	return cjpeg, oxipng
 }
 
 // customOptimizerURLProblem ports optimizers.custom.url_problem.
@@ -369,7 +331,6 @@ var imageOptimizerFormats = []string{"png", "jpg", "webp"}
 // optimizer registry (available() + default_optimizer()).
 func (a *App) imageOptimizeConfig() configImageOptimize {
 	s := a.Settings
-	cjpeg, oxipng := a.builtinOptimizerTools()
 	available := []configImageOptimizer{}
 	ids := map[string]bool{}
 	for _, name := range s.optimizerListed() {
@@ -377,10 +338,7 @@ func (a *App) imageOptimizeConfig() configImageOptimize {
 		case "builtin":
 			// The port's built-in optimizer runs in process (Go JPEG
 			// re-encode + Zopfli PNG recompression), so it is always ready
-			// (D22); the management-command warning keeps upstream's
-			// PATH-based wording for CLI parity.
-			_ = cjpeg
-			_ = oxipng
+			// and needs no cjpeg/oxipng binaries (D22).
 			available = append(available, configImageOptimizer{
 				ID: "builtin", Name: "Built-in", Formats: optimizerBuiltinFormats,
 			})

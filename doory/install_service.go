@@ -178,6 +178,13 @@ func runInstallService(opts installServiceOptions, stdout, stderr io.Writer) err
 	if _, err := envconfig.Upgrade(configFile); err != nil {
 		fmt.Fprintf(stderr, "install-service: warning: could not upgrade %s; leaving it unchanged: %v\n", configFile, err)
 	}
+	// The template's ./data default is relative to the caller's working
+	// directory. Pin the installed file to the unit's absolute data directory
+	// so `doory make-admin …` and the service use the same database no matter
+	// where the command runs.
+	if err := matchInstalledDataDir(configFile, filepath.Join(dataDir, "data")); err != nil {
+		return err
+	}
 	if opts.port != 8080 {
 		if err := matchLocalSiteURL(configFile, opts.port); err != nil {
 			return err
@@ -309,6 +316,34 @@ func copyFileMode(source, target string, mode os.FileMode) error {
 		return err
 	}
 	return os.WriteFile(target, data, mode)
+}
+
+// matchInstalledDataDir replaces the template's relative data directory with
+// the absolute one the systemd unit uses. A custom active value is left alone.
+func matchInstalledDataDir(path, dataDir string) error {
+	return replaceTemplateLine(path, "DOORY_DATA_DIR=./data", "DOORY_DATA_DIR="+dataDir)
+}
+
+func replaceTemplateLine(path, oldLine, newLine string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("read %s: %w", path, err)
+	}
+	lines := strings.Split(string(data), "\n")
+	changed := false
+	for i, line := range lines {
+		if line == oldLine {
+			lines[i] = newLine
+			changed = true
+		}
+	}
+	if !changed {
+		return nil
+	}
+	if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o600); err != nil {
+		return fmt.Errorf("write %s: %w", path, err)
+	}
+	return nil
 }
 
 // matchLocalSiteURL updates the template's localhost sample when the installer

@@ -379,17 +379,20 @@ Rules (PiG §6):
   upstream does), PNG recompressed losslessly by re-deflating its scanlines at
   the highest level (`doory/optimizer.go`; the pure-Go Zopfli port writes a
   broken zlib stream, so the standard library does it — sizes differ from
-  oxipng's, which is what the structural rule already covers). So `builtin` is always ready: `/config/` lists it
-  (`formats: [jpg, png]`, `default: "builtin"`) and
-  `POST /exports/optimize/` really optimizes where the oracle on the same host
-  would answer "no optimizer". For CLI parity the management-command warning
-  keeps upstream's PATH-based wording (it still says cjpeg/oxipng are missing),
-  and the kernel scenario excludes the two `image_optimize` optimizers/default
-  fields with a recorded `ignore_json_paths`. The off-site optimizers
-  (TinyPNG/Kraken/custom) keep their HTTP contract pending and refuse loudly.
+  oxipng's, which is what the structural rule already covers). So `builtin` is
+  always ready: `/config/` lists it (`formats: [jpg, png]`,
+  `default: "builtin"`) and `POST /exports/optimize/` really optimizes where
+  the oracle on the same host would answer "no optimizer". Because the port
+  needs neither binary, it also drops upstream's `exports.W002` system-check
+  warning ("can't find mozjpeg (cjpeg) and oxipng"); that check output is a
+  recorded difference here. The kernel scenario excludes the two
+  `image_optimize` optimizers/default fields with a recorded
+  `ignore_json_paths`. The off-site optimizers (TinyPNG/Kraken/custom) keep
+  their HTTP contract pending and refuse loudly.
 - remove-when: the port ships native cjpeg/oxipng (or upstream makes the
   built-in optimizer pure-Python), and the config/check wording can follow the
-  binaries again; then drop the scenario's `ignore_json_paths`.
+  binaries again; then drop the scenario's `ignore_json_paths` and restore the
+  upstream warning if applicable.
 - evidence: `doory/optimizer.go`, `doory/checks.go` (imageOptimizeConfig),
   `doory/exports_optimize.go`, test/parity/scenarios/kernel/01-kernel-http.toml,
   test/parity/scenarios/exports/13-exports.toml.

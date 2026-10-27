@@ -5,6 +5,7 @@ package doory
 
 import (
 	"bufio"
+	"database/sql"
 	"fmt"
 	"os"
 	"os/user"
@@ -184,10 +185,13 @@ func runMakeAdmin(c *CLI, argv []string) error {
 	if len(args.positionals) != 1 {
 		return &usageError{message: "the following arguments are required: email"}
 	}
-	email := args.positionals[0]
+	email := strings.ToLower(strings.TrimSpace(args.positionals[0]))
 	var id string
-	if err := c.App.DB.QueryRow(`SELECT id FROM accounts_user WHERE email = ?`, email).Scan(&id); err != nil {
-		return commandErrorf("user '%s' does not exist", email)
+	if err := c.App.DB.QueryRow(`SELECT id FROM accounts_user WHERE LOWER(email) = LOWER(?)`, email).Scan(&id); err != nil {
+		if err == sql.ErrNoRows {
+			return commandErrorf("user '%s' does not exist", email)
+		}
+		return commandErrorf("look up '%s': %v", email, err)
 	}
 	if args.bool("superuser") {
 		_, err = c.App.DB.Exec(`UPDATE accounts_user SET is_staff = TRUE, is_superuser = TRUE,

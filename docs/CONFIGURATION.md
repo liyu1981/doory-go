@@ -72,6 +72,9 @@ can run before the first start.
 Everything that must survive lives under one directory:
 
 - `DOORY_DATA_DIR` (default `./data`) — holds `doory.sqlite3`, `media/`, `exports/`.
+  `doory install-service` pins this to the absolute `~/.doory/data` in the
+  installed `.env`, so management commands run from any directory use the
+  same database as the service.
 - `DATABASE_URL` — default `sqlite:///./data/doory.sqlite3`; set `postgres://user:pass@host/db` for PostgreSQL (same binary).
 - `MEDIA_ROOT`, `EXPORT_STORAGE_ROOT` — override individual paths.
 

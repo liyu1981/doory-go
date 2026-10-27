@@ -337,7 +337,7 @@ behavioral verification).
 | upstream | go | status |
 |---|---|---|
 | `backend/apps/exports/optimizers/base.py` |  | ⬜ |
-| `backend/apps/exports/optimizers/builtin.py` | doory/checks.go (cjpeg/oxipng detection only (W002 + /config/); mozjpeg/oxipng shrink pending) | 🟡 |
+| `backend/apps/exports/optimizers/builtin.py` | doory/optimizer.go + doory/checks.go (in-process JPEG re-encode and PNG recompression; /config/ always lists builtin; upstream W002 binary check is deliberately omitted, D22) | ✅ |
 | `backend/apps/exports/optimizers/custom.py` | doory/checks.go (url_problem/key_problem only (W003/W005 + /config/); shrink pending) | 🟡 |
 | `backend/apps/exports/optimizers/http.py` |  | ⬜ |
 | `backend/apps/exports/optimizers/kraken.py` | doory/checks.go (ready() only (/config/); shrink pending) | 🟡 |
