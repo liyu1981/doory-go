@@ -66,7 +66,7 @@ func (r *Run) bootPair(sc *Scenario, renderURL string) (*Side, *Side, error) {
 	}
 
 	goDB := "sqlite:///" + filepath.Join(r.WorkDir, "go.sqlite3")
-	migrate := exec.Command(binPath, "migrate")
+	migrate := exec.Command(binPath, "--no-env-file", "migrate")
 	migrate.Dir = r.Repo
 	migrate.Env = append(os.Environ(), "DATABASE_URL="+goDB)
 	if out, err := migrate.CombinedOutput(); err != nil {
@@ -186,7 +186,7 @@ func (r *Run) bootPair(sc *Scenario, renderURL string) (*Side, *Side, error) {
 		RepoRoot: r.Repo, Bin: binPath}
 	goLog := filepath.Join(r.WorkDir, "go.log")
 	goSide.log, _ = os.Create(goLog)
-	serve := exec.Command(binPath, "serve", fmt.Sprintf("127.0.0.1:%d", goPort))
+	serve := exec.Command(binPath, "--no-env-file", "serve", fmt.Sprintf("127.0.0.1:%d", goPort))
 	serve.Dir = r.Repo
 	serve.Env = append(os.Environ(), "DATABASE_URL="+goDB,
 		fmt.Sprintf("DOORY_ADDR=127.0.0.1:%d", goPort),

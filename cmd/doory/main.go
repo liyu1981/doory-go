@@ -8,6 +8,7 @@
 //	                      bootstraps driven by DOORY_SYNC_*/DOORY_SEED_*) then serve
 //	healthcheck           container probe (HEALTH_PORT/HEALTH_PATH, exit 0 on 200)
 //	migrate               apply the embedded schema for the DATABASE_URL dialect (D4)
+//	config                generate/upgrade the optional .env file (init, upgrade)
 //	version               print the port version and its upstream pin
 //	help                  list the management commands
 //
@@ -21,19 +22,30 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"doory-go/doory"
 	"doory-go/internal/dooryversion"
+	"doory-go/internal/envconfig"
 	"doory-go/internal/renderworker"
 )
 
 func main() {
-	cmd, args := splitArgs(os.Args[1:])
-	if cmd == "" {
+	argv, global, err := takeGlobalFlags(os.Args[1:])
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "doory:", err)
+		os.Exit(2)
+	}
+	cmd, args := splitArgs(argv)
+	if cmd == "" || cmd == "help" || cmd == "--help" || cmd == "-h" {
 		// A bare binary prints the command overview (like manage.py) instead of
 		// guessing what to run.
 		doory.PrintCLIHelp(os.Stdout)
 		return
+	}
+	if err := loadEnvForCommand(cmd, global); err != nil {
+		fmt.Fprintln(os.Stderr, "doory:", err)
+		os.Exit(1)
 	}
 	switch cmd {
 	case "render-worker":
@@ -56,6 +68,8 @@ func main() {
 		os.Exit(0)
 	case "version":
 		fmt.Printf("doory-go %s (upstream %s)\n", dooryversion.Version, dooryversion.UpstreamCommit)
+	case "config":
+		os.Exit(doory.RunConfigCommand(args, os.Stdout, os.Stderr))
 	case "migrate":
 		if err := doory.MigrateFromEnv(); err != nil {
 			fmt.Fprintln(os.Stderr, "migrate:", err)
@@ -134,8 +148,68 @@ func main() {
 		}
 	default:
 		// Everything else is a management command (Django's manage.py <cmd>).
-		os.Exit(doory.RunCLIFromEnv(os.Args[1:]))
+		os.Exit(doory.RunCLIFromEnv(argv))
 	}
+}
+
+// globalOptions are the flags accepted before (or after) any subcommand.
+type globalOptions struct {
+	envFile   string
+	noEnvFile bool
+}
+
+// takeGlobalFlags removes the global --env-file/--no-env-file options from
+// argv. They may appear anywhere before a `--` terminator; the remaining args
+// keep their order.
+func takeGlobalFlags(argv []string) ([]string, globalOptions, error) {
+	var opts globalOptions
+	envFileSeen := false
+	rest := make([]string, 0, len(argv))
+	for i := 0; i < len(argv); i++ {
+		arg := argv[i]
+		if arg == "--" {
+			rest = append(rest, argv[i:]...)
+			break
+		}
+		switch {
+		case arg == "--env-file":
+			if i+1 >= len(argv) {
+				return nil, opts, fmt.Errorf("--env-file needs a path")
+			}
+			envFileSeen = true
+			opts.envFile = argv[i+1]
+			i++
+		case strings.HasPrefix(arg, "--env-file="):
+			envFileSeen = true
+			opts.envFile = strings.TrimPrefix(arg, "--env-file=")
+		case arg == "--no-env-file":
+			opts.noEnvFile = true
+		default:
+			rest = append(rest, arg)
+		}
+	}
+	if envFileSeen && strings.TrimSpace(opts.envFile) == "" {
+		return nil, opts, fmt.Errorf("--env-file needs a path")
+	}
+	if opts.noEnvFile && envFileSeen {
+		return nil, opts, fmt.Errorf("--env-file and --no-env-file are mutually exclusive")
+	}
+	return rest, opts, nil
+}
+
+// loadEnvForCommand fills missing process-environment variables from the
+// selected dotenv file. Commands that do not read configuration skip it, so
+// `doory config` and `doory version` work even with a broken user env file.
+func loadEnvForCommand(cmd string, opts globalOptions) error {
+	switch cmd {
+	case "version", "config":
+		return nil
+	}
+	if opts.noEnvFile {
+		return nil
+	}
+	_, err := envconfig.Load(opts.envFile)
+	return err
 }
 
 func envOr(name, def string) string {

@@ -23,3 +23,7 @@ node_modules/
 
 .oracle/
 *.sqlite3
+
+# Local configuration written by `doory config init` (may hold secrets).
+.env
+.env.bak

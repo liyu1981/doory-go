@@ -392,3 +392,22 @@ Rules (PiG §6):
 - evidence: `doory/optimizer.go`, `doory/checks.go` (imageOptimizeConfig),
   `doory/exports_optimize.go`, test/parity/scenarios/kernel/01-kernel-http.toml,
   test/parity/scenarios/exports/13-exports.toml.
+
+## D23 — the binary reads an optional .env file
+
+- SCRUTINIZED: pending (owner-requested ergonomics; upstream reads only the process environment)
+- status: active
+- summary: Upstream's Django process never reads a `.env` file itself; operators
+  source it or use systemd `EnvironmentFile=`. The Go binary loads
+  `~/.config/doory/.env` (or `$XDG_CONFIG_HOME/doory/.env`) when present,
+  accepts the global `--env-file PATH` / `--no-env-file` options, and only
+  fills variables that are absent from the process environment (process env
+  always wins). `doory config init` writes the embedded `.env.example` and
+  `doory config upgrade` merges the newest template while keeping active
+  values. Variable names and defaults are unchanged, so systemd
+  `EnvironmentFile`, container env passing and plain `export` keep working.
+- remove-when: upstream starts auto-reading the same file, or the owner decides
+  the binary must stay environment-only (then remove `envconfig.Load` and keep
+  `.env.example` as documentation only).
+- evidence: `internal/envconfig`, `doory/config.go`, `cmd/doory/main.go`
+  (`--env-file`/`--no-env-file`), `.env.example`, `docs/CONFIGURATION.md`.

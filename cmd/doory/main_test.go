@@ -31,3 +31,39 @@ func TestSplitArgs(t *testing.T) {
 		}
 	}
 }
+
+func TestTakeGlobalFlags(t *testing.T) {
+	cases := []struct {
+		name     string
+		argv     []string
+		wantRest []string
+		wantOpts globalOptions
+		wantErr  bool
+	}{
+		{"no flags", []string{"serve", ":8111"}, []string{"serve", ":8111"}, globalOptions{}, false},
+		{"before command", []string{"--env-file", "/tmp/x.env", "serve"}, []string{"serve"}, globalOptions{envFile: "/tmp/x.env"}, false},
+		{"after command", []string{"serve", "--env-file=/tmp/x.env"}, []string{"serve"}, globalOptions{envFile: "/tmp/x.env"}, false},
+		{"disable", []string{"--no-env-file", "migrate"}, []string{"migrate"}, globalOptions{noEnvFile: true}, false},
+		{"missing path", []string{"--env-file"}, nil, globalOptions{}, true},
+		{"empty path", []string{"--env-file=", "serve"}, nil, globalOptions{}, true},
+		{"conflict", []string{"--no-env-file", "--env-file", "/tmp/x", "serve"}, nil, globalOptions{}, true},
+		{"after terminator", []string{"serve", "--", "--env-file"}, []string{"serve", "--", "--env-file"}, globalOptions{}, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rest, opts, err := takeGlobalFlags(tc.argv)
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("err = %v, wantErr %v", err, tc.wantErr)
+			}
+			if tc.wantErr {
+				return
+			}
+			if !reflect.DeepEqual(rest, tc.wantRest) {
+				t.Errorf("rest = %v, want %v", rest, tc.wantRest)
+			}
+			if opts != tc.wantOpts {
+				t.Errorf("opts = %+v, want %+v", opts, tc.wantOpts)
+			}
+		})
+	}
+}

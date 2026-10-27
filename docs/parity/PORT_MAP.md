@@ -28,7 +28,7 @@ behavioral verification).
 
 | upstream | go | status |
 |---|---|---|
-| `backend/.env.example` | `.env.example` (the single binary's knobs, same variable names; D4 data dir) | ✅ |
+| `backend/.env.example` | `.env.example` (canonical template; `doory config init`/`upgrade`, same variable names, D4 data dir, D23 dotenv loading) | ✅ |
 | `backend/Dockerfile` | deferred: no container image (D18) — the binary is the release artifact; `deploy/doory.service` replaces the compose service | 🟡 |
 | `backend/conftest.py` | test/parity (paired scenarios replace the pytest harness; ledger dispositions) | 🟡 |
 | `backend/docker-entrypoint.sh` | doory/entrypoint.go (DB wait, migrate, env-gated bootstraps; embedded content on by default — D19) | ✅ |

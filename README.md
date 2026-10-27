@@ -116,6 +116,14 @@ DJANGO_SECRET_KEY=$(openssl rand -base64 48) SITE_URL=http://localhost:8111 \
 `dist/doory` with no arguments prints the command overview (`doory help` shows
 the same, `doory <command> -h` the options of one command).
 
+Configuration can live in an optional dotenv file instead of a long command
+line: the binary reads `~/.config/doory/.env` when present, or a file passed
+with `--env-file PATH`; variables already in the process environment win.
+`doory config init` writes a complete `.env` from the embedded `.env.example`
+(use it with `--env-file .env`, or put it at `~/.config/doory/.env`), and
+`doory config upgrade` merges the newest template into it while keeping the
+values you set (see `docs/CONFIGURATION.md`).
+
 The plain Go equivalent (note the output path: `doory/` is the package
 directory, so the binary goes to `dist/`):
 
@@ -169,7 +177,8 @@ sudo useradd --system --home /var/lib/doory doory
 sudo install -d -o doory -g doory /var/lib/doory
 sudo install -m 0755 doory /usr/local/bin/doory
 sudo install -d /etc/doory
-sudo cp .env.example /etc/doory/doory.env   # fill DJANGO_SECRET_KEY + SITE_URL
+sudo /usr/local/bin/doory config init /etc/doory
+sudo mv /etc/doory/.env /etc/doory/doory.env   # the unit's EnvironmentFile; fill secrets
 sudo cp deploy/doory.service /etc/systemd/system/doory.service
 sudo systemctl daemon-reload && sudo systemctl enable --now doory
 ```
@@ -177,9 +186,9 @@ sudo systemctl daemon-reload && sudo systemctl enable --now doory
 `/var/lib/doory` (the `WorkingDirectory`) is the data directory: SQLite
 database, media and exports live there and that one directory is the backup
 unit. Put a TLS-terminating proxy (Caddy/nginx/…) in front and set
-`SECURE_SSL_REDIRECT=true` + `SECURE_COOKIES=true`. Server-side PDF export
-needs Chromium installed on the host (`EXPORT_CHROMIUM_PATH`) and
-`SERVER_PDF_ENABLED=true`.
+`SECURE_COOKIES=true`; terminate TLS and redirect HTTP there (the binary does
+not read `SECURE_SSL_REDIRECT` yet). Server-side PDF export needs Chromium
+installed on the host (`EXPORT_CHROMIUM_PATH`) and `SERVER_PDF_ENABLED=true`.
 
 Paths the single listener owns (the nginx rules upstream serves, D7):
 `/api/`, `/admin/`, `/ws/`, `/mcp`, `/sitemap.xml` and `/static/` go to the
