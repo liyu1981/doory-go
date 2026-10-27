@@ -21,9 +21,9 @@
 # family's remaining settings slice.
 #
 # Pending in family (PORT_MAP 🟡): password/reset+confirm, email/verify+
-# resend (D9), google, me DELETE, avatar upload, and the OIDC provider flows
-# (start/callback/connection are covered for a server without a provider:
-# the redirects, `oidc_not_configured` and the disconnect envelope).
+# resend (D9), me DELETE and avatar upload. Google and the full OIDC provider
+# flows are covered by the Go SSO tests; this scenario keeps the no-provider
+# surface (redirects, `oidc_not_configured`, disconnect envelope).
 
 name = "02-accounts-auth"
 description = "Register/login/logout/me/password-change match the oracle byte-for-byte: csrf enforcement by cause, password validators, session lifecycle, session death after password change."

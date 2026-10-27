@@ -84,6 +84,10 @@ func (a *App) sessionUser(r *http.Request) (*UserRow, bool) {
 	if err != nil || sess == nil {
 		return nil, false
 	}
+	if sess.UserID == "" {
+		// Anonymous session with data (an OIDC flow): live, but not a user.
+		return nil, false
+	}
 	u, err := getUserByID(a.DB, sess.UserID)
 	if err != nil || u == nil || !u.IsActive {
 		_ = deleteSession(a.DB, sess.Key)

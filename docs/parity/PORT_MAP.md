@@ -47,17 +47,17 @@ behavioral verification).
 | `backend/apps/accounts/backends.py` |  | ⬜ |
 | `backend/apps/accounts/checks.py` | doory/checks.go (systemCheckWarnings: OIDC configuration problems as accounts.W001, printed before every management command) | ✅ |
 | `backend/apps/accounts/emails.py` | doory/email.go (verify/reset templates, console/SMTP transport, async send; D9) | ✅ |
-| `backend/apps/accounts/google.py` | (pending: Google ID-token verification + link/create; the route answers 404 today) | ⬜ |
+| `backend/apps/accounts/google.py` | doory/google.go (Google ID-token verification via JWKS, link/create, verified-email rule; POST /api/v1/auth/google/) | ✅ |
 | `backend/apps/accounts/lockout.py` | doory/lockout.go | ✅ |
 | `backend/apps/accounts/migrations/` |  | ⬜ |
 | `backend/apps/accounts/models.py` | doory/user.go (User row, create/get, name property, envelope); pending: check_password rebind, google_sub flows | 🟡 |
-| `backend/apps/accounts/oidc.py` | doory/checks.go (configuration_problems/enabled/button_label/button_icon) + doory/oidc.go (start/callback redirects, connection delete, take_flow session touch, safe_next_path); discovery/PKCE/JWKS/token flows pending | 🟡 |
+| `backend/apps/accounts/oidc.py` | doory/checks.go (configuration/enabled/button) + doory/oidc.go (start/callback/connect/disconnect, discovery, PKCE, token exchange, session flows, safe_next_path) + doory/oidc_jwt.go (JWKS + ID-token verification + SSRF-safe fetch) | ✅ |
 | `backend/apps/accounts/serializers.py` | doory/views_auth.go (Register/Login/Profile/PasswordChange validation in declaration order) + doory/user.go (UserEnvelope shape incl. oidc_linked); pending: reset/verify/google/delete serializers, OIDC connect/redirect | 🟡 |
-| `backend/apps/accounts/services.py` |  | ⬜ |
-| `backend/apps/accounts/tests/` |  | ⬜ |
+| `backend/apps/accounts/services.py` | doory/google.go + doory/oidc_service.go (Google/OIDC link/create/connect/disconnect, unproven-email password drop, unique-race retry); avatar helpers still pending with the assets/core slice | 🟡 |
+| `backend/apps/accounts/tests/` | doory/oidc_sso_test.go (OIDC sign-in/trust/connect/disconnect + Google create/link/validation); remaining accounts cases still pending | 🟡 |
 | `backend/apps/accounts/tokens.py` | doory/tokens.go (Django PasswordResetTokenGenerator port for reset + verification) | ✅ |
-| `backend/apps/accounts/urls.py` | doory/router.go + doory/app.go (auth routes incl. oidc/{start,callback,connection}) | 🟡 |
-| `backend/apps/accounts/views.py` | doory/views_auth.go (register, login, logout, me GET/PATCH, password/change, confirm_identity) + doory/accounts_email.go (password reset/confirm, email verify/resend) + doory/oidc.go (OidcStart/Callback/Connection) + doory/views.go (CsrfView); pending: google, me DELETE | 🟡 |
+| `backend/apps/accounts/urls.py` | doory/router.go + doory/app.go (auth routes incl. google and oidc/{start,callback,connection}) | ✅ |
+| `backend/apps/accounts/views.py` | doory/views_auth.go (register, login, logout, me GET/PATCH, password/change, confirm_identity) + doory/accounts_email.go (password reset/confirm, email verify/resend) + doory/oidc.go (OidcStart/Callback/Connection) + doory/google.go (GoogleLoginView) + doory/views.go (CsrfView); pending: me DELETE | 🟡 |
 
 ## `backend/apps/accounts/templates/accounts/email/`
 

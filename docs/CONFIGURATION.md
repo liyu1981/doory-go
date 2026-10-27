@@ -100,18 +100,21 @@ Everything that must survive lives under one directory:
 ## Authentication / SSO
 
 - **Email + password** is always available.
-- **Google sign-in:** set `GOOGLE_CLIENT_ID`. The frontend shows the Google
-  button, but backend verification (`POST /api/v1/auth/google/`) is not ported
-  yet (gap G3) — sign-in will not complete. Track G3 before relying on it.
-- **Generic OIDC SSO (working today):** set
+- **Google sign-in:** set `GOOGLE_CLIENT_ID` to a web-application OAuth client
+  id. The backend verifies the Google ID token (`POST /api/v1/auth/google/`)
+  and links or creates the account. Google must return a verified email.
+- **Generic OIDC SSO:** discovery, PKCE, JWKS/ID-token verification, sign-in,
+  account linking and connect/disconnect are implemented. Settings:
   - `OIDC_ISSUER` (e.g. `https://accounts.google.com`)
   - `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`
   - `OIDC_SCOPES` (default `openid email profile`)
-  - `OIDC_TRUST_EMAIL` (default `false`)
+  - `OIDC_TRUST_EMAIL` (default `false`): trust the provider's verified email
+    to link an existing account automatically; without it, link from Settings
+    after confirming the password.
   - `OIDC_BUTTON_LABEL`, `OIDC_BUTTON_ICON` (optional)
-  - Google is an OIDC provider, so pointing `OIDC_ISSUER` at Google with a
-    web-application OAuth client is the working path today. Register the
-    callback `/api/v1/auth/oidc/callback/` in the provider.
+  - Register the callback `/api/v1/auth/oidc/callback/` in the provider.
+  - The issuer must be `https://` unless `DJANGO_DEBUG=true` (local
+    development only).
 
 ## First-run content
 

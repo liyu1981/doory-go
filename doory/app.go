@@ -64,6 +64,12 @@ func NewApp(s *Settings, db *sql.DB) *App {
 			Csrf: CSRFAlways, Session: SessionConsult, Handler: a.loginView,
 		},
 		Route{
+			// GoogleLoginView (AuthView): AllowAny, CSRF always, default
+			// session authentication. The credential is a Google ID token.
+			Path: "/api/v1/auth/google/", Methods: []string{"POST"}, Style: AllowClass,
+			Csrf: CSRFAlways, Session: SessionConsult, Require: RequireNever, Handler: a.googleLogin,
+		},
+		Route{
 			Path: "/api/v1/auth/logout/", Methods: []string{"POST"}, Style: AllowClass,
 			Csrf: CSRFAlways, Session: SessionConsult, Require: RequireAlways,
 			Handler: a.logoutView,

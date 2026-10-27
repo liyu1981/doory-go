@@ -72,7 +72,16 @@ func (a *App) finishLogin(w http.ResponseWriter, r *http.Request, u *UserRow) {
 		if sess, _ := getSession(a.DB, cookie.Value); sess != nil {
 			if sess.UserID == u.ID && sess.AuthHash == hash {
 				key = sess.Key // same authenticated user: keep the key (probe0002e)
-				_ = putSession(a.DB, key, u.ID, hash)
+				_ = putSessionWithFlows(a.DB, key, u.ID, hash, sess.Flows)
+				setSessionCookie(w, key, a.Settings.SessionCookieSecure())
+				a.rotateCSRFCookie(w, r)
+				return
+			}
+			if sess.UserID == "" {
+				// Django's login() cycles an anonymous key and keeps the
+				// session data (pending OIDC flows in other tabs).
+				_ = putSessionWithFlows(a.DB, key, u.ID, hash, sess.Flows)
+				_ = deleteSession(a.DB, sess.Key)
 				setSessionCookie(w, key, a.Settings.SessionCookieSecure())
 				a.rotateCSRFCookie(w, r)
 				return
@@ -80,7 +89,7 @@ func (a *App) finishLogin(w http.ResponseWriter, r *http.Request, u *UserRow) {
 			_ = flushSession(a.DB, sess.Key) // different user / stale hash
 		}
 	}
-	_ = putSession(a.DB, key, u.ID, hash)
+	_ = putSessionWithFlows(a.DB, key, u.ID, hash, nil)
 	setSessionCookie(w, key, a.Settings.SessionCookieSecure())
 	a.rotateCSRFCookie(w, r)
 }

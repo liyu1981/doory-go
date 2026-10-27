@@ -27,7 +27,9 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"database/sql"
+	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -48,6 +50,9 @@ type Session struct {
 	UserID    string
 	AuthHash  string
 	ExpiresAt time.Time
+	// Flows are the pending OIDC sign-in/connect flows (Django's
+	// session["oidc_flows"]); empty for ordinary sessions.
+	Flows map[string]oidcFlow
 }
 
 // sessionAuthHash mirrors AbstractBaseUser.get_session_auth_hash: sha256 hex
@@ -92,17 +97,39 @@ func getSession(db *sql.DB, key string) (*Session, error) {
 	if !time.Now().UTC().Before(expires) {
 		return nil, nil
 	}
-	// Go-native payload: "<userID>|<authHash>|go-session-v1"
-	parts := strings.SplitN(data, "|", 3)
-	if len(parts) != 3 || parts[2] != "go-session-v1" {
+	// Go-native payloads:
+	//   "<userID>|<authHash>|go-session-v1"                  (no OIDC flows)
+	//   "<userID>|<authHash>|go-session-v2|<base64url JSON>" (pending flows)
+	parts := strings.SplitN(data, "|", 4)
+	switch {
+	case len(parts) == 3 && parts[2] == "go-session-v1":
+		return &Session{Key: key, UserID: parts[0], AuthHash: parts[1], ExpiresAt: expires}, nil
+	case len(parts) == 4 && parts[2] == "go-session-v2":
+		flows := map[string]oidcFlow{}
+		raw, err := base64.RawURLEncoding.DecodeString(parts[3])
+		if err != nil || json.Unmarshal(raw, &flows) != nil {
+			return nil, nil
+		}
+		return &Session{Key: key, UserID: parts[0], AuthHash: parts[1], ExpiresAt: expires, Flows: flows}, nil
+	default:
 		return nil, nil // a Django-written session is not readable (D5 open)
 	}
-	return &Session{Key: key, UserID: parts[0], AuthHash: parts[1], ExpiresAt: expires}, nil
 }
 
 func putSession(db *sql.DB, key, userID, authHash string) error {
+	return putSessionWithFlows(db, key, userID, authHash, nil)
+}
+
+func putSessionWithFlows(db *sql.DB, key, userID, authHash string, flows map[string]oidcFlow) error {
 	expires := time.Now().UTC().Add(sessionCookieMaxAge * time.Second)
 	payload := userID + "|" + authHash + "|go-session-v1"
+	if len(flows) > 0 {
+		raw, err := json.Marshal(flows)
+		if err != nil {
+			return err
+		}
+		payload = userID + "|" + authHash + "|go-session-v2|" + base64.RawURLEncoding.EncodeToString(raw)
+	}
 	_, err := db.Exec(`INSERT INTO django_session (session_key, session_data, expire_date)
 		VALUES (?, ?, ?)
 		ON CONFLICT(session_key) DO UPDATE SET session_data = excluded.session_data, expire_date = excluded.expire_date`,
@@ -121,7 +148,7 @@ func cycleSessionKey(db *sql.DB, s *Session) (string, error) {
 	if err := deleteSession(db, s.Key); err != nil {
 		return "", err
 	}
-	if err := putSession(db, newKey, s.UserID, s.AuthHash); err != nil {
+	if err := putSessionWithFlows(db, newKey, s.UserID, s.AuthHash, s.Flows); err != nil {
 		return "", err
 	}
 	return newKey, nil

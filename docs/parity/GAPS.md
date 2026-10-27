@@ -29,7 +29,6 @@ Last verified: pin `2fb4d0297ec4c6e417b5225215502f8217c2a4dc` (doory@v0.2.0).
 |---|---|---|---|
 | G1 | `POST /api/v1/designs/{id}/fill/` | `filling.fill_design`: fill the template's tagged fields (`{key: value}`), as a copy by default | Needs the document-mutation engine: `doc/ops.py` (`update_object`, `replace_image`), `edits.apply_edit` (locking, revision, auto-version). Same engine as G2; the ops subset + validation is the work item. |
 | G2 | `POST /api/v1/designs/{id}/bulk-fill/` | `filling.bulk_fill`: one new design per row, each row reporting its design or its error | Same engine as G1 plus `BulkFillSerializer` (rows, `row_numbers`, `name_pattern`, `folder`, `export`), per-row rate charges and the image exporter. **The rebuilt frontend calls this** (fill-from-data dialog). |
-| G3 | `POST /api/v1/auth/google/` | Verify a Google ID token (JWKS/RS256, iss/aud/exp, verified email rules) then link or create the account | Unported. Needs JWKS fetch/cache + signature/claim verification and `_link_or_create` (unproven-password-drop rule). `GOOGLE_CLIENT_ID` unset (the default) already answers `google_not_configured`? No — the route is absent, so it 404s; closing it starts with the serializer + config error. |
 | G4 | `GET /api/v1/schema/`, `GET /api/v1/docs/` | drf-spectacular OpenAPI document + Swagger UI | D8 promises *structural* schema parity but nothing is served today. Needs a generated OpenAPI document (from the routes/interfaces ledger or hand-kept) and the docs page. Lowest priority of the route gaps; no frontend client depends on it. |
 
 Documented additions (not gaps): `/mcp`, `/mcp/health`, `/sitemap.xml`,
@@ -44,7 +43,6 @@ which upstream function is missing — never a silent wrong answer.
 | id | route | branch | what closes it |
 |---|---|---|---|
 | G5 | `POST /api/v1/templates/{slug}/use/` | `gallery.create_from_template` (design from a seeded template) | Copy the template document into a new design with `source_template` provenance, category/preset handling and the version row. `gallery.services`/`models.apply_document`. The frontend's "use this template" path. |
-| G6 | `GET /api/v1/auth/oidc/{start,callback}/`, `POST /api/v1/auth/oidc/connection/` | `oidc.begin` / `oidc.complete` (discovery, PKCE, state/nonce session flows, JWKS + ID-token verification, `oidc_identities` writes, trust-email rules) | Only reachable once a provider is configured (default off); the no-provider surface is ported. Port `accounts/oidc.py` flows + `services.sign_in_with_oidc/connect_oidc`. |
 | G7 | `POST /api/v1/stock/videos/import/` (and the live branch of `GET /stock/videos/`) | `video_stock.import_video`: resolve via the provider API, download with host checks, probe, convert, insert the asset | Video family (G15). The no-config payloads and serializer bounds are ported. |
 | G8 | `POST /api/v1/exports/optimize/` with an off-site optimizer | `optimizers/{tinypng,kraken,custom}.shrink` (HTTP contract, offsite charging) | Needs the optimizer HTTP transport (`optimizers/http.py`) + rate charge. The built-in optimizer is implemented in process (D22), so `optimize: true` works today. |
 | G9 | `POST /api/v1/ai/providers/{id}/test/`, `/load-models/` | `services.test_provider` (sample picture call, preview, AICall log), `catalog.list_remote_models` | Same provider transport as the AI family's run path, plus the sample image and the remote catalogue mapping. Row lookups are ported. |
@@ -80,6 +78,7 @@ which upstream function is missing — never a silent wrong answer.
 | G24 | Scenario coverage | 109 of 338 PORT_MAP rows are covered by ≥1 scenario (85 reviewed-but-uncovered). Weakest: `mcp` 0/21, `ops` 10/34, `elements` 3/24 — see the AGENTS.md table (`pnpm coverage`). |
 | G25 | `ledger/test-mapping` dispositions | Pending/partial entries remain for mcp, ops, elements, gallery, design-doc and the 0.2.0 files (video, optimizers, OIDC, my-sizes). Each needs evidence or a named missing case. |
 | G26 | PORT_MAP staleness | Some cells lag the code (e.g. `exports/optimizers/builtin.py` is implemented in process per D22 but still says "shrink pending"). Rule: whoever touches an upstream file updates its row in the same commit. |
+| G32 | SSO paired-scenario coverage | OIDC and Google sign-in now have Go integration tests (`doory/oidc_sso_test.go`), but no paired oracle scenario yet. Wiring one needs a fake provider (discovery/JWKS/token/userinfo) and a trusted TLS endpoint the Django oracle can reach; until then the SSO rows are review/test-covered, not scenario-covered. |
 
 ## F. Admin program (D2 — owner-approved 2026-10-26)
 
@@ -97,4 +96,6 @@ which upstream function is missing — never a silent wrong answer.
 |---|---|---|
 | — | 0.2.0 routes the rebuilt frontend called: `size-presets/mine`, `auth/oidc/{start,callback,connection}` (no-provider surface), `stock/videos{,/providers,/import}`, `designs/{id}/{fields,thumbnail}`, `designs/bulk`, `exports/optimize`, `auth/password/reset{,/confirm}`, `auth/email/{verify,resend}` | `2892176`, `dc77682` |
 | — | Starter content + fonts embedded and installed by `entrypoint` (D19); in-process built-in optimizer (D22) | `dc77682` |
+| G3 | `POST /api/v1/auth/google/` — Google ID-token verification and link/create | this change |
+| G6 | OIDC provider flows (start/callback/connect, discovery, PKCE, JWKS, ID-token verification) | this change |
 | — | Clone-build without parity tooling; `:8111` default; `scripts/install-systemd.sh` (`~/.doory`) | `5a22cd7` |
