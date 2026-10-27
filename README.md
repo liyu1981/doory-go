@@ -71,19 +71,25 @@ data in `~/.doory/data`, the configuration in `~/.config/doory/.env` and the
 logs in `~/.doory/logs/doory.log`, serving on `:8111`:
 
 ```bash
-./scripts/install-systemd.sh                # build, install, enable and start
-./scripts/install-systemd.sh --no-build     # reuse dist/doory
-./scripts/install-systemd.sh --port 9000    # another address
-./scripts/install-systemd.sh --uninstall    # stop and remove the unit, keep state + config
+# The installation logic is in the binary:
+dist/doory install-service              # install, enable and start
+dist/doory install-service --port 9000  # another address
+dist/doory install-service --uninstall  # stop and remove the unit, keep state + config
+
+# Convenience wrapper (builds dist/doory first):
+./scripts/install-systemd.sh
+./scripts/install-systemd.sh --no-build
+
 loginctl enable-linger "$USER"              # optional: keep running after logout
 systemctl --user status doory.service       # state
 tail -f ~/.doory/logs/doory.log             # output (entrypoint + serving)
 ```
 
-Upgrade = copy a new binary over `~/.local/bin/doory` and
+Upgrade = run the new binary's `install-service` again (it copies itself over
+`~/.local/bin/doory` and restarts the unit) or copy it manually and
 `systemctl --user restart doory.service`; the data directory is migrated on
-start by `entrypoint`. The installer writes/upgrades `~/.config/doory/.env`
-and migrates an old `~/.doory/doory.env` once.
+start by `entrypoint`. `install-service` writes/upgrades
+`~/.config/doory/.env` and migrates an old `~/.doory/doory.env` once.
 
 ## Commands
 

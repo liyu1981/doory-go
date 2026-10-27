@@ -55,7 +55,7 @@ can run before the first start.
 
 | Deployment | How |
 |---|---|
-| user service (`scripts/install-systemd.sh`) | The installer writes/upgrades `~/.config/doory/.env` and lets the binary read it directly; an old `~/.doory/doory.env` is migrated once. |
+| user service (`doory install-service`) | The binary writes/upgrades `~/.config/doory/.env` and reads it directly; an old `~/.doory/doory.env` is migrated once. `scripts/install-systemd.sh` is the build-and-delegate wrapper. |
 | systemd (system-wide) | `doory config init /etc/doory` or copy `.env.example` to `/etc/doory/.env`; keep `EnvironmentFile=/etc/doory/doory.env` or rely on the default `~/.config` path of the service user. |
 | container / supervisor | Pass the variables directly (`-e KEY=val`, `Environment=…`) or mount a file and use `--env-file`. |
 | local dev / manual | `doory config init` then `doory --env-file .env serve :8111`; move the file to `~/.config/doory/.env` to load it without the flag. Shell `export` still works. |

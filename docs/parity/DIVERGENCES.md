@@ -302,7 +302,8 @@ Rules (PiG §6):
   of parity. Test infrastructure (a local Postgres container for the dialect
   lane) is test tooling and not affected by this record.
 - evidence: PLAN.md §5 #14 and §8 M14, the M14 log, README "Deploying it (no
-  containers)", `deploy/doory.service`, `.env.example`.
+  containers)", `deploy/doory.service`, `doory/install_service.go`
+  (`doory install-service`), `scripts/install-systemd.sh`, `.env.example`.
 
 ## D19 — the binary installs its embedded content on the first start
 

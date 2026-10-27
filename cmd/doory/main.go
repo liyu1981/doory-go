@@ -9,6 +9,7 @@
 //	healthcheck           container probe (HEALTH_PORT/HEALTH_PATH, exit 0 on 200)
 //	migrate               apply the embedded schema for the DATABASE_URL dialect (D4)
 //	config                generate/upgrade the optional .env file (init, upgrade)
+//	install-service       install the systemd user unit (also --uninstall)
 //	version               print the port version and its upstream pin
 //	help                  list the management commands
 //
@@ -70,6 +71,8 @@ func main() {
 		fmt.Printf("doory-go %s (upstream %s)\n", dooryversion.Version, dooryversion.UpstreamCommit)
 	case "config":
 		os.Exit(doory.RunConfigCommand(args, os.Stdout, os.Stderr))
+	case "install-service":
+		os.Exit(doory.RunInstallServiceCommand(args, os.Stdout, os.Stderr))
 	case "migrate":
 		if err := doory.MigrateFromEnv(); err != nil {
 			fmt.Fprintln(os.Stderr, "migrate:", err)
@@ -202,7 +205,7 @@ func takeGlobalFlags(argv []string) ([]string, globalOptions, error) {
 // `doory config` and `doory version` work even with a broken user env file.
 func loadEnvForCommand(cmd string, opts globalOptions) error {
 	switch cmd {
-	case "version", "config":
+	case "version", "config", "install-service":
 		return nil
 	}
 	if opts.noEnvFile {

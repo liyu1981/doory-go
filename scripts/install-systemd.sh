@@ -1,22 +1,19 @@
 #!/usr/bin/env bash
-# Install Doory as a systemd USER service with its state under ~/.doory.
+# Build (if needed) and install Doory as a systemd USER service.
 #
-#   ./scripts/install-systemd.sh                 # build (if needed) + install + enable + start
+#   ./scripts/install-systemd.sh                 # build, then install + enable + start
 #   ./scripts/install-systemd.sh --no-build      # use dist/doory as it is
 #   ./scripts/install-systemd.sh --port 8111     # listen address (default 8111)
-#   ./scripts/install-systemd.sh --uninstall     # stop, disable and remove the unit (keeps state + config)
+#   ./scripts/install-systemd.sh --uninstall     # stop, disable and remove the unit
 #
-# Nothing here needs root: the binary goes to ~/.local/bin, the unit to
-# ~/.config/systemd/user, the configuration to ~/.config/doory/.env and the
-# state to ~/.doory:
-#   ~/.config/doory/.env  configuration, read by the binary (DJANGO_SECRET_KEY, SITE_URL, ...)
-#   ~/.doory/data         SQLite database, media/, exports/   (DOORY_DATA_DIR)
-#   ~/.doory/logs         doory.log (stdout+stderr of the service)
-# An old ~/.doory/doory.env is migrated to ~/.config/doory/.env once.
+# The installation itself lives in the binary now:
 #
-# The service is a *user* unit: it runs as you, with your files. For it to
-# keep running after you log out, allow lingering once:
-#   loginctl enable-linger "$USER"
+#   dist/doory install-service [--port PORT] [--uninstall]
+#
+# It installs the binary to ~/.local/bin/doory, writes/upgrades
+# ~/.config/doory/.env (migrating an old ~/.doory/doory.env once), writes the
+# unit to ~/.config/systemd/user/doory.service and keeps state in ~/.doory.
+# This script is only the build-and-delegate wrapper.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
@@ -25,13 +22,7 @@ cd "$REPO"
 PORT="8111"
 BUILD=1
 UNINSTALL=0
-UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
-UNIT="$UNIT_DIR/doory.service"
-BIN_DIR="$HOME/.local/bin"
-HOME_DIR="$HOME/.doory"
-CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/doory"
-CONFIG_FILE="$CONFIG_DIR/.env"
-LEGACY_ENV="$HOME_DIR/doory.env"
+BIN="$REPO/dist/doory"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -39,7 +30,7 @@ while [ $# -gt 0 ]; do
     --uninstall) UNINSTALL=1; shift ;;
     --port) PORT="${2:-}"; shift 2 ;;
     --port=*) PORT="${1#--port=}"; shift ;;
-    -h|--help) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "install-systemd: unknown argument: $1 (see --help)" >&2; exit 2 ;;
   esac
 done
@@ -48,93 +39,21 @@ case "$PORT" in
 esac
 
 if [ "$UNINSTALL" = "1" ]; then
-  systemctl --user disable --now doory.service 2>/dev/null || true
-  rm -f "$UNIT"
-  systemctl --user daemon-reload 2>/dev/null || true
-  echo "install-systemd: unit removed (state in $HOME_DIR and config in $CONFIG_DIR are untouched)"
-  exit 0
+  if [ -x "$BIN" ]; then
+    exec "$BIN" install-service --uninstall
+  fi
+  if [ -x "$HOME/.local/bin/doory" ]; then
+    exec "$HOME/.local/bin/doory" install-service --uninstall
+  fi
+  echo "install-systemd: no doory binary found (neither $BIN nor ~/.local/bin/doory)" >&2
+  exit 1
 fi
 
-# ---- 1. The binary ----------------------------------------------------------------------------
 if [ "$BUILD" = "1" ]; then
   ./scripts/build.sh
 fi
-if [ ! -x "$REPO/dist/doory" ]; then
-  echo "install-systemd: dist/doory not found — run ./scripts/build.sh (or pnpm build) first" >&2
+if [ ! -x "$BIN" ]; then
+  echo "install-systemd: $BIN not found — run ./scripts/build.sh (or pnpm build) first" >&2
   exit 1
 fi
-install -d "$BIN_DIR"
-install -m 0755 "$REPO/dist/doory" "$BIN_DIR/doory"
-
-# ---- 2. State, logs and configuration ---------------------------------------------------------
-install -d "$HOME_DIR" "$HOME_DIR/data" "$HOME_DIR/logs" "$CONFIG_DIR"
-if [ ! -f "$CONFIG_FILE" ]; then
-  if [ -f "$LEGACY_ENV" ]; then
-    # Keep an existing install's values; the upgrade below adds the newer keys.
-    install -m 0600 "$LEGACY_ENV" "$CONFIG_FILE"
-    echo "install-systemd: migrated $LEGACY_ENV -> $CONFIG_FILE"
-  else
-    # The complete, documented template from the binary itself.
-    "$BIN_DIR/doory" --no-env-file config init "$CONFIG_DIR" >/dev/null
-  fi
-fi
-# Bring the file up to the current template version without losing configured
-# values. A failure leaves the service on the file it already has.
-if ! "$BIN_DIR/doory" --no-env-file config upgrade "$CONFIG_FILE" >/dev/null; then
-  echo "install-systemd: warning: could not upgrade $CONFIG_FILE; leaving it unchanged" >&2
-fi
-# The template's localhost SITE_URL carries the sample :8080 port. Match the
-# port this unit actually listens on unless the operator set another value.
-if [ "$PORT" != "8080" ] && grep -qx 'SITE_URL=http://localhost:8080' "$CONFIG_FILE"; then
-  sed -i "s#^SITE_URL=http://localhost:8080\$#SITE_URL=http://localhost:$PORT#" "$CONFIG_FILE"
-fi
-chmod 600 "$CONFIG_FILE"
-
-# ---- 3. The unit ------------------------------------------------------------------------------
-install -d "$UNIT_DIR"
-cat > "$UNIT" <<EOF
-# Generated by scripts/install-systemd.sh — re-run it instead of editing.
-[Unit]
-Description=Doory (single binary: API, realtime co-editing, MCP, frontend)
-Documentation=https://github.com/shaongitbd/doory
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-# A user unit already runs as you; the binary and all state live under \$HOME.
-WorkingDirectory=%h/.doory
-Environment=DOORY_DATA_DIR=%h/.doory/data
-Environment=HEALTH_PORT=$PORT
-# Configuration is read by the binary from ~/.config/doory/.env (D23); keep
-# Environment= overrides above when a value must not be changed by that file.
-# entrypoint: migrate, install the embedded content (templates, fonts, elements,
-# audio) and then serve. Logs go to %h/.doory/logs/doory.log (rotated by the
-# journal-less user unit: see logrotate note in the README).
-ExecStart=%h/.local/bin/doory entrypoint :$PORT
-StandardOutput=append:%h/.doory/logs/doory.log
-StandardError=append:%h/.doory/logs/doory.log
-Restart=on-failure
-RestartSec=2s
-# Server-side PDF/image export spawns Chromium: it needs either its sandbox or
-# EXPORT_CHROMIUM_NO_SANDBOX=true. No hardening directives that block that.
-
-[Install]
-WantedBy=default.target
-EOF
-
-systemctl --user daemon-reload
-systemctl --user enable --now doory.service
-
-sleep 1
-echo "install-systemd: installed and started"
-echo "  binary:  $BIN_DIR/doory"
-echo "  unit:    $UNIT"
-echo "  config:  $CONFIG_FILE"
-echo "  data:    $HOME_DIR/data"
-echo "  logs:    $HOME_DIR/logs/doory.log"
-echo "  url:     http://localhost:$PORT"
-echo
-echo "  status:  systemctl --user status doory.service"
-echo "  logs:    tail -f $HOME_DIR/logs/doory.log"
-echo "  stay up after logout:  loginctl enable-linger $USER"
+exec "$BIN" install-service --port "$PORT"
