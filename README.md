@@ -67,14 +67,14 @@ scenario pairs, drift gates); none of them runs during a release build.
 ### Installing it as a user service (`~/.doory`)
 
 No root needed: a systemd **user** unit keeps the binary in `~/.local/bin`, the
-data in `~/.doory/data`, the environment file in `~/.doory/doory.env` and the
+data in `~/.doory/data`, the configuration in `~/.config/doory/.env` and the
 logs in `~/.doory/logs/doory.log`, serving on `:8111`:
 
 ```bash
 ./scripts/install-systemd.sh                # build, install, enable and start
 ./scripts/install-systemd.sh --no-build     # reuse dist/doory
 ./scripts/install-systemd.sh --port 9000    # another address
-./scripts/install-systemd.sh --uninstall    # stop and remove the unit, keep ~/.doory
+./scripts/install-systemd.sh --uninstall    # stop and remove the unit, keep state + config
 loginctl enable-linger "$USER"              # optional: keep running after logout
 systemctl --user status doory.service       # state
 tail -f ~/.doory/logs/doory.log             # output (entrypoint + serving)
@@ -82,7 +82,8 @@ tail -f ~/.doory/logs/doory.log             # output (entrypoint + serving)
 
 Upgrade = copy a new binary over `~/.local/bin/doory` and
 `systemctl --user restart doory.service`; the data directory is migrated on
-start by `entrypoint`.
+start by `entrypoint`. The installer writes/upgrades `~/.config/doory/.env`
+and migrates an old `~/.doory/doory.env` once.
 
 ## Commands
 
