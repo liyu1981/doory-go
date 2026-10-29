@@ -79,6 +79,7 @@ which upstream function is missing — never a silent wrong answer.
 | G25 | `ledger/test-mapping` dispositions | Pending/partial entries remain for mcp, ops, elements, gallery, design-doc and the 0.2.0 files (video, optimizers, OIDC, my-sizes). Each needs evidence or a named missing case. |
 | G26 | PORT_MAP staleness | Some cells lag the code (e.g. `exports/optimizers/builtin.py` is implemented in process per D22 but still says "shrink pending"). Rule: whoever touches an upstream file updates its row in the same commit. |
 | G32 | SSO paired-scenario coverage | OIDC and Google sign-in now have Go integration tests (`doory/oidc_sso_test.go`), but no paired oracle scenario yet. Wiring one needs a fake provider (discovery/JWKS/token/userinfo) and a trusted TLS endpoint the Django oracle can reach; until then the SSO rows are review/test-covered, not scenario-covered. |
+| G33 | WASM codec output parity | The built-in optimizer now runs official cjpeg 4.1.5 / oxipng 10.2.1 WASI CLIs as child processes, but no fixture compares their optimized bytes with the native oracle tools. Add native-vs-WASI output fixtures (and decide whether `WITH_SIMD=0` is acceptable) before claiming byte parity. |
 
 ## F. Admin program (D2 — owner-approved 2026-10-26)
 

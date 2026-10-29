@@ -313,7 +313,7 @@ behavioral verification).
 | upstream | go | status |
 |---|---|---|
 | `backend/apps/exports/apps.py` |  | ⬜ |
-| `backend/apps/exports/checks.py` | doory/checks.go (IMAGE_OPTIMIZERS W001-W005, printed before every management command) | ✅ |
+| `backend/apps/exports/checks.py` | doory/checks.go (IMAGE_OPTIMIZERS W001, W003-W005; W002 is omitted because the built-in codecs are embedded, D22) | ✅ |
 | `backend/apps/exports/chromium_worker.py` | internal/renderworker + internal/chromium (CDP driver over the same system chromium; substitution recorded) | 🟡 |
 | `backend/apps/exports/delivery.py` | doory/delivery.go (Django-signing port, store/purge/open) | ✅ |
 | `backend/apps/exports/exceptions.py` | doory/exports.go + doory/render.go (all export codes+messages) | ✅ |
@@ -336,8 +336,8 @@ behavioral verification).
 
 | upstream | go | status |
 |---|---|---|
-| `backend/apps/exports/optimizers/base.py` |  | ⬜ |
-| `backend/apps/exports/optimizers/builtin.py` | doory/optimizer.go + doory/checks.go (in-process JPEG re-encode and PNG recompression; /config/ always lists builtin; upstream W002 binary check is deliberately omitted, D22) | ✅ |
+| `backend/apps/exports/optimizers/base.py` | doory/optimizer.go + doory/exports_optimize.go (optimizer selection, max-bytes skip, same-format/size guard, per-file timeout; warning/log wording partial) | 🟡 |
+| `backend/apps/exports/optimizers/builtin.py` | doory/optimizer.go + internal/wasmcodec (official cjpeg 4.1.5 / oxipng 10.2.1 WASI CLIs run as child processes under wazero; /config/ always lists builtin; upstream W002 binary check omitted, D22) | ✅ |
 | `backend/apps/exports/optimizers/custom.py` | doory/checks.go (url_problem/key_problem only (W003/W005 + /config/); shrink pending) | 🟡 |
 | `backend/apps/exports/optimizers/http.py` |  | ⬜ |
 | `backend/apps/exports/optimizers/kraken.py` | doory/checks.go (ready() only (/config/); shrink pending) | 🟡 |

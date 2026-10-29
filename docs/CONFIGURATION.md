@@ -150,9 +150,13 @@ Requires Chromium on the host:
 ## Image optimizers (optional)
 
 - `IMAGE_OPTIMIZERS` (default `builtin`), `IMAGE_OPTIMIZER_DEFAULT`
+- The built-in optimizer embeds the official cjpeg 4.1.5 and oxipng 10.2.1
+  CLIs (WASI) and runs them as child processes; no host binaries are needed.
+- `IMAGE_OPTIMIZER_TIMEOUT` (seconds per file, default 30)
+- `IMAGE_OPTIMIZER_MAX_BYTES` (default 25 MiB)
 - `TINYPNG_API_KEY`, `KRAKEN_API_KEY`, `KRAKEN_API_SECRET`
 - `IMAGE_OPTIMIZER_CUSTOM_NAME`, `IMAGE_OPTIMIZER_CUSTOM_URL`,
-  `IMAGE_OPTIMIZER_CUSTOM_KEY`, `IMAGE_OPTIMIZER_MAX_BYTES`
+  `IMAGE_OPTIMIZER_CUSTOM_KEY`
 
 ## AI providers (optional)
 

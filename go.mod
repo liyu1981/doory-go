@@ -11,6 +11,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/jackc/pgx/v5 v5.11.0
+	github.com/tetratelabs/wazero v1.12.0
 	golang.org/x/image v0.47.0
 	golang.org/x/term v0.45.0
 	golang.org/x/text v0.43.0

@@ -10,6 +10,8 @@
 //	migrate               apply the embedded schema for the DATABASE_URL dialect (D4)
 //	config                generate/upgrade the optional .env file (init, upgrade)
 //	install-service       install the systemd user unit (also --uninstall)
+//	mozjpeg               internal cjpeg worker (embedded WASI; used by the optimizer)
+//	oxipng                internal oxipng worker (embedded WASI; used by the optimizer)
 //	version               print the port version and its upstream pin
 //	help                  list the management commands
 //
@@ -19,6 +21,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -29,6 +32,7 @@ import (
 	"doory-go/internal/dooryversion"
 	"doory-go/internal/envconfig"
 	"doory-go/internal/renderworker"
+	"doory-go/internal/wasmcodec"
 )
 
 func main() {
@@ -73,6 +77,12 @@ func main() {
 		os.Exit(doory.RunConfigCommand(args, os.Stdout, os.Stderr))
 	case "install-service":
 		os.Exit(doory.RunInstallServiceCommand(args, os.Stdout, os.Stderr))
+	case "mozjpeg":
+		// Hidden codec worker: the built-in optimizer runs this same binary
+		// as the upstream cjpeg process, backed by the embedded WASI module.
+		os.Exit(wasmcodec.RunCjpeg(context.Background(), args, "", os.Stdout, os.Stderr))
+	case "oxipng":
+		os.Exit(wasmcodec.RunOxipng(context.Background(), args, "", os.Stdout, os.Stderr))
 	case "migrate":
 		if err := doory.MigrateFromEnv(); err != nil {
 			fmt.Fprintln(os.Stderr, "migrate:", err)
@@ -205,7 +215,7 @@ func takeGlobalFlags(argv []string) ([]string, globalOptions, error) {
 // `doory config` and `doory version` work even with a broken user env file.
 func loadEnvForCommand(cmd string, opts globalOptions) error {
 	switch cmd {
-	case "version", "config", "install-service":
+	case "version", "config", "install-service", "mozjpeg", "oxipng":
 		return nil
 	}
 	if opts.noEnvFile {

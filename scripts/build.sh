@@ -66,7 +66,7 @@ fi
 # The frontend bundle and the content fixtures are what make the binary
 # self-contained; a partial checkout (sparse/submodule-less) is the only way
 # they can be missing.
-for asset in doory/webapp/index.html doory/data/element_packs.json doory/data/size_presets.json doory/data/fonts; do
+for asset in doory/webapp/index.html doory/data/element_packs.json doory/data/size_presets.json doory/data/fonts internal/wasmcodec/cjpeg-4.1.5.wasm internal/wasmcodec/oxipng-10.2.1.wasm; do
   if [ ! -e "$asset" ]; then
     echo "build: missing embedded asset $asset — this looks like a partial checkout; re-clone the repository" >&2
     exit 1

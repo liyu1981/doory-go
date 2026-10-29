@@ -367,35 +367,35 @@ Rules (PiG §6):
 - evidence: `doory/checks.go` (imageOptimizeConfig, imageFormats),
   `doory/exports_optimize.go`, test/parity/scenarios/kernel/01-kernel-http.toml.
 
-## D22 — the built-in optimizer runs in process (no cjpeg/oxipng binaries)
+## D22 — the built-in optimizer runs the upstream CLIs from embedded WASI
 
 - SCRUTINIZED: pending (owner-visible: `optimize` works without external tools)
 - status: active
-- summary: upstream's built-in optimizer shells out to mozjpeg's `cjpeg` and
-  `oxipng`; where they are missing it reports "left out" (`exports.W002`) and
-  `/config/` omits `builtin`. The port implements the same contract in
-  process: JPG re-encoded with the standard library at the requested quality
-  (kept only when smaller; above quality 90 the converted file stands, as
-  upstream does), PNG recompressed losslessly by re-deflating its scanlines at
-  the highest level (`doory/optimizer.go`; the pure-Go Zopfli port writes a
-  broken zlib stream, so the standard library does it — sizes differ from
-  oxipng's, which is what the structural rule already covers). So `builtin` is
-  always ready: `/config/` lists it (`formats: [jpg, png]`,
-  `default: "builtin"`) and `POST /exports/optimize/` really optimizes where
-  the oracle on the same host would answer "no optimizer". Because the port
-  needs neither binary, it also drops upstream's `exports.W002` system-check
-  warning ("can't find mozjpeg (cjpeg) and oxipng"); that check output is a
-  recorded difference here. The kernel scenario excludes the two
-  `image_optimize` optimizers/default fields with a recorded
-  `ignore_json_paths`. The off-site optimizers (TinyPNG/Kraken/custom) keep
-  their HTTP contract pending and refuse loudly.
-- remove-when: the port ships native cjpeg/oxipng (or upstream makes the
-  built-in optimizer pure-Python), and the config/check wording can follow the
-  binaries again; then drop the scenario's `ignore_json_paths` and restore the
-  upstream warning if applicable.
-- evidence: `doory/optimizer.go`, `doory/checks.go` (imageOptimizeConfig),
-  `doory/exports_optimize.go`, test/parity/scenarios/kernel/01-kernel-http.toml,
-  test/parity/scenarios/exports/13-exports.toml.
+- summary: upstream's built-in optimizer shells out to native `cjpeg`
+  (mozjpeg 4.1.5) and `oxipng` (10.2.1). The port keeps the same process
+  model, but the executables are the official CLIs compiled to
+  `wasm32-wasip1` and embedded in the binary. `doory mozjpeg` and
+  `doory oxipng` are hidden workers that run those modules under wazero/WASI;
+  the optimizer starts its own binary as a child, uses a temporary work
+  directory, passes the same arguments (`-quality`/`-baseline`/`-outfile`,
+  `-q -o 2 -t 2 --strip safe --out`) and enforces
+  `IMAGE_OPTIMIZER_TIMEOUT`. No native `cjpeg`/`oxipng` installation is
+  needed, and the release build needs no Rust/wasi-sdk toolchain because the
+  `.wasm` files are committed (see `internal/wasmcodec/BUILD.md`).
+  `/config/` always advertises `builtin`; because the binaries are embedded,
+  upstream's `exports.W002` (“can't find cjpeg/oxipng”) is intentionally not
+  emitted. A Go re-encode is kept only as a fallback when the self-invoked
+  worker cannot start (for example inside the Go test binary).
+- remove-when: upstream stops using these tools, or native binaries become an
+  acceptable runtime dependency again, or the WASI builds cannot be kept
+  close enough to the native output to justify the substitution. Rebuild from
+  the pinned versions and compare output before changing this record. Byte
+  parity against the native upstream binaries is still a verification item:
+  the cjpeg WASI build uses `WITH_SIMD=0`, and the existing image comparators
+  stay structural until a native-vs-WASI fixture proves otherwise.
+- evidence: `doory/optimizer.go`, `internal/wasmcodec` (embedded CLI modules,
+  BUILD.md, checksums), `doory/app.go`/`cmd/doory/main.go` (workers),
+  `.env.example` (`IMAGE_OPTIMIZER_TIMEOUT`), D18.
 
 ## D23 — the binary reads an optional .env file
 

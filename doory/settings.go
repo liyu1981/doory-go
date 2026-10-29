@@ -93,6 +93,7 @@ type Settings struct {
 	ImageOptimizerCustomName string   // IMAGE_OPTIMIZER_CUSTOM_NAME (default "Custom")
 	ImageOptimizerCustomURL  string   // IMAGE_OPTIMIZER_CUSTOM_URL (default "")
 	ImageOptimizerCustomKey  string   // IMAGE_OPTIMIZER_CUSTOM_KEY (default "")
+	ImageOptimizerTimeout    int      // IMAGE_OPTIMIZER_TIMEOUT (seconds per file, default 30)
 	ImageOptimizerMaxBytes   int      // IMAGE_OPTIMIZER_MAX_BYTES (default 25 MiB)
 	McpExportURLTTLSeconds   int      // MCP_EXPORT_URL_TTL_SECONDS (default 600)
 	McpCallsPerMinute        int      // MCP_CALLS_PER_MINUTE (default 120; 0 = unlimited)
@@ -228,6 +229,7 @@ func FromEnv() *Settings {
 		ImageOptimizerCustomName:    envStr("IMAGE_OPTIMIZER_CUSTOM_NAME", "Custom"),
 		ImageOptimizerCustomURL:     envStr("IMAGE_OPTIMIZER_CUSTOM_URL", ""),
 		ImageOptimizerCustomKey:     envStr("IMAGE_OPTIMIZER_CUSTOM_KEY", ""),
+		ImageOptimizerTimeout:       envInt("IMAGE_OPTIMIZER_TIMEOUT", 30),
 		ImageOptimizerMaxBytes:      envInt("IMAGE_OPTIMIZER_MAX_BYTES", 25*1024*1024),
 		McpExportURLTTLSeconds:      envInt("MCP_EXPORT_URL_TTL_SECONDS", 600),
 		McpCallsPerMinute:           envInt("MCP_CALLS_PER_MINUTE", 120),

@@ -336,9 +336,8 @@ func (a *App) imageOptimizeConfig() configImageOptimize {
 	for _, name := range s.optimizerListed() {
 		switch name {
 		case "builtin":
-			// The port's built-in optimizer runs in process (Go JPEG
-			// re-encode + Zopfli PNG recompression), so it is always ready
-			// and needs no cjpeg/oxipng binaries (D22).
+			// The embedded cjpeg/oxipng WASI workers are always available,
+			// so builtin needs no external binaries (D22).
 			available = append(available, configImageOptimizer{
 				ID: "builtin", Name: "Built-in", Formats: optimizerBuiltinFormats,
 			})

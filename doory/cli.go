@@ -166,6 +166,8 @@ func PrintCLIHelp(w io.Writer) {
 	fmt.Fprintln(w, "    healthcheck   probe /api/v1/health/ (HEALTH_PORT, HEALTH_PATH); exit 0 on 200")
 	fmt.Fprintln(w, "    config        generate/upgrade the optional .env file (init, upgrade)")
 	fmt.Fprintln(w, "    install-service  install the systemd user unit (--port, --uninstall)")
+	fmt.Fprintln(w, "    mozjpeg       internal cjpeg worker (WASI; used by the built-in optimizer)")
+	fmt.Fprintln(w, "    oxipng        internal oxipng worker (WASI; used by the built-in optimizer)")
 	fmt.Fprintln(w, "    version       print the port version and its upstream pin")
 	fmt.Fprintln(w, "    help          this text (also `doory help <command>`)")
 	fmt.Fprintln(w)

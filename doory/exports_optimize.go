@@ -331,9 +331,9 @@ func (a *App) optimizeImage(png []byte, request optimizeRequest) (optimizedImage
 	best.width, best.height = width, height
 	best.bytesBefore = len(best.data)
 	if optimizer == "builtin" {
-		// The in-process built-in optimizer (D22): never larger, and the
-		// headers say whether its file was kept.
-		shrunk, applied := shrinkBuiltin(best.data, best.format, best.quality, img, request.Progressive)
+		// The built-in optimizer (D22, embedded WASI cjpeg/oxipng): never
+		// larger, and the headers say whether its file was kept.
+		shrunk, applied := a.optimizeBuiltin(best.data, best.format, best.quality, img, request)
 		if applied {
 			best.data = shrunk
 			best.optimized = true
