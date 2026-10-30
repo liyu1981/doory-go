@@ -378,10 +378,10 @@ behavioral verification).
 | `backend/apps/gallery/migrations/` |  | ⬜ |
 | `backend/apps/gallery/models.py` | doory/gallery.go (row reads + orientation derivation); apply_document pending with import_template | 🟡 |
 | `backend/apps/gallery/serializers.py` | doory/gallery.go (category/summary/detail envelopes) | 🟡 |
-| `backend/apps/gallery/services.py` |  | ⬜ |
+| `backend/apps/gallery/services.py` | doory/gallery.go (create-from-template copy/use-count/thumbnail copy; slug/thumbnail/duplicate helpers still pending) | 🟡 |
 | `backend/apps/gallery/signals.py` |  | ⬜ |
 | `backend/apps/gallery/sitemap.py` | doory/gallery.go (exact bytes, SITE_URL base, published-template loop) | ✅ |
-| `backend/apps/gallery/tests/` |  | ⬜ |
+| `backend/apps/gallery/tests/` | doory/gallery_use_test.go (create-from-template/use-count/not-found); remaining gallery cases pending | 🟡 |
 | `backend/apps/gallery/urls.py` |  | ⬜ |
 | `backend/apps/gallery/validators.py` |  | ⬜ |
 | `backend/apps/gallery/views.py` | doory/gallery.go (categories/list/detail/use + TemplateFilter) | 🟡 |

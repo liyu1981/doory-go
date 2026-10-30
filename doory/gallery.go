@@ -8,14 +8,16 @@
 //
 // Catalog CONTENT comes from `manage.py seed_templates` (ops family): a
 // fresh install serves empty lists — asserted by parity:designs/08-catalog.
-// Template creation from a template (`use` on a seeded row, create_from_
-// template) stays pending with content seeding; the not-found path is
-// probe-proven (probes/0005 step09: "Template not found.").
+// `use` copies a seeded template into a new design, increments its use count
+// and copies its thumbnail; the not-found path is probe-proven (probes/0005
+// step09: "Template not found.").
 package doory
 
 import (
 	"database/sql"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -322,22 +324,70 @@ func (a *App) templateDetail(w http.ResponseWriter, r *http.Request) {
 // Creating FROM a seeded template (create_from_template happy path) stays
 // pending with content seeding (PORT_MAP note).
 func (a *App) templateUse(w http.ResponseWriter, r *http.Request) {
+	u := currentUser(r)
 	slug := routeParam(r, "slug")
-	var exists int
-	if err := a.DB.QueryRow(
-		`SELECT COUNT(*) FROM gallery_template WHERE slug = ? AND is_published = TRUE`,
-		slug).Scan(&exists); err != nil {
+	var templateID, title, preset, document, thumbnail string
+	err := a.DB.QueryRow(`SELECT id, title, preset, document, thumbnail FROM gallery_template
+		WHERE slug = ? AND is_published = TRUE`, slug).
+		Scan(&templateID, &title, &preset, &document, &thumbnail)
+	if err == sql.ErrNoRows {
+		writeDRF(w, http.StatusNotFound, "not_found", "Template not found.")
+		return
+	}
+	if err != nil {
 		logerr(err, "templateUse")
 		writeDRF(w, http.StatusInternalServerError, "server_error", "Something went wrong on our side.")
 		return
 	}
-	if exists == 0 {
-		writeDRF(w, http.StatusNotFound, "not_found", "Template not found.")
+	parsed, err := parseJSONValue([]byte(document))
+	if err != nil {
+		writeDRF(w, http.StatusInternalServerError, "server_error", "Something went wrong on our side.")
 		return
 	}
-	// Seeded-template creation: pending with content seeding (gallery ops).
-	writeDRF(w, http.StatusInternalServerError, "server_error",
-		"route registered but not ported: gallery.create_from_template (content seeding pending)")
+	if verr := validateDocument(parsed, maxDesignDocumentBytes); verr != nil {
+		writeDRF(w, verr.Status, verr.Code, verr.Message)
+		return
+	}
+	doc, _ := parsed.(map[string]any)
+	info, _ := describeDocument(doc)
+	if preset != "" && info.Preset == "" {
+		meta, _ := doc["meta"].(map[string]any)
+		if meta == nil {
+			meta = map[string]any{}
+		}
+		meta["presetId"] = preset
+		doc["meta"] = meta
+		parsed, _ = parseJSONValue(encodeCompactJSON(doc))
+	}
+	title = truncateRunes(title, 200)
+	raw := pythonStoredJSON(encodeCompactJSON(doc))
+	design, err := a.createDesign(u, title, parsed, raw, nil)
+	if err != nil {
+		if lr, ok := err.(*LimitReachedError); ok {
+			writeDRF(w, http.StatusConflict, "limit_reached", lr.Error())
+		} else {
+			writeDRF(w, http.StatusInternalServerError, "server_error", "Something went wrong on our side.")
+		}
+		return
+	}
+	// The template's picture is the new design's thumbnail until an editor
+	// saves one. Copying it keeps the template row untouched.
+	if thumbnail != "" {
+		src := filepath.Join(a.Settings.MediaRoot, filepath.FromSlash(thumbnail))
+		if _, statErr := os.Stat(src); statErr == nil {
+			name := "designs/" + dashedUUID(u.ID) + "/" + dashedUUID(design.ID) + "-" +
+				strings.ToLower(newUUID4Hex())[:10] + ".webp"
+			dst := filepath.Join(a.Settings.MediaRoot, filepath.FromSlash(name))
+			if mkErr := os.MkdirAll(filepath.Dir(dst), 0o755); mkErr == nil {
+				if copyFile(src, dst) == nil {
+					_, _ = a.DB.Exec(`UPDATE designs_design SET thumbnail = ? WHERE id = ?`, name, design.ID)
+					design.Thumbnail = name
+				}
+			}
+		}
+	}
+	_, _ = a.DB.Exec(`UPDATE gallery_template SET use_count = use_count + 1 WHERE id = ?`, templateID)
+	writeJSON(w, http.StatusCreated, design.full())
 }
 
 // sitemap ports gallery/sitemap.py: the landing/features/FAQ/contact/
