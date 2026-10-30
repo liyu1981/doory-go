@@ -226,7 +226,7 @@ which upstream function is missing — never a silent wrong answer.
 | — | 0.2.0 routes the rebuilt frontend called: `size-presets/mine`, `auth/oidc/{start,callback,connection}` (no-provider surface), `stock/videos{,/providers,/import}`, `designs/{id}/{fields,thumbnail}`, `designs/bulk`, `exports/optimize`, `auth/password/reset{,/confirm}`, `auth/email/{verify,resend}` | `2892176`, `dc77682` |
 | — | Starter content + fonts embedded and installed by `entrypoint` (D19); in-process built-in optimizer (D22) | `dc77682` |
 | G1 | `POST /api/v1/designs/{id}/fill/` — fill template fields as a copy or in place | `d98f9a4` |
-| G27 | Admin kernel and CLI (staff/session/CSRF, index/app/search/autocomplete/jsi18n, never_cache/Vary, admin log/history, bootstrap commands, auth seed) | to be filled |
+| G27 | Admin kernel and CLI (staff/session/CSRF, index/app/search/autocomplete/jsi18n, never_cache/Vary, admin log/history, bootstrap commands, auth seed) | `c4f61f7` |
 | G2 | `POST /api/v1/designs/{id}/bulk-fill/` — one copy per row, row errors, name pattern/folder/export | `5ca20e3` |
 | G4 | `GET /api/v1/schema/`, `GET /api/v1/docs/` — pinned OpenAPI document + staff Swagger UI | `a02fad8` |
 | G5 | `POST /api/v1/templates/{slug}/use/` — create a design from a published template | `48e87a0` |
