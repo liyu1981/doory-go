@@ -246,21 +246,21 @@ behavioral verification).
 | `backend/apps/designs/apps.py` | — | ⬜ |
 | `backend/apps/designs/edits.py` | (pending: fill/fields actions) | ⬜ |
 | `backend/apps/designs/exceptions.py` | doory/document.go + doory/designs_views.go (invalid_document/inline_asset/document_too_large/design_trashed/not_in_trash codes + revision_conflict 409 body) | ✅ |
-| `backend/apps/designs/fill.py` |  | ⬜ |
+| `backend/apps/designs/fill.py` | doory/design_fill.go (fill_design: field values -> update_object/replace_image, all-or-nothing, copy/in-place, one-fill lock, version before edit; URL images remain G14) | 🟡 |
 | `backend/apps/designs/folder_views.py` | doory/folders.go (list/create/detail/patch/delete + design_count annotation) | 🟡 |
 | `backend/apps/designs/folders.py` | doory/folders.go (depth/cycle/unique/reparent rules); pending: LimitReached 409 at500 folders | 🟡 |
 | `backend/apps/designs/management/` | doory/commands_seed.go + doory/designs_purge.go (purge_trash --days; full cascade delete + thumbnail files) | ✅ |
 | `backend/apps/designs/migrations/` | (schema: generated from oracle, digest-proven) | ✅ |
 | `backend/apps/designs/models.py` | doory/designs.go + doory/designs_versions.go + doory/folders.go (row ops, Meta ordering, thumbnail paths pending with assets) | 🟡 |
 | `backend/apps/designs/parsers.py` | doory/views_auth.go jsonBody (bounded); pending: DesignJSONParser media-type edge probes | 🟡 |
-| `backend/apps/designs/serializers.py` | doory/designs.go + doory/folders.go + doory/designs_versions.go (title/query/create/update/bulk pending, version+folder shapes) ; clean_text via doory/apitokens.go | 🟡 |
+| `backend/apps/designs/serializers.py` | doory/designs.go + doory/folders.go + doory/designs_versions.go + doory/design_fill.go (FillSerializer validation; title/query/create/update/bulk pending, version+folder shapes); clean_text via doory/apitokens.go | 🟡 |
 | `backend/apps/designs/services.py` | doory/designs.go + designs_views.go + designs_actions.go (create/update/trash/restore/duplicate/versions, bulk_apply, set_thumbnail, purge); filling.create_from_template/fill pending | 🟡 |
 | `backend/apps/designs/signals.py` | (thumbnail file cleanup on delete — assets family) | ⬜ |
 | `backend/apps/designs/tests/` | (dispositions: ledger/test-mapping-v*.json) | 🟡 |
 | `backend/apps/designs/throttling.py` | (fill/bulk throttles — pending with fill actions; kernel ports DRF rates) | ⬜ |
 | `backend/apps/designs/urls.py` | doory/app.go (router: list/detail/actions/versions + {uuid}/{design_pk} templates) | ✅ |
 | `backend/apps/designs/validators.py` | doory/document.go (complete: structure/motion/audio/walk/size bound) | ✅ |
-| `backend/apps/designs/views.py` | doory/designs.go + doory/designs_views.go + doory/designs_actions.go (list/create/retrieve/patch/destroy/restore/duplicate/trash + fields/bulk/thumbnail); bulk-fill/fill pending | 🟡 |
+| `backend/apps/designs/views.py` | doory/designs.go + doory/designs_views.go + doory/designs_actions.go (list/create/retrieve/patch/destroy/restore/duplicate/trash + fields/bulk/thumbnail) + doory/design_fill.go (fill action); bulk-fill pending | 🟡 |
 
 ## `backend/apps/designs/doc/`
 

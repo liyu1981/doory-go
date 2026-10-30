@@ -165,12 +165,18 @@ func NewApp(s *Settings, db *sql.DB) *App {
 			Handler: a.designsRoot,
 		},
 		Route{
-			// retrieve/partial_update/destroy. Pending actions (fill, bulk_fill,
-			// fields, thumbnail, bulk) are NOT registered — PORT_MAP pending note;
-			// their absence never changes this Allow set.
+			// retrieve/partial_update/destroy. fill/bulk-fill/fields/thumbnail/
+			// bulk are separate detail/collection routes below.
 			Path: "/api/v1/designs/{uuid}/", Methods: []string{"GET", "PATCH", "DELETE"}, Style: AllowClass,
 			Csrf: CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
 			Handler: a.designsDetail,
+		},
+		Route{
+			// DesignViewSet.fill (detail action): authenticated, CSRF for
+			// the unsafe method; 201 for a copy, 200 for an in-place edit.
+			Path: "/api/v1/designs/{uuid}/fill/", Methods: []string{"POST"}, Style: AllowClass,
+			Csrf: CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
+			Handler: a.designFill,
 		},
 		Route{
 			// detail actions (DesignViewSet): fields is a plain GET, thumbnail

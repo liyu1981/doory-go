@@ -1,0 +1,79 @@
+package doory
+
+import (
+	"encoding/json"
+	"strings"
+	"testing"
+)
+
+func fillTestDocument() map[string]any {
+	return map[string]any{
+		"schemaVersion": json.Number("1"),
+		"width":         json.Number("800"),
+		"height":        json.Number("600"),
+		"unit":          "px",
+		"pages": []any{map[string]any{
+			"id":         "page-1",
+			"background": map[string]any{"type": "solid", "color": "#ffffff"},
+			"objects": []any{
+				map[string]any{
+					"id": "name-1", "type": "textbox", "text": "Name",
+					"left": json.Number("10"), "top": json.Number("20"),
+					"width": json.Number("300"), "height": json.Number("50"), "fontSize": json.Number("40"),
+					"field": map[string]any{"key": "name", "type": "text", "label": "Name"},
+				},
+				map[string]any{
+					"id": "accent-1", "type": "rect", "fill": "#ff0000",
+					"left": json.Number("0"), "top": json.Number("0"),
+					"width": json.Number("10"), "height": json.Number("10"),
+					"field": map[string]any{"key": "accent", "type": "color"},
+				},
+			},
+		}},
+	}
+}
+
+func TestFillDesignCopyInPlaceAndValidation(t *testing.T) {
+	env := newAdminEnv(t)
+	user := env.makeUser("fill@example.com", false, false)
+	env.loginAs(user)
+	doc := fillTestDocument()
+	raw := pythonStoredJSON(encodeCompactJSON(doc))
+	parsed, _ := parseJSONValue(raw)
+	template, err := env.app.createDesign(user, "Badge", parsed, raw, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := "/api/v1/designs/" + dashedUUID(template.ID) + "/fill/"
+
+	res, body := env.doJSON(path, `{"values":{"name":"Ada Lovelace","accent":"#00ff88"}}`)
+	if res.StatusCode != 201 {
+		t.Fatalf("copy fill = %d %s", res.StatusCode, body)
+	}
+	if !strings.Contains(body, `"filled":["name","accent"]`) {
+		t.Fatalf("fill body = %s", body)
+	}
+	var copies int
+	_ = env.db.QueryRow(`SELECT COUNT(*) FROM designs_design WHERE owner_id = ?`, user.ID).Scan(&copies)
+	if copies != 2 {
+		t.Fatalf("design count = %d, want 2", copies)
+	}
+	templateNow, _ := env.app.getDesignByID(template.ID)
+	if !strings.Contains(templateNow.Document, "Name") {
+		t.Fatal("copy fill changed the template")
+	}
+
+	res, body = env.doJSON(path, `{"values":{"name":"Edited"},"as_copy":false}`)
+	if res.StatusCode != 200 {
+		t.Fatalf("in-place fill = %d %s", res.StatusCode, body)
+	}
+	updated, _ := env.app.getDesignByID(template.ID)
+	if !strings.Contains(updated.Document, "Edited") || updated.Revision != template.Revision+1 {
+		t.Fatalf("in-place document/revision = %s rev=%d", updated.Document, updated.Revision)
+	}
+
+	res, body = env.doJSON(path, `{"values":{"nope":"x","accent":"red"}}`)
+	if res.StatusCode != 400 || !strings.Contains(body, `"nope"`) || !strings.Contains(body, `"accent"`) {
+		t.Fatalf("bad fill = %d %s", res.StatusCode, body)
+	}
+}
