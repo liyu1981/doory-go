@@ -23,6 +23,147 @@ Rules:
 
 Last verified: pin `2fb4d0297ec4c6e417b5225215502f8217c2a4dc` (doory@v0.2.0).
 
+## Dependency graph (open gaps)
+
+`A --> B` means **A depends on B**: B must land (or at least be understood)
+before A can be completed faithfully. Dotted arrows are shared infrastructure
+or parity-completeness dependencies, not necessarily hard blockers. The graph
+is laid out top-to-bottom; the table below is the quick lookup form.
+
+```mermaid
+flowchart TB
+  %% asset / media pipeline
+  subgraph Media["Asset / media pipeline"]
+    direction TB
+    G14["G14 remote fetch / SSRF + download"]
+    G15["G15 video family"]
+    G7["G7 stock video import"]
+    G12["G12 stock photo search/import"]
+    G13["G13 Freesound search/import"]
+    G10["G10 SVG upload"]
+    G11["G11 audio upload"]
+    G22["G22 DRF rate throttles"]
+
+    G7 --> G15
+    G15 --> G14
+    G12 --> G14
+    G13 --> G14
+    G7 -.-> G22
+    G12 -.-> G22
+    G13 -.-> G22
+    G15 -.-> G22
+    G11 -.-> G15
+  end
+
+  %% AI
+  subgraph AI["AI providers"]
+    direction TB
+    G16["G16 AI response readers / styles"]
+    G9["G9 provider test / load-models"]
+    G30["G30 admin AI pages"]
+
+    G9 --> G16
+    G30 --> G9
+    G30 --> G16
+  end
+
+  %% admin program
+  subgraph Admin["Admin program (D2)"]
+    direction TB
+    G17["G17 D2 admin umbrella"]
+    G27["G27 admin kernel + CLI"]
+    G28["G28 admin model engine"]
+    G29["G29 admin content authoring"]
+    G31["G31 admin verification"]
+
+    G17 --> G27
+    G17 --> G28
+    G17 --> G29
+    G17 --> G30
+    G17 --> G31
+    G28 --> G27
+    G29 --> G27
+    G29 --> G28
+    G30 --> G27
+    G30 --> G28
+    G31 --> G27
+    G31 --> G28
+    G31 --> G29
+    G31 --> G30
+  end
+
+  %% independent deliberate differences
+  subgraph Differences["Independent / deliberate differences"]
+    direction TB
+    G18["G18 D20 WebP/JPEG bytes"]
+    G19["G19 D21 AVIF"]
+    G20["G20 D7 S3 media"]
+    G21["G21 D4 Postgres dialect lane"]
+    G23["G23 image normalisation edges"]
+  end
+
+  %% verification / bookkeeping (not feature prerequisites)
+  subgraph Verification["Verification and bookkeeping"]
+    direction TB
+    G24["G24 scenario coverage"]
+    G25["G25 test-mapping dispositions"]
+    G26["G26 PORT_MAP staleness"]
+    G32["G32 SSO paired scenario"]
+    G33["G33 WASM codec output parity"]
+  end
+
+  %% Layout-only links: keep the clusters stacked vertically (they are invisible).
+  G11 ~~~ G16
+  G16 ~~~ G27
+  G27 ~~~ G18
+  G18 ~~~ G24
+```
+
+### Dependency lookup table
+
+Read `Depends on` as "must land first". `soft` means shared infrastructure or
+parity-completeness, not a hard feature blocker.
+
+| gap | depends on | kind | note |
+|---|---|---|---|
+| G7 | G15 | hard | G15 provides the video probe/convert/store pipeline |
+| G7 | G22 | soft | needs the video upload rate charge |
+| G9 | G16 | hard | response readers/style pipeline |
+| G10 | — | — | SVG rasterisation is self-contained |
+| G11 | G15 | soft | shares the ffmpeg harness |
+| G12 | G14 | hard | provider downloads use the SSRF-safe remote fetch |
+| G12 | G22 | soft | needs the stock rate charge |
+| G13 | G14 | hard | previews/downloads use the remote fetch |
+| G13 | G22 | soft | needs the stock rate charge |
+| G14 | — | — | foundational remote fetch |
+| G15 | G14 | hard | clip downloads use the remote fetch |
+| G15 | G22 | soft | needs the video upload rate charge |
+| G16 | — | — | AI response readers/style encoders |
+| G17 | G27, G28, G29, G30, G31 | hard | admin program umbrella |
+| G18 | — | — | image byte differences only |
+| G19 | — | — | AVIF encoder missing |
+| G20 | — | — | S3 storage seam |
+| G21 | — | — | Postgres dialect runner lane |
+| G22 | — | — | cross-cutting DRF throttle slice |
+| G23 | — | — | image normalisation edges |
+| G24 | — | — | verification of all families |
+| G25 | — | — | test-mapping bookkeeping |
+| G26 | — | — | PORT_MAP review bookkeeping |
+| G27 | — | — | admin kernel foundation |
+| G28 | G27 | hard | model engine builds on the admin kernel |
+| G29 | G27, G28 | hard | content authoring builds on the engine |
+| G30 | G9, G16, G27, G28 | hard | AI pages build on AI transport and admin engine |
+| G31 | G27, G28, G29, G30 | hard | admin verification covers the whole program |
+| G32 | — | — | verification of the closed SSO work |
+| G33 | — | — | verification of the WASM codec output |
+
+Notes:
+
+- G14 is also the remaining URL-image follow-up for the closed G1/G2 fill paths.
+- G11 shares the ffmpeg harness with G15, but does not require video import itself.
+- G22 is a cross-cutting throttle slice: G7/G12/G13/G15 need their rate charges
+  for full parity, but their core pipelines can be built first.
+
 ## A. Routes upstream has and the port does not register
 
 | id | route | upstream behaviour | why it is open / what closes it |
