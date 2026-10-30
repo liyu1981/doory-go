@@ -505,7 +505,7 @@ behavioral verification).
 |---|---|---|
 | `backend/doory/asgi.py` |  | ⬜ |
 | `backend/doory/mcp_asgi.py` |  | ⬜ |
-| `backend/doory/urls.py` | doory/app.go (kernel + accounts + designs + folders + presets + elements + gallery + brand + sitemap routes; admin/static/media mounts pending) | 🟡 |
+| `backend/doory/urls.py` | doory/app.go + doory/admin.go (kernel, accounts, designs/folders, presets/elements/gallery/brand/sitemap routes; admin/static/media mounts) | ✅ |
 | `backend/doory/wsgi.py` |  | ⬜ |
 
 ## `backend/doory/settings/`

@@ -136,6 +136,10 @@ func runSideCommand(side *Side, sc *Scenario, step StepCommand, sideName string)
 
 var (
 	cliProgramName = regexp.MustCompile(`\bmanage\.py\b`)
+	// D22: the oracle may warn that cjpeg/oxipng are missing. The port embeds
+	// those CLIs, so the warning is deliberately absent; remove the whole
+	// W002 block before comparing.
+	cliW002 = regexp.MustCompile(`(?m)^\?: \(exports\.W002\).*\n(?:\tHINT:.*\n)?`)
 	// Django's argparse adds these to every command (the Go binary has no
 	// settings module, pythonpath, traceback flag or check framework, D13).
 	cliDjangoGlobals = regexp.MustCompile(`\s*\[--settings SETTINGS\]|\s*\[--pythonpath PYTHONPATH\]|` +
@@ -152,6 +156,12 @@ func normalizeCLIOutput(text string, side *Side) string {
 	text = strings.ReplaceAll(text, side.ExportRoot, "<EXPORT_STORAGE_ROOT>")
 	text = strings.ReplaceAll(text, side.WorkDir, "<WORKDIR>")
 	text = cliTiming.ReplaceAllString(text, "in <N>s") // wall-clock timings are not behavior
+	text = cliW002.ReplaceAllString(text, "")
+	// If W002 was the only warning, the now-empty banner goes too.
+	if strings.TrimSpace(strings.ReplaceAll(strings.ReplaceAll(text,
+		"System check identified some issues:", ""), "WARNINGS:", "")) == "" {
+		text = ""
+	}
 	return normalizeUsageBlock(text)
 }
 
