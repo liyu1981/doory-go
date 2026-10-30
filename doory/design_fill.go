@@ -378,11 +378,11 @@ func (a *App) resolveFillImage(owner *UserRow, value any) (fillImage, error) {
 		text = strings.TrimSpace(text)
 		lower := strings.ToLower(text)
 		if strings.HasPrefix(lower, "http://") || strings.HasPrefix(lower, "https://") {
-			if !a.Settings.McpExportURLUploads {
-				return fillImage{}, fmt.Errorf("URL image uploads are switched off on this server.")
+			asset, err := a.importRemoteImage(owner, text, "")
+			if err != nil {
+				return fillImage{}, err
 			}
-			// G14 (remote fetch/SSRF) is still open; do not pretend a URL was imported.
-			return fillImage{}, fmt.Errorf("URL image uploads are not available on this server yet.")
+			return fillImageFromAsset(asset), nil
 		}
 		if asset, err := a.fillAssetByIDOrName(owner, text); err == nil && asset != nil {
 			return fillImageFromAsset(asset), nil
@@ -440,11 +440,14 @@ func (a *App) resolveFillImage(owner *UserRow, value any) (fillImage, error) {
 		out.Focal = source.Focal
 		return out, nil
 	}
-	if _, ok := obj["url"].(string); ok {
-		if !a.Settings.McpExportURLUploads {
-			return fillImage{}, fmt.Errorf("URL image uploads are switched off on this server.")
+	if rawURL, ok := obj["url"].(string); ok {
+		asset, err := a.importRemoteImage(owner, rawURL, "")
+		if err != nil {
+			return fillImage{}, err
 		}
-		return fillImage{}, fmt.Errorf("URL image uploads are not available on this server yet.")
+		out := fillImageFromAsset(asset)
+		out.Focal = source.Focal
+		return out, nil
 	}
 	return fillImage{}, fmt.Errorf("Send exactly one of asset_id, element_id and url.")
 }

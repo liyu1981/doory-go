@@ -144,14 +144,14 @@ behavioral verification).
 | `backend/apps/assets/ordering.py` | doory/designs.go (applyOrdering whitelist + pk tie-break + message); other callers with assets family | 🟡 |
 | `backend/apps/assets/parsers.py` | doory/views_auth.go jsonBody (bounded JSON; BoundedJSONParser edges pending) | 🟡 |
 | `backend/apps/assets/providers.py` | (provider registry + photo APIs — configured paths pending with remote slice) | ⬜ |
-| `backend/apps/assets/remote.py` | (remote fetch/SSRF pinned-address policy — next slice, needs fake-provider fixtures) | ⬜ |
+| `backend/apps/assets/remote.py` | doory/remote_image.go (https/443 only, public-address checks incl. NAT64/tunnels, checked redirects, pinned TLS dial, deadline, size/type limits) | ✅ |
 | `backend/apps/assets/serializers.py` | doory/assets.go (envelope incl. status/error/poster_url/audio_url/video, upload/update/query validation) | ✅ |
 | `backend/apps/assets/services.py` | doory/assets.go (prepare raster/quota/storage; markup/audio/video loud-pending, thumbnail content M14) | 🟡 |
 | `backend/apps/assets/signals.py` | (file cleanup on delete — pending file-lifecycle slice) | ⬜ |
 | `backend/apps/assets/stock.py` | doory/stock.go (search/import validation + no-config payloads); live provider paths pending (remote/SSRF slice) | 🟡 |
 | `backend/apps/assets/stocklimits.py` | (rate tracking — pending with provider slice) | ⬜ |
 | `backend/apps/assets/storage.py` | (delete-on-commit helpers — pending with file-lifecycle slice) | ⬜ |
-| `backend/apps/assets/tests/` | (dispositions: ledger/test-mapping-v*.json) | 🟡 |
+| `backend/apps/assets/tests/` | doory/remote_image_test.go (URL policy, redirects, size/type checks, URL import) + ledger/test-mapping dispositions remain | 🟡 |
 | `backend/apps/assets/throttling.py` | (DRF rate scopes — kernel family pending) | ⬜ |
 | `backend/apps/assets/uploads.py` | doory/assets.go (oversize reject, clean_name/clean_tags/strip — shared with brand/fonts) | ✅ |
 | `backend/apps/assets/urls.py` |  | ⬜ |

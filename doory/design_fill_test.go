@@ -105,3 +105,58 @@ func TestBulkFillRowsAndRowNumbers(t *testing.T) {
 		t.Fatalf("design count = %d, want 3", count)
 	}
 }
+
+func TestFillDesignImportsURLImage(t *testing.T) {
+	env := newAdminEnv(t)
+	user := env.makeUser("url-fill@example.com", false, false)
+	env.loginAs(user)
+	doc := fillTestDocument()
+	page := doc["pages"].([]any)[0].(map[string]any)
+	objects := page["objects"].([]any)
+	page["objects"] = append(objects, map[string]any{
+		"id": "photo-1", "type": "image", "src": "/media/old.png",
+		"left": json.Number("0"), "top": json.Number("0"),
+		"width": json.Number("100"), "height": json.Number("100"),
+		"field": map[string]any{"key": "photo", "type": "image"},
+	})
+	raw := pythonStoredJSON(encodeCompactJSON(doc))
+	parsed, _ := parseJSONValue(raw)
+	template, err := env.app.createDesign(user, "Badge", parsed, raw, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	oldFetch := fetchRemoteImage
+	fetchRemoteImage = func(rawURL string, maxBytes int) ([]byte, error) {
+		return imageBytesForRemote(t), nil
+	}
+	t.Cleanup(func() { fetchRemoteImage = oldFetch })
+	path := "/api/v1/designs/" + dashedUUID(template.ID) + "/fill/"
+	res, body := env.doJSON(path, `{"values":{"photo":"https://img.example/a.png?token=secret"}}`)
+	if res.StatusCode != 201 {
+		t.Fatalf("url fill = %d %s", res.StatusCode, body)
+	}
+	var designID string
+	_ = env.db.QueryRow(`SELECT id FROM designs_design WHERE owner_id = ? AND id <> ?`,
+		user.ID, template.ID).Scan(&designID)
+	created, _ := env.app.getDesignByID(designID)
+	parsedCreated, _ := parseJSONValue([]byte(created.Document))
+	createdPage := parsedCreated.(map[string]any)["pages"].([]any)[0].(map[string]any)
+	var assetID string
+	for _, rawObj := range createdPage["objects"].([]any) {
+		obj := rawObj.(map[string]any)
+		if obj["id"] == "photo-1" {
+			assetID, _ = obj["assetId"].(string)
+		}
+	}
+	if assetID == "" {
+		t.Fatalf("filled image has no assetId: %s", created.Document)
+	}
+	asset, err := env.app.getAssetByID(hexUUID(assetID))
+	if err != nil || asset == nil {
+		t.Fatalf("asset %q: %v", assetID, err)
+	}
+	if !strings.Contains(asset.Meta, `"source_url":"https://img.example/a.png"`) ||
+		strings.Contains(asset.Meta, "secret") {
+		t.Fatalf("asset meta = %s", asset.Meta)
+	}
+}

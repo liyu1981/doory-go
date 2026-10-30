@@ -35,7 +35,6 @@ flowchart TB
   %% asset / media pipeline
   subgraph Media["Asset / media pipeline"]
     direction TB
-    G14["G14 remote fetch / SSRF + download"]
     G15["G15 video family"]
     G7["G7 stock video import"]
     G12["G12 stock photo search/import"]
@@ -45,9 +44,6 @@ flowchart TB
     G22["G22 DRF rate throttles"]
 
     G7 --> G15
-    G15 --> G14
-    G12 --> G14
-    G13 --> G14
     G7 -.-> G22
     G12 -.-> G22
     G13 -.-> G22
@@ -125,12 +121,8 @@ parity-completeness, not a hard feature blocker.
 | G9 | G16 | hard | response readers/style pipeline |
 | G10 | — | — | SVG rasterisation is self-contained |
 | G11 | G15 | soft | shares the ffmpeg harness |
-| G12 | G14 | hard | provider downloads use the SSRF-safe remote fetch |
 | G12 | G22 | soft | needs the stock rate charge |
-| G13 | G14 | hard | previews/downloads use the remote fetch |
 | G13 | G22 | soft | needs the stock rate charge |
-| G14 | — | — | foundational remote fetch |
-| G15 | G14 | hard | clip downloads use the remote fetch |
 | G15 | G22 | soft | needs the video upload rate charge |
 | G16 | — | — | AI response readers/style encoders |
 | G17 | G28, G29, G30, G31 | hard | admin program umbrella |
@@ -152,7 +144,6 @@ parity-completeness, not a hard feature blocker.
 
 Notes:
 
-- G14 is also the remaining URL-image follow-up for the closed G1/G2 fill paths.
 - G11 shares the ffmpeg harness with G15, but does not require video import itself.
 - G22 is a cross-cutting throttle slice: G7/G12/G13/G15 need their rate charges
   for full parity, but their core pipelines can be built first.
@@ -184,7 +175,6 @@ which upstream function is missing — never a silent wrong answer.
 |---|---|---|---|
 | G12 | Stock photos: Unsplash / Pexels / Pixabay search + import | Validation + `_not_configured` payloads match the oracle; no provider call | Provider HTTP clients with the fake-provider fixtures (`assets/providers.py`, `remote.py`, counting/pausing/redaction). |
 | G13 | Freesound: search, info, import, preview | Same (no-config shapes + messages) | `assets/freesound.py` client + preview streaming. |
-| G14 | Remote image fetch (`URL_IMAGE_UPLOADS`, bulk-fill URLs, stock import downloads) | Not ported | `assets/remote.py` SSRF-pinned fetch; also needed by G1/G2 (URL values). |
 | G15 | Video family | Availability + limits + no-config payloads only (D20-era) | `assets/video.py` (ffprobe/ffmpeg probe + conversion), `video_jobs.py` (queue, 202 processing, poster/filmstrip/audio), `ingest_video_upload`, `sweep_video_jobs`, live stock-video providers, and video export in `exports/`. |
 | G16 | AI provider response readers / style encoders (`ai/styles/{base,multipart,json_b64,mask,custom}.py`, `results.py`) | The port builds the doory multipart request and maps errors; response decoding and style variants are partial | Port the styles + result readers; needs the fake-provider harness to prove wire behaviour. |
 
@@ -226,6 +216,7 @@ which upstream function is missing — never a silent wrong answer.
 | — | 0.2.0 routes the rebuilt frontend called: `size-presets/mine`, `auth/oidc/{start,callback,connection}` (no-provider surface), `stock/videos{,/providers,/import}`, `designs/{id}/{fields,thumbnail}`, `designs/bulk`, `exports/optimize`, `auth/password/reset{,/confirm}`, `auth/email/{verify,resend}` | `2892176`, `dc77682` |
 | — | Starter content + fonts embedded and installed by `entrypoint` (D19); in-process built-in optimizer (D22) | `dc77682` |
 | G1 | `POST /api/v1/designs/{id}/fill/` — fill template fields as a copy or in place | `d98f9a4` |
+| G14 | Remote image fetch (`URL_IMAGE_UPLOADS`, bulk-fill/fill URL values, stock import downloads) | to be filled |
 | G27 | Admin kernel and CLI (staff/session/CSRF, index/app/search/autocomplete/jsi18n, never_cache/Vary, admin log/history, bootstrap commands, auth seed) | `c4f61f7` |
 | G2 | `POST /api/v1/designs/{id}/bulk-fill/` — one copy per row, row errors, name pattern/folder/export | `5ca20e3` |
 | G4 | `GET /api/v1/schema/`, `GET /api/v1/docs/` — pinned OpenAPI document + staff Swagger UI | `a02fad8` |
