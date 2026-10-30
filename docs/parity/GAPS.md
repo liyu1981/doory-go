@@ -27,7 +27,6 @@ Last verified: pin `2fb4d0297ec4c6e417b5225215502f8217c2a4dc` (doory@v0.2.0).
 
 | id | route | upstream behaviour | why it is open / what closes it |
 |---|---|---|---|
-| G4 | `GET /api/v1/schema/`, `GET /api/v1/docs/` | drf-spectacular OpenAPI document + Swagger UI | D8 promises *structural* schema parity but nothing is served today. Needs a generated OpenAPI document (from the routes/interfaces ledger or hand-kept) and the docs page. Lowest priority of the route gaps; no frontend client depends on it. |
 
 Documented additions (not gaps): `/mcp`, `/mcp/health`, `/sitemap.xml`,
 `/ws/designs/{uuid}/` come from D1/D7/D8 (single process, embedded SPA,
@@ -97,6 +96,7 @@ which upstream function is missing — never a silent wrong answer.
 | — | Starter content + fonts embedded and installed by `entrypoint` (D19); in-process built-in optimizer (D22) | `dc77682` |
 | G1 | `POST /api/v1/designs/{id}/fill/` — fill template fields as a copy or in place | this change |
 | G2 | `POST /api/v1/designs/{id}/bulk-fill/` — one copy per row, row errors, name pattern/folder/export | this change |
+| G4 | `GET /api/v1/schema/`, `GET /api/v1/docs/` — pinned OpenAPI document + staff Swagger UI | this change |
 | G3 | `POST /api/v1/auth/google/` — Google ID-token verification and link/create | this change |
 | G6 | OIDC provider flows (start/callback/connect, discovery, PKCE, JWKS, ID-token verification) | this change |
 | — | Clone-build without parity tooling; `:8111` default; `scripts/install-systemd.sh` (`~/.doory`) | `5a22cd7` |

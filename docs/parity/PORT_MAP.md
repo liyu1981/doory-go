@@ -225,8 +225,8 @@ behavioral verification).
 | `backend/apps/core/permissions.py` |  | ⬜ |
 | `backend/apps/core/storage.py` |  | ⬜ |
 | `backend/apps/core/svg.py` | internal/svg (sanitize + info + intrinsic size — differential-tested against the oracle sanitizer fixtures) | ✅ |
-| `backend/apps/core/tests/` |  | ⬜ |
-| `backend/apps/core/urls.py` | doory/app.go (health + config routes; schema/docs with contract driver) | 🟡 |
+| `backend/apps/core/tests/` | doory/schema_test.go (OpenAPI paths, JSON format, Swagger staff/debug gate); remaining core cases pending | 🟡 |
+| `backend/apps/core/urls.py` | doory/app.go + doory/schema.go (health, config, embedded OpenAPI schema and staff/debug Swagger UI) | ✅ |
 | `backend/apps/core/views.py` | doory/views.go (health, config incl. oidc_button_*/features.oidc_login/features.image_optimize, handler404/handler500 envelope paths; sitemap with gallery family) | 🟡 |
 
 ## `backend/apps/core/mlmodels/`

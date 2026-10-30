@@ -47,6 +47,17 @@ func NewApp(s *Settings, db *sql.DB) *App {
 			Handler: a.config,
 		},
 		Route{
+			// SpectacularAPIView: public APIView; ?format=json switches the
+			// embedded document from YAML to JSON.
+			Path: "/api/v1/schema/", Methods: []string{"GET"}, Style: AllowClass,
+			Handler: a.openapiSchema,
+		},
+		Route{
+			// SpectacularSwaggerView: staff only, or anonymous with DEBUG on.
+			Path: "/api/v1/docs/", Methods: []string{"GET"}, Style: AllowClass,
+			Session: SessionConsult, Require: RequireNever, Handler: a.apiDocs,
+		},
+		Route{
 			// accounts CsrfView: APIView subclass (Allow "GET, HEAD,
 			// OPTIONS"); authentication_classes=[] — no session consult;
 			// the cookie makes the response vary on Cookie (handler).
