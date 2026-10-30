@@ -77,3 +77,31 @@ func TestFillDesignCopyInPlaceAndValidation(t *testing.T) {
 		t.Fatalf("bad fill = %d %s", res.StatusCode, body)
 	}
 }
+
+func TestBulkFillRowsAndRowNumbers(t *testing.T) {
+	env := newAdminEnv(t)
+	user := env.makeUser("bulk@example.com", false, false)
+	env.loginAs(user)
+	doc := fillTestDocument()
+	raw := pythonStoredJSON(encodeCompactJSON(doc))
+	parsed, _ := parseJSONValue(raw)
+	template, err := env.app.createDesign(user, "Badge", parsed, raw, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := "/api/v1/designs/" + dashedUUID(template.ID) + "/bulk-fill/"
+	res, body := env.doJSON(path,
+		`{"rows":[{"name":"Ada"},{"accent":"nope"},{"name":"Grace"}],"row_numbers":[1,2,3],"name_pattern":"{name} ({n})"}`)
+	if res.StatusCode != 200 {
+		t.Fatalf("bulk fill = %d %s", res.StatusCode, body)
+	}
+	if !strings.Contains(body, `"created":2`) || !strings.Contains(body, `"Ada (1)"`) ||
+		!strings.Contains(body, `"Grace (3)"`) || !strings.Contains(body, `"ok":false`) {
+		t.Fatalf("bulk body = %s", body)
+	}
+	var count int
+	_ = env.db.QueryRow(`SELECT COUNT(*) FROM designs_design WHERE owner_id = ?`, user.ID).Scan(&count)
+	if count != 3 { // template + two successful rows
+		t.Fatalf("design count = %d, want 3", count)
+	}
+}

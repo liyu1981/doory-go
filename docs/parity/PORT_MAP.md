@@ -246,7 +246,7 @@ behavioral verification).
 | `backend/apps/designs/apps.py` | — | ⬜ |
 | `backend/apps/designs/edits.py` | (pending: fill/fields actions) | ⬜ |
 | `backend/apps/designs/exceptions.py` | doory/document.go + doory/designs_views.go (invalid_document/inline_asset/document_too_large/design_trashed/not_in_trash codes + revision_conflict 409 body) | ✅ |
-| `backend/apps/designs/fill.py` | doory/design_fill.go (fill_design: field values -> update_object/replace_image, all-or-nothing, copy/in-place, one-fill lock, version before edit; URL images remain G14) | 🟡 |
+| `backend/apps/designs/fill.py` | doory/design_fill.go + doory/design_bulk_fill.go (fill_design + bulk_fill: all-or-nothing copies/in-place edits, row errors, name pattern/folder, row/export charges and image export; URL images remain G14) | 🟡 |
 | `backend/apps/designs/folder_views.py` | doory/folders.go (list/create/detail/patch/delete + design_count annotation) | 🟡 |
 | `backend/apps/designs/folders.py` | doory/folders.go (depth/cycle/unique/reparent rules); pending: LimitReached 409 at500 folders | 🟡 |
 | `backend/apps/designs/management/` | doory/commands_seed.go + doory/designs_purge.go (purge_trash --days; full cascade delete + thumbnail files) | ✅ |
@@ -260,7 +260,7 @@ behavioral verification).
 | `backend/apps/designs/throttling.py` | (fill/bulk throttles — pending with fill actions; kernel ports DRF rates) | ⬜ |
 | `backend/apps/designs/urls.py` | doory/app.go (router: list/detail/actions/versions + {uuid}/{design_pk} templates) | ✅ |
 | `backend/apps/designs/validators.py` | doory/document.go (complete: structure/motion/audio/walk/size bound) | ✅ |
-| `backend/apps/designs/views.py` | doory/designs.go + doory/designs_views.go + doory/designs_actions.go (list/create/retrieve/patch/destroy/restore/duplicate/trash + fields/bulk/thumbnail) + doory/design_fill.go (fill action); bulk-fill pending | 🟡 |
+| `backend/apps/designs/views.py` | doory/designs.go + doory/designs_views.go + doory/designs_actions.go (list/create/retrieve/patch/destroy/restore/duplicate/trash + fields/bulk/thumbnail) + doory/design_fill.go (fill) + doory/design_bulk_fill.go (bulk-fill) | 🟡 |
 
 ## `backend/apps/designs/doc/`
 

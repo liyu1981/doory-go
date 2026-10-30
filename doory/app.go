@@ -179,6 +179,13 @@ func NewApp(s *Settings, db *sql.DB) *App {
 			Handler: a.designFill,
 		},
 		Route{
+			// DesignViewSet.bulk_fill (url_path bulk-fill): always creates
+			// copies and returns one result per row.
+			Path: "/api/v1/designs/{uuid}/bulk-fill/", Methods: []string{"POST"}, Style: AllowClass,
+			Csrf: CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
+			Handler: a.designBulkFill,
+		},
+		Route{
 			// detail actions (DesignViewSet): fields is a plain GET, thumbnail
 			// a multipart PUT; bulk is the collection-level action.
 			Path: "/api/v1/designs/{uuid}/fields/", Methods: []string{"GET"}, Style: AllowClass,
