@@ -271,15 +271,6 @@ func (a *App) optimizeImage(png []byte, request optimizeRequest) (optimizedImage
 			optimizer = request.Optimize
 		}
 	}
-	if optimizer != "" && optimizer != "builtin" {
-		// The off-site optimizers (TinyPNG/Kraken/custom) need their HTTP
-		// contract: refuse loudly instead of sending nothing.
-		return optimizedImage{}, &DocumentError{
-			Code: "server_error", Status: http.StatusInternalServerError,
-			Message: "route registered but not ported: exports.optimizers.shrink (off-site optimizer pending)",
-		}
-	}
-
 	unreadable := &DocumentError{
 		Code: "invalid_image", Status: http.StatusBadRequest,
 		Message: "The file is not a readable PNG image.",
@@ -339,6 +330,30 @@ func (a *App) optimizeImage(png []byte, request optimizeRequest) (optimizedImage
 			best.optimized = true
 		}
 		best.optimizer = "builtin"
+	} else if optimizer != "" {
+		// TinyPNG / Kraken.io / custom: same contract as upstream's
+		// optimize(): a failure, timeout or non-smaller answer leaves the
+		// converted file as it was.
+		if len(best.data) <= a.Settings.ImageOptimizerMaxBytes {
+			var quality *int
+			if best.quality > 0 {
+				value := best.quality
+				quality = &value
+			}
+			job := offsiteImageJob{
+				data: best.data, format: best.format, mime: best.mime,
+				width: width, height: height, quality: quality,
+				stripMeta: request.StripMetadata, srgb: request.Srgb,
+			}
+			if shrunk, err := a.optimizeOffsite(job, optimizer); err == nil && len(shrunk) < len(best.data) {
+				outW, outH, outFormat, cerr := decodeImageConfig(shrunk)
+				if cerr == nil && outFormat == best.format && outW == width && outH == height {
+					best.data = shrunk
+					best.optimized = true
+				}
+			}
+		}
+		best.optimizer = optimizer
 	}
 	return *best, nil
 }

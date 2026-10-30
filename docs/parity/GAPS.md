@@ -40,7 +40,6 @@ which upstream function is missing — never a silent wrong answer.
 | id | route | branch | what closes it |
 |---|---|---|---|
 | G7 | `POST /api/v1/stock/videos/import/` (and the live branch of `GET /stock/videos/`) | `video_stock.import_video`: resolve via the provider API, download with host checks, probe, convert, insert the asset | Video family (G15). The no-config payloads and serializer bounds are ported. |
-| G8 | `POST /api/v1/exports/optimize/` with an off-site optimizer | `optimizers/{tinypng,kraken,custom}.shrink` (HTTP contract, offsite charging) | Needs the optimizer HTTP transport (`optimizers/http.py`) + rate charge. The built-in optimizer is implemented in process (D22), so `optimize: true` works today. |
 | G9 | `POST /api/v1/ai/providers/{id}/test/`, `/load-models/` | `services.test_provider` (sample picture call, preview, AICall log), `catalog.list_remote_models` | Same provider transport as the AI family's run path, plus the sample image and the remote catalogue mapping. Row lookups are ported. |
 | G10 | `POST /api/v1/assets/` with an SVG upload | `assets._prepare_svg` (`core/svg.py`: sanitise, cap, rasterise preview) | SVG pipeline. The port answers the loud notPorted error today. |
 | G11 | `POST /api/v1/assets/` with an audio upload | `assets._prepare_audio` (`assets/audio.py`: container/codec probe, duration, waveform) | Audio pipeline. Note the audio *library* install (`sync_audio`) is ported; only uploads are not. |
@@ -97,6 +96,7 @@ which upstream function is missing — never a silent wrong answer.
 | G2 | `POST /api/v1/designs/{id}/bulk-fill/` — one copy per row, row errors, name pattern/folder/export | this change |
 | G4 | `GET /api/v1/schema/`, `GET /api/v1/docs/` — pinned OpenAPI document + staff Swagger UI | this change |
 | G5 | `POST /api/v1/templates/{slug}/use/` — create a design from a published template | this change |
+| G8 | `POST /api/v1/exports/optimize/` with TinyPNG/Kraken/custom | to be filled |
 | G3 | `POST /api/v1/auth/google/` — Google ID-token verification and link/create | this change |
 | G6 | OIDC provider flows (start/callback/connect, discovery, PKCE, JWKS, ID-token verification) | this change |
 | — | Clone-build without parity tooling; `:8111` default; `scripts/install-systemd.sh` (`~/.doory`) | `5a22cd7` |

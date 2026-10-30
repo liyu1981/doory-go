@@ -338,10 +338,10 @@ behavioral verification).
 |---|---|---|
 | `backend/apps/exports/optimizers/base.py` | doory/optimizer.go + doory/exports_optimize.go (optimizer selection, max-bytes skip, same-format/size guard, per-file timeout; warning/log wording partial) | 🟡 |
 | `backend/apps/exports/optimizers/builtin.py` | doory/optimizer.go + internal/wasmcodec (official cjpeg 4.1.5 / oxipng 10.2.1 WASI CLIs run as child processes under wazero; /config/ always lists builtin; upstream W002 binary check omitted, D22) | ✅ |
-| `backend/apps/exports/optimizers/custom.py` | doory/checks.go (url_problem/key_problem only (W003/W005 + /config/); shrink pending) | 🟡 |
-| `backend/apps/exports/optimizers/http.py` |  | ⬜ |
-| `backend/apps/exports/optimizers/kraken.py` | doory/checks.go (ready() only (/config/); shrink pending) | 🟡 |
-| `backend/apps/exports/optimizers/tinypng.py` | doory/checks.go (ready() only (/config/); shrink pending) | 🟡 |
+| `backend/apps/exports/optimizers/custom.py` | doory/optimizer_offsite.go (shrink contract, metadata/quality query, response headers) | ✅ |
+| `backend/apps/exports/optimizers/http.py` | doory/optimizer_offsite.go (operator-policy checked requests, no redirects, deadline, size cap, JSON/multipart helpers) | ✅ |
+| `backend/apps/exports/optimizers/kraken.py` | doory/optimizer_offsite.go (shrink: multipart options/upload, kraken-only result URL, download) | ✅ |
+| `backend/apps/exports/optimizers/tinypng.py` | doory/optimizer_offsite.go (shrink: tinify upload, preserve/download, Basic auth) | ✅ |
 
 ## `backend/apps/fonts/`
 
