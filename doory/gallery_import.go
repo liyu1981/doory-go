@@ -3,12 +3,10 @@
 // `seed_templates` and `import_template`.
 //
 // Thumbnails: upstream re-encodes every thumbnail to WebP through Pillow
-// (make_thumbnail, quality 82). There is no pure-Go WebP encoder (the same
-// substitution M7 recorded for asset thumbnails), so the Go port validates
-// the raster, bounds it (720 px longest side) and stores the source bytes when
-// they already are WebP — the file name/URL and dimensions match, the bytes
-// do not. The cli-driver compares those files structurally and M14's encoder
-// decision removes the exception.
+// (make_thumbnail, quality 82). The Go port uses the embedded libwebp module
+// with the same quality/method; the resampling filter is still CatmullRom
+// rather than Pillow's Lanczos, so decoded dimensions match and bytes may not
+// (D15). The cli-driver therefore compares template media structurally.
 
 package doory
 
@@ -457,8 +455,8 @@ func templateCategorySlugs(tx *sql.Tx) ([]string, error) {
 }
 
 // templateThumbnail validates a thumbnail file the way thumbnail_from_upload
-// does (a decodable raster, bounded) and returns the bytes to store plus the
-// image dimensions. WebP sources are stored as-is (documented encoder gap).
+// does (a decodable raster, bounded) and returns a 720 px WebP re-encode plus
+// the source image dimensions.
 func templateThumbnail(sourcePath string) ([]byte, int, int, error) {
 	st, err := os.Stat(sourcePath)
 	if err != nil || !st.Mode().IsRegular() {
@@ -474,20 +472,23 @@ func templateThumbnail(sourcePath string) ([]byte, int, int, error) {
 	if len(data) == 0 {
 		return nil, 0, 0, fmt.Errorf("The file is empty.")
 	}
-	cfg, format, derr := image.DecodeConfig(bytes.NewReader(data))
+	cfg, _, derr := image.DecodeConfig(bytes.NewReader(data))
 	if derr != nil {
 		return nil, 0, 0, fmt.Errorf("Unsupported image type. Use PNG, JPEG, WebP, GIF or AVIF.")
 	}
-	if cfg.Width < 1 || cfg.Height < 1 || cfg.Width > 12000 || cfg.Height > 12000 {
+	if cfg.Width < 1 || cfg.Height < 1 || cfg.Width > 12000 || cfg.Height > 12000 ||
+		int64(cfg.Width)*int64(cfg.Height) > maxImagePixels {
 		return nil, 0, 0, fmt.Errorf("Unsupported image dimensions.")
 	}
-	if cfg.Width > templateThumbMaxSide || cfg.Height > templateThumbMaxSide {
-		return nil, cfg.Width, cfg.Height, fmt.Errorf("thumbnail-oversize")
+	img, _, derr := image.Decode(bytes.NewReader(data))
+	if derr != nil {
+		return nil, 0, 0, fmt.Errorf("The file is not a valid image.")
 	}
-	if format != "webp" {
-		return nil, cfg.Width, cfg.Height, fmt.Errorf("thumbnail-reencode-needed")
+	thumb, derr := encodeWebP(fitThumbnail(img, templateThumbMaxSide))
+	if derr != nil {
+		return nil, 0, 0, fmt.Errorf("Could not create a thumbnail.")
 	}
-	return data, cfg.Width, cfg.Height, nil
+	return thumb, cfg.Width, cfg.Height, nil
 }
 
 // decodeThumbnailConfig validates a thumbnail raster (content decides the type).
@@ -545,10 +546,18 @@ func treeThumbnails(tree templateTree) thumbnailLoader {
 		if dims != nil {
 			return nil, templateImportErrorf(`Thumbnail "%s": %v`, reference, dims)
 		}
-		if cfg.Width > templateThumbMaxSide || cfg.Height > templateThumbMaxSide {
-			return nil, templateImportErrorf(`Thumbnail "%s": thumbnail-oversize`, reference)
+		if int64(cfg.Width)*int64(cfg.Height) > maxImagePixels {
+			return nil, templateImportErrorf(`Thumbnail "%s": Unsupported image dimensions.`, reference)
 		}
-		return data, nil
+		img, _, derr := image.Decode(bytes.NewReader(data))
+		if derr != nil {
+			return nil, templateImportErrorf(`Thumbnail "%s": The file is not a valid image.`, reference)
+		}
+		thumb, derr := encodeWebP(fitThumbnail(img, templateThumbMaxSide))
+		if derr != nil {
+			return nil, templateImportErrorf(`Thumbnail "%s": Could not create a thumbnail.`, reference)
+		}
+		return thumb, nil
 	}
 }
 

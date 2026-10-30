@@ -5,7 +5,6 @@ go 1.27.1
 require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/CivNode/yjs-go v0.1.6
-	github.com/HugoSmits86/nativewebp v1.3.0
 	github.com/andybalholm/brotli v1.2.6
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0

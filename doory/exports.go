@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"image/jpeg"
 	"math"
 	"mime/multipart"
 	"net/http"
@@ -414,6 +413,7 @@ func (a *App) imageExport(w http.ResponseWriter, r *http.Request) {
 		Quality       *int         `json:"quality"`
 		Scale         *float64     `json:"scale"`
 		Transparent   bool         `json:"transparent"`
+		Progressive   bool         `json:"progressive"`
 		FilenameStyle string       `json:"filename_style"`
 		FilenameTS    *bool        `json:"filename_timestamp"`
 	}
@@ -524,7 +524,7 @@ func (a *App) imageExport(w http.ResponseWriter, r *http.Request) {
 		writeDRF(w, derr.Status, derr.Code, derr.Message)
 		return
 	}
-	converted, cerr := convertImage(result.Data, format, quality, transparent)
+	converted, cerr := convertImage(result.Data, format, quality, transparent, body.Progressive)
 	if cerr != nil {
 		writeDRF(w, 500, "export_failed", "The PDF could not be rendered.")
 		return
@@ -567,28 +567,29 @@ func imageMIME(format string) string {
 	return map[string]string{"png": "image/png", "jpg": "image/jpeg", "webp": "image/webp"}[format]
 }
 
-// convertImage ports services._convert: PNG as drawn; JPG flattened on
-// white. WEBP needs a pure-Go encoder — pending (PORT_MAP note); such a
-// request answers the family's loud-pending error instead of diverging.
-func convertImage(pngData []byte, format string, quality int, transparent bool) ([]byte, error) {
-	switch format {
-	case "png":
+// convertImage ports services._convert_to: PNG as drawn; JPG flattened on
+// white; WebP preserves alpha only for a transparent export. WebP and JPEG
+// use the embedded libwebp/libjpeg-turbo encoders with Pillow's method 4,
+// optimize=True and progressive settings.
+func convertImage(pngData []byte, format string, quality int, transparent, progressive bool) ([]byte, error) {
+	if format == "png" {
 		return pngData, nil
-	case "jpg":
-		img, _, err := image.Decode(bytes.NewReader(pngData))
-		if err != nil {
-			return nil, err
-		}
-		var out bytes.Buffer
-		if err := jpeg.Encode(&out, flattenWhite(img), &jpeg.Options{Quality: quality}); err != nil {
-			return nil, err
-		}
-		return out.Bytes(), nil
-	default:
-		// No pure-Go WebP ENCODER exists; the request path is loud-pending
-		// (PORT_MAP exports row) rather than silently different.
-		return nil, fmt.Errorf("webp export pending (no pure-Go encoder)")
 	}
+	img, _, err := image.Decode(bytes.NewReader(pngData))
+	if err != nil {
+		return nil, err
+	}
+	if format == "jpg" {
+		return encodeJPEG(flattenWhite(img), quality, progressive)
+	}
+	if format == "webp" {
+		prepared := img
+		if !transparent {
+			prepared = flattenWhite(img)
+		}
+		return encodeWebPQuality(prepared, float32(quality), false)
+	}
+	return nil, fmt.Errorf("unsupported format")
 }
 
 // flattenWhite ports the JPG path of services._convert: composite over

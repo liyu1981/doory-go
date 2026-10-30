@@ -146,7 +146,7 @@ behavioral verification).
 | `backend/apps/assets/providers.py` | (provider registry + photo APIs — configured paths pending with remote slice) | ⬜ |
 | `backend/apps/assets/remote.py` | doory/remote_image.go (https/443 only, public-address checks incl. NAT64/tunnels, checked redirects, pinned TLS dial, deadline, size/type limits) | ✅ |
 | `backend/apps/assets/serializers.py` | doory/assets.go (envelope incl. status/error/poster_url/audio_url/video, upload/update/query validation) | ✅ |
-| `backend/apps/assets/services.py` | doory/assets.go (prepare raster/SVG/quota/storage, content sniffing, sanitised SVG with intrinsic size; audio/video loud-pending, thumbnail content M14) | 🟡 |
+| `backend/apps/assets/services.py` | doory/assets.go (prepare raster/SVG/quota/storage, content sniffing, sanitised SVG with intrinsic size; audio/video loud-pending); thumbnails use libwebp, resampling filter remains D15 | 🟡 |
 | `backend/apps/assets/signals.py` | (file cleanup on delete — pending file-lifecycle slice) | ⬜ |
 | `backend/apps/assets/stock.py` | doory/stock.go (search/import validation + no-config payloads); live provider paths pending (remote/SSRF slice) | 🟡 |
 | `backend/apps/assets/stocklimits.py` | (rate tracking — pending with provider slice) | ⬜ |
@@ -216,7 +216,7 @@ behavioral verification).
 | `backend/apps/core/apps.py` |  | ⬜ |
 | `backend/apps/core/csrf.py` | doory/csrf_verify.go (enforce_csrf causes + masked-token unmask) + doory/router.go (mixin ordering) | ✅ |
 | `backend/apps/core/exceptions.py` | doory/envelope.go (uniform error envelope + 401-for-anon; ValidationError field maps, ApiError, Throttled retry_after pending) | 🟡 |
-| `backend/apps/core/images.py` | doory/assets.go (prepareRaster: decode-decides, dims/pixels, original-bytes storage); EXIF transpose/re-encode + AVIF + thumbnail encoder pending | 🟡 |
+| `backend/apps/core/images.py` | doory/assets.go (prepareRaster decode-decides/dims/pixels/original-bytes) + doory/images.go (make_thumbnail/square-crop geometry, WebP via internal/wasmimage); EXIF transpose/re-encode + AVIF pending | 🟡 |
 | `backend/apps/core/management/` | doory/commands_models.go + doory/mlmodels.go (sync_models: --list/--dry-run/--from-dir/HTTPS sources with size+SHA-256 verify, .part rename, NOTICE.txt) | ✅ |
 | `backend/apps/core/middleware.py` | doory/middleware.go (PermissionsPolicy + PrivateApiCache; MediaSecurityHeaders with assets family) | 🟡 |
 | `backend/apps/core/models.py` |  | ⬜ |
@@ -326,7 +326,7 @@ behavioral verification).
 | `backend/apps/exports/policy.py` | internal/renderpolicy (origin/prefix decisions, path traversal, fetch rules) | ✅ |
 | `backend/apps/exports/renderer.py` | doory/render.go (slots, worker model, env allowlist, report mapping) | 🟡 |
 | `backend/apps/exports/serializers.py` | doory/exports.go (PdfExport/ImageExport) + doory/exports_optimize.go (ImageOptimizeSerializer), D21 for avif | 🟡 |
-| `backend/apps/exports/services.py` | doory/exports.go + doory/render.go + doory/exports_optimize.go (sanitize->layout->render pipeline, optimize_image for png/jpg/webp, max_bytes search, palette, D21 for avif); multi-page/video pending | 🟡 |
+| `backend/apps/exports/services.py` | doory/exports.go + doory/render.go + doory/exports_optimize.go (sanitize->layout->render pipeline, optimize_image for png/jpg/webp with libwebp/libjpeg-turbo, max_bytes search, palette, D21 for avif); multi-page/video pending | 🟡 |
 | `backend/apps/exports/tests/` | (dispositions: ledger/test-mapping-v*.json) | 🟡 |
 | `backend/apps/exports/throttling.py` | (ExportRateThrottle — kernel rate limits pending) | ⬜ |
 | `backend/apps/exports/urls.py` |  | ⬜ |

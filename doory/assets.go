@@ -10,9 +10,9 @@
 // Slice notes (PORT_MAP pending): SVG markup is sanitised, sized and stored
 // (no separate preview: the asset URL is the preview); audio uploads still
 // answer the loud notPorted error until the audio pipeline lands. AVIF
-// decode and EXIF-orientation re-encode parity (Pillow encoders) are G19/G23;
-// WebP thumbnail FILE content is name-parity only until M14 (no pure-Go
-// encoder — the response exposes only the URL).
+// decode and EXIF-orientation re-encode parity (Pillow encoders) are G19/G23.
+// Raster thumbnails are re-encoded through libwebp at Pillow's quality 82;
+// their resampling filter still differs (D15).
 //
 // Ports backend/apps/assets/views.py
 // Ports backend/apps/assets/services.py
@@ -411,7 +411,7 @@ func (a *App) assetsCreate(w http.ResponseWriter, r *http.Request) {
 	// storage: upload_to uses uuid STRING values (probe0007 step10):
 	// assets/<owner-dashed>/<id-dashed>.<ext> + thumbs/<id>.webp
 	asset.File = "assets/" + dashedUUID(u.ID) + "/" + dashedUUID(asset.ID) + "." + prepared.ext
-	if prepared.kind == "image" {
+	if prepared.kind == "image" && prepared.thumb != nil {
 		asset.Thumbnail = "assets/" + dashedUUID(u.ID) + "/thumbs/" + dashedUUID(asset.ID) + ".webp"
 	}
 
@@ -433,13 +433,11 @@ func (a *App) assetsCreate(w http.ResponseWriter, r *http.Request) {
 		writeDRF(w, http.StatusInternalServerError, "server_error", "Something went wrong on our side.")
 		return
 	}
-	// Thumbnail: raster NAME parity only until a pure-Go WebP encoder lands
-	// (M14 backlog; responses expose the URL, never the bytes). SVGs have no
-	// separate thumbnail (the asset URL is the preview).
+	// SVGs have no separate thumbnail (the asset URL is the preview).
 	if asset.Thumbnail != "" {
 		thumbPath := filepath.Join(a.Settings.MediaRoot, asset.Thumbnail)
 		if err := os.MkdirAll(filepath.Dir(thumbPath), 0o755); err == nil {
-			_ = os.WriteFile(thumbPath, prepared.data, 0o644)
+			_ = os.WriteFile(thumbPath, prepared.thumb, 0o644)
 		}
 	}
 
@@ -471,6 +469,7 @@ type preparedRaster struct {
 	ext    string
 	width  int
 	height int
+	thumb  []byte
 }
 
 func prepareRaster(data []byte) (*preparedRaster, *DocumentError) {
@@ -493,7 +492,8 @@ func prepareRaster(data []byte) (*preparedRaster, *DocumentError) {
 	}
 	// Full decode surfaces truncated/corrupt files (DecodeConfig reads only
 	// the header).
-	if _, _, err := image.Decode(bytes.NewReader(data)); err != nil {
+	img, _, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
 		return nil, &DocumentError{Code: "invalid_file", Status: 400,
 			Message: "The file is not a valid image."}
 	}
@@ -506,8 +506,13 @@ func prepareRaster(data []byte) (*preparedRaster, *DocumentError) {
 		return nil, &DocumentError{Code: "invalid_file", Status: 400,
 			Message: "Unsupported image type. Use PNG, JPEG, WebP, GIF or AVIF."}
 	}
-	return &preparedRaster{kind: "image", data: data, mime: mime, ext: ext,
-		width: width, height: height}, nil
+	prepared := &preparedRaster{kind: "image", data: data, mime: mime, ext: ext,
+		width: width, height: height}
+	// _prepare_raster: a 480 px WebP thumbnail, optional when encoding fails.
+	if thumb, terr := encodeWebP(fitThumbnail(img, thumbnailSide)); terr == nil {
+		prepared.thumb = thumb
+	}
+	return prepared, nil
 }
 
 // prepareSVG ports assets.services._prepare_svg: sanitise, inspect the

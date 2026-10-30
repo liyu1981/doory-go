@@ -228,15 +228,16 @@ Rules (PiG §6):
 - status: active
 - summary: `seed_templates`/`import_template` pass every thumbnail through
   Pillow (`process_image_upload` + `make_thumbnail`: decode, EXIF-strip, LANCZOS
-  resize to 720 px, WebP quality 82). There is no pure-Go WebP ENCODER (the M7
-  finding); the port validates the raster, bounds it, and stores the source
-  bytes when they already are WebP. File name/URL and decoded dimensions match,
-  the bytes do not. The cli-driver therefore compares files directly inside
+  resize to 720 px, WebP quality 82). The port now uses the embedded libwebp
+  encoder at the same quality/method and re-encodes imported thumbnails, but
+  its resampling filter is CatmullRom (the closest stdlib kernel) rather than
+  Pillow's Lanczos, and EXIF transposition is still pending (G23). File names,
+  types and decoded dimensions match; resized/EXIF-carrying thumbnails are not
+  pixel-identical. The cli-driver therefore compares files directly inside
   `templates/` by decoded dimensions (`media_structural` in scenario 22) and
   everything else in the tree by content hash.
-- remove-when: a Go WebP encoder is adopted (or the thumbnails ship
-  pre-generated and the command copies them), then the structural rule and this
-  record go away.
+- remove-when: a Pillow-compatible Lanczos resampler and EXIF transpose land
+  (G23), then the structural rule and this record go away.
 - evidence: PLAN.md M13 log, scenario 22-ops-commands (seed_templates),
   doory/commands_gallery.go.
 
@@ -328,23 +329,24 @@ Rules (PiG §6):
 - evidence: `doory/entrypoint.go` (prepareEnvFromOS), `.env.example`
   (DOORY_SYNC_ELEMENTS/DOORY_SYNC_AUDIO/DOORY_SEED_TEMPLATES), PLAN.md §11.
 
-## D20 — WebP is encoded in-process, never byte-identical to Pillow's
+## D20 — retired: WebP/JPEG use the embedded libwebp/libjpeg-turbo modules
 
-- SCRUTINIZED: pending (image bytes are compared structurally, never byte-wise)
-- status: active
-- summary: upstream makes WebP with Pillow (design thumbnails, asset
-  thumbnails, `format=webp` downloads and exports). Go's standard library has
-  no WebP encoder, so the port uses a pure-Go lossless encoder
-  (`github.com/HugoSmits86/nativewebp`): files are valid WebP with the same
-  dimensions and alpha, but their bytes differ from Pillow's. Comparators
-  therefore compare WebP responses structurally (decoded pixels/dimensions,
-  media-tree digests excluded for generated thumbnails), and D15's
-  template-thumbnail rule stays in place for the pinned upstream files.
-- remove-when: a Go build with libwebp (cgo) is adopted, making encoder
-  output comparable with Pillow's — or the comparators grow a byte-level
-  WebP rule that the reason for this record disappears.
-- evidence: `doory/images.go` (encodeWebP), `go.mod` (nativewebp), D15,
-  PLAN.md §11.
+- SCRUTINIZED: approved (retired)
+- status: retired
+- summary: this divergence originally recorded the pure-Go lossless WebP
+  encoder and Go's standard-library JPEG encoder, whose output was valid but
+  never byte-identical to Pillow's. The port now embeds libwebp 1.6.0 and
+  libjpeg-turbo 3.1.0 (JPEG API 6.2) as WASI reactor modules and calls their
+  exported ABI in-process, with Pillow's encoder settings (WebP method 4,
+  alpha_quality 100; JPEG optimize + optional progressive). The byte fixtures
+  in `internal/wasmimage/testdata` are Pillow's output and the encoder tests
+  compare them exactly.
+- remove-when: n/a (retired). Re-open a new id if the embedded library
+  versions or a wrapper ABI can no longer track the oracle's Pillow build.
+- evidence: `internal/wasmimage/` (modules, C ABI, BUILD.md, byte fixtures),
+  `doory/images.go`, `doory/exports.go`, `doory/exports_optimize.go`. D15
+  still records that resampled thumbnails are not pixel-identical (different
+  resampling filter), and D21 still records the absent AVIF encoder.
 
 ## D21 — AVIF is advertised away: no pure-Go encoder exists
 

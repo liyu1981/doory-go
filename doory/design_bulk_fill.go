@@ -262,7 +262,7 @@ func (a *App) bulkExportImage(design *designRow, format string, owner *UserRow) 
 	if derr != nil {
 		return nil, fmt.Errorf("%s", derr.Message)
 	}
-	data, cerr := convertImage(result.Data, format, 90, false)
+	data, cerr := convertImage(result.Data, format, 90, false, false)
 	if cerr != nil {
 		return nil, fmt.Errorf("The image could not be rendered.")
 	}

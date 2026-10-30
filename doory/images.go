@@ -3,9 +3,9 @@
 // pipeline).
 //
 // Decoding accepts what the ported stack can read (PNG, JPEG, GIF, WebP —
-// AVIF is loud-pending, D21). Encoding is WebP via a pure-Go lossless encoder
-// (D20: valid WebP, identical pixels, bytes unlike Pillow's) plus PNG/JPEG
-// from the standard library.
+// AVIF is loud-pending, D21). WebP and JPEG encoding use the embedded
+// libwebp 1.6.0 and libjpeg-turbo 3.1.0 modules, matching the libraries
+// Pillow 13 links; PNG stays on the standard library.
 package doory
 
 import (
@@ -14,10 +14,9 @@ import (
 	"image"
 	"image/color"
 	"image/gif"
-	"image/jpeg"
 	"image/png"
 
-	"github.com/HugoSmits86/nativewebp"
+	"doory-go/internal/wasmimage"
 	xdraw "golang.org/x/image/draw"
 	_ "golang.org/x/image/webp" // register the WebP decoder for image.Decode
 )
@@ -70,8 +69,8 @@ func fitThumbnail(src image.Image, maxSide int) image.Image {
 		targetH = 1
 	}
 	dst := image.NewNRGBA(image.Rect(0, 0, targetW, targetH))
-	// CatmullRom is the closest stdlib filter to Lanczos; pixels are compared
-	// structurally, never byte-wise (D15/D20).
+	// CatmullRom is the closest stdlib filter to Lanczos. Resampling still
+	// differs from Pillow's Lanczos at the pixel level (D15).
 	xdraw.CatmullRom.Scale(dst, dst.Bounds(), src, b, xdraw.Src, nil)
 	return dst
 }
@@ -89,28 +88,126 @@ func toRGBA(src image.Image) image.Image {
 
 // encodeImage encodes an image in one of the supported formats.
 func encodeImage(img image.Image, format string) ([]byte, error) {
-	var buf bytes.Buffer
 	switch format {
 	case "png":
+		var buf bytes.Buffer
 		if err := png.Encode(&buf, img); err != nil {
 			return nil, err
 		}
+		return buf.Bytes(), nil
 	case "jpg", "jpeg":
-		if err := jpeg.Encode(&buf, flattenOnWhite(img), &jpeg.Options{Quality: 90}); err != nil {
-			return nil, err
-		}
+		return encodeJPEG(flattenOnWhite(img), 90, false)
 	case "webp":
-		if err := nativewebp.Encode(&buf, img, nil); err != nil {
-			return nil, err
-		}
+		return encodeWebP(img)
 	default:
 		return nil, errors.New("unsupported format")
 	}
-	return buf.Bytes(), nil
 }
 
-// encodeWebP makes a WebP file (lossless; D20).
-func encodeWebP(img image.Image) ([]byte, error) { return encodeImage(img, "webp") }
+// encodeWebP makes a WebP file at Pillow's make_thumbnail defaults:
+// quality 82, method 4, lossy.
+func encodeWebP(img image.Image) ([]byte, error) { return encodeWebPQuality(img, 82, false) }
+
+// encodeWebPQuality encodes WebP with Pillow's WebPImagePlugin settings:
+// method 4, alpha_quality 100, exact 0.
+func encodeWebPQuality(img image.Image, quality float32, lossless bool) ([]byte, error) {
+	pixels, width, height, alpha := webpPixels(img)
+	return wasmimage.EncodeWebP(pixels, width, height, quality, 4, lossless, alpha)
+}
+
+// webpPixels returns RGB when the image is fully opaque and RGBA otherwise.
+func webpPixels(img image.Image) ([]byte, int, int, bool) {
+	b := img.Bounds()
+	width, height := b.Dx(), b.Dy()
+	if imageHasAlpha(img) {
+		return rgbaPixels(img), width, height, true
+	}
+	return rgbPixels(img), width, height, false
+}
+
+// imageHasAlpha reports whether any pixel is not fully opaque.
+func imageHasAlpha(img image.Image) bool {
+	switch src := img.(type) {
+	case *image.NRGBA:
+		for y := 0; y < src.Rect.Dy(); y++ {
+			row := src.Pix[y*src.Stride : y*src.Stride+src.Rect.Dx()*4]
+			for i := 3; i < len(row); i += 4 {
+				if row[i] != 0xff {
+					return true
+				}
+			}
+		}
+		return false
+	case *image.RGBA:
+		for y := 0; y < src.Rect.Dy(); y++ {
+			row := src.Pix[y*src.Stride : y*src.Stride+src.Rect.Dx()*4]
+			for i := 3; i < len(row); i += 4 {
+				if row[i] != 0xff {
+					return true
+				}
+			}
+		}
+		return false
+	case *image.Gray, *image.Gray16, *image.YCbCr:
+		return false
+	}
+	b := img.Bounds()
+	for y := b.Min.Y; y < b.Max.Y; y++ {
+		for x := b.Min.X; x < b.Max.X; x++ {
+			if _, _, _, a := img.At(x, y).RGBA(); a != 0xffff {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// rgbaPixels copies non-premultiplied RGBA bytes.
+func rgbaPixels(img image.Image) []byte {
+	b := img.Bounds()
+	width, height := b.Dx(), b.Dy()
+	out := make([]byte, width*height*4)
+	if src, ok := img.(*image.NRGBA); ok {
+		for y := 0; y < height; y++ {
+			srcRow := src.Pix[(b.Min.Y+y-src.Rect.Min.Y)*src.Stride:]
+			copy(out[y*width*4:(y+1)*width*4], srcRow[(b.Min.X-src.Rect.Min.X)*4:(b.Min.X-src.Rect.Min.X)*4+width*4])
+		}
+		return out
+	}
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			c := color.NRGBAModel.Convert(img.At(b.Min.X+x, b.Min.Y+y)).(color.NRGBA)
+			i := (y*width + x) * 4
+			out[i], out[i+1], out[i+2], out[i+3] = c.R, c.G, c.B, c.A
+		}
+	}
+	return out
+}
+
+// rgbPixels copies non-premultiplied RGB bytes (alpha is dropped).
+func rgbPixels(img image.Image) []byte {
+	b := img.Bounds()
+	width, height := b.Dx(), b.Dy()
+	out := make([]byte, width*height*3)
+	if src, ok := img.(*image.NRGBA); ok {
+		for y := 0; y < height; y++ {
+			for x := 0; x < width; x++ {
+				i := ((b.Min.Y+y-src.Rect.Min.Y)*src.Stride + (b.Min.X+x-src.Rect.Min.X)*4)
+				o := (y*width + x) * 3
+				out[o], out[o+1], out[o+2] = src.Pix[i], src.Pix[i+1], src.Pix[i+2]
+			}
+		}
+		return out
+	}
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			c := color.NRGBAModel.Convert(img.At(b.Min.X+x, b.Min.Y+y)).(color.NRGBA)
+			i := (y*width + x) * 3
+			out[i], out[i+1], out[i+2] = c.R, c.G, c.B
+		}
+	}
+	return out
+}
 
 // flattenOnWhite ports the JPG flattening the oracle does for opaque formats.
 func flattenOnWhite(src image.Image) image.Image {

@@ -1323,8 +1323,8 @@ M13 progress log (this session — cli foundation + deterministic commands):
 - ⬜ M13 remaining (named, all content-gated rather than behavioral): (a) the
   npm/url element packs over the NETWORK (implemented; directory/unit tested —
   CI has no network), brand-logo sync against a real pack, --from-dir with a
-  real npm tarball; (b) template thumbnails stay dimension-compared until a Go
-  WebP encoder lands (D15); (c) the deep audio metadata parse (duration/
+  real npm tarball; (b) template thumbnails stay dimension-compared until a
+  Pillow-compatible resampler/EXIF transpose lands (D15/G23); (c) the deep audio metadata parse (duration/
   channels) belongs to the assets upload pipeline, still pending there;
   (d) `sync_audio --pack` has no manifest entry to exercise (unit-tested).
 
@@ -1548,11 +1548,11 @@ in this order (each probed against the oracle first, then scenario-covered):
    kinds + field tags + shrink-to-fit overflow estimate).
 2. `/designs/bulk/` — `BulkSerializer` + `services.bulk_apply`
    (trash/restore/delete/star/unstar/move).
-3. `/designs/{uuid}/thumbnail/` — upload → decode → 480 px WebP (D20).
+3. `/designs/{uuid}/thumbnail/` — upload → decode → 480 px WebP.
 4. `/designs/{uuid}/bulk-fill/` — `BulkFillSerializer` + `filling.bulk_fill`
    (one design per row, text/image/colour values; URL images need the remote
    fetch, which the port has for the AI transport only).
-5. `/exports/optimize/` — `optimize_image` for png/jpg/webp (D20); AVIF is
+5. `/exports/optimize/` — `optimize_image` for png/jpg/webp; AVIF is
    advertised away (D21).
 6. `/auth/email/verify/`, `/auth/email/resend/`,
    `/auth/password/reset/`, `/auth/password/reset/confirm/` — Django's
@@ -1577,7 +1577,7 @@ The eleven routes the rebuilt frontend called, plus the content bootstrap:
   kinds, the text-estimate builders), `/designs/bulk/`
   (`services.bulk_apply` for trash/restore/delete/star/unstar/move with the
   serializer's validation) and `/designs/{uuid}/thumbnail/` (decode →
-  `thumbnailMaxPixels` → 480 px WebP via the new in-process encoder, D20),
+  `thumbnailMaxPixels` → 480 px WebP via the embedded libwebp encoder),
   all scenario-covered in 05-designs.
 - ✅ `/exports/optimize/` (`doory/exports_optimize.go`): png/jpg/webp/auto,
   quality presets, `max_bytes` search, transparency flattening, `png_colors`

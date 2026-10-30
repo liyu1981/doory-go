@@ -3,6 +3,9 @@ package doory
 import (
 	"bytes"
 	"encoding/json"
+	"image"
+	"image/color"
+	"image/png"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -81,5 +84,51 @@ func TestSVGAssetUploadIsSanitisedAndStored(t *testing.T) {
 	res, body = env.postFileWithCSRF("/api/v1/assets/", "file", "bad.svg", `<svg><script>alert(1)</script>`)
 	if res.StatusCode != http.StatusBadRequest || !strings.Contains(body, "not a valid, safe SVG") {
 		t.Fatalf("unsafe svg = %d %s", res.StatusCode, body)
+	}
+}
+
+func TestRasterAssetThumbnailIsWebP(t *testing.T) {
+	env := newAdminEnv(t)
+	user := env.makeUser("thumb@example.com", false, false)
+	env.loginAs(user)
+	src := image.NewNRGBA(image.Rect(0, 0, 1000, 500))
+	for y := 0; y < 500; y++ {
+		for x := 0; x < 1000; x++ {
+			src.SetNRGBA(x, y, color.NRGBA{R: uint8(x), G: uint8(y), B: uint8(x ^ y), A: 255})
+		}
+	}
+	var pngBytes bytes.Buffer
+	if err := png.Encode(&pngBytes, src); err != nil {
+		t.Fatal(err)
+	}
+	res, body := env.postFileWithCSRF("/api/v1/assets/", "file", "photo.png", pngBytes.String())
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("png upload = %d %s", res.StatusCode, body)
+	}
+	var payload struct {
+		ID       string `json:"id"`
+		Kind     string `json:"kind"`
+		ThumbURL string `json:"thumb_url"`
+	}
+	if err := json.Unmarshal([]byte(body), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if payload.Kind != "image" || !strings.HasSuffix(payload.ThumbURL, ".webp") {
+		t.Fatalf("png envelope = %+v", payload)
+	}
+	var name string
+	if err := env.db.QueryRow(`SELECT thumbnail FROM assets_asset WHERE id = ?`, hexUUID(payload.ID)).Scan(&name); err != nil {
+		t.Fatal(err)
+	}
+	stored, err := os.ReadFile(filepath.Join(env.settings.MediaRoot, filepath.FromSlash(name)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.HasPrefix(stored, []byte("RIFF")) || !bytes.Contains(stored[:12], []byte("WEBP")) {
+		t.Fatalf("thumbnail is not WebP: %q", stored[:12])
+	}
+	cfg, format, err := image.DecodeConfig(bytes.NewReader(stored))
+	if err != nil || format != "webp" || cfg.Width != 480 || cfg.Height != 240 {
+		t.Fatalf("thumbnail config = %dx%d %s err=%v, want 480x240 webp", cfg.Width, cfg.Height, format, err)
 	}
 }

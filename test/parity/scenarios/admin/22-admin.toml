@@ -10,9 +10,9 @@ driver = "http"
 tags = []
 collectstatic = true
 dialects = ["sqlite"]
-# Thumbnails are derived images: the oracle re-encodes them through Pillow's
-# WebP encoder, the Go port through its own (D20). Files in these directories
-# compare by decoded dimensions instead of bytes.
+# Thumbnails are derived images: the WebP encoder now matches Pillow, but the
+# resampling filter (CatmullRom vs Lanczos) still changes pixels, so files in
+# these directories compare by decoded dimensions instead of bytes (D15).
 media_structural = ["templates/", "elements/packs/"]
 covers = [
   "backend/apps/accounts/admin.py",

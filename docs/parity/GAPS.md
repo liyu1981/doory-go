@@ -84,13 +84,11 @@ flowchart TB
   %% independent deliberate differences
   subgraph Differences["Independent / deliberate differences"]
     direction TB
-    G18["G18 D20 WebP/JPEG bytes"]
     G19["G19 D21 AVIF"]
     G20["G20 D7 S3 media"]
     G21["G21 D4 Postgres dialect lane"]
     G23["G23 image normalisation edges"]
 
-    G23 --> G18
     G23 --> G19
   end
 
@@ -107,8 +105,8 @@ flowchart TB
   %% Layout-only links: keep the clusters stacked vertically (they are invisible).
   G11 ~~~ G16
   G16 ~~~ G28
-  G28 ~~~ G18
-  G18 ~~~ G24
+  G28 ~~~ G19
+  G19 ~~~ G24
 ```
 
 ### Dependency lookup table
@@ -127,12 +125,11 @@ parity-completeness, not a hard feature blocker.
 | G15 | G22 | soft | needs the video upload rate charge |
 | G16 | — | — | AI response readers/style encoders |
 | G17 | G28, G29, G30, G31 | hard | admin program umbrella |
-| G18 | — | — | image byte differences only |
 | G19 | — | — | AVIF encoder missing |
 | G20 | — | — | S3 storage seam |
 | G21 | — | — | Postgres dialect runner lane |
 | G22 | — | — | cross-cutting DRF throttle slice |
-| G23 | G18, G19 | hard | EXIF/normalisation parity needs the encoder and AVIF paths |
+| G23 | G19 | hard | EXIF/normalisation parity still needs the AVIF path |
 | G24 | — | — | verification of all families |
 | G25 | — | — | test-mapping bookkeeping |
 | G26 | — | — | PORT_MAP review bookkeeping |
@@ -175,7 +172,7 @@ which upstream function is missing — never a silent wrong answer.
 |---|---|---|---|
 | G12 | Stock photos: Unsplash / Pexels / Pixabay search + import | Validation + `_not_configured` payloads match the oracle; no provider call | Provider HTTP clients with the fake-provider fixtures (`assets/providers.py`, `remote.py`, counting/pausing/redaction). |
 | G13 | Freesound: search, info, import, preview | Same (no-config shapes + messages) | `assets/freesound.py` client + preview streaming. |
-| G15 | Video family | Availability + limits + no-config payloads only (D20-era) | `assets/video.py` (ffprobe/ffmpeg probe + conversion), `video_jobs.py` (queue, 202 processing, poster/filmstrip/audio), `ingest_video_upload`, `sweep_video_jobs`, live stock-video providers, and video export in `exports/`. |
+| G15 | Video family | Availability + limits + no-config payloads only | `assets/video.py` (ffprobe/ffmpeg probe + conversion), `video_jobs.py` (queue, 202 processing, poster/filmstrip/audio), `ingest_video_upload`, `sweep_video_jobs`, live stock-video providers, and video export in `exports/`. |
 | G16 | AI provider response readers / style encoders (`ai/styles/{base,multipart,json_b64,mask,custom}.py`, `results.py`) | The port builds the doory multipart request and maps errors; response decoding and style variants are partial | Port the styles + result readers; needs the fake-provider harness to prove wire behaviour. |
 
 ## D. Deliberate differences that are still open work
@@ -183,12 +180,11 @@ which upstream function is missing — never a silent wrong answer.
 | id | divergence | status |
 |---|---|---|
 | G17 | **D2 — Django admin** | Owner approved the Go admin on 2026-10-26: full route-shape coverage, server-rendered (no-Unfold) HTML, staff read + superuser writes until per-model permissions land. G27 is closed; the remaining work is split into G28–G31. |
-| G18 | **D20 — WebP/JPEG bytes** | In-process encoders (lossless WebP, stdlib JPEG) instead of Pillow/mozjpeg: valid files, different bytes. Image responses are compared structurally (D15/D20). Closes if a libwebp/libjpeg build is adopted. |
 | G19 | **D21 — AVIF** | Not made at all (no pure-Go encoder); `/config/` advertises `png,jpg,webp` and the endpoint rejects `avif`. Closes with an AVIF encoder. |
 | G20 | **D7 — S3 media storage** | Local media only; the `storages` seam is not ported. |
 | G21 | **D4 — Postgres dialect lane** | Schema digest + `pg-smoke` run on Postgres; the runner does **not** replay each scenario on Postgres. Wiring the dialect matrix into `test/parity` closes it. |
 | G22 | **D6/D11-family leftovers** | Scoped DRF rate throttles are not enforced end-to-end (the account lockout is); `REST_FRAMEWORK` rates still need the kernel throttle slice. |
-| G23 | Image normalisation edges | EXIF orientation/normalisation and AVIF decode paths differ from Pillow's; loud or structural today, not byte-equal. |
+| G23 | Image normalisation edges | EXIF orientation/normalisation and AVIF decode paths differ from Pillow's; loud or structural today, not byte-equal. The WebP/JPEG encoder half is closed by G18. |
 
 ## E. Verification and bookkeeping deficits
 
@@ -218,6 +214,7 @@ which upstream function is missing — never a silent wrong answer.
 | G1 | `POST /api/v1/designs/{id}/fill/` — fill template fields as a copy or in place | `d98f9a4` |
 | G10 | SVG asset upload (sanitise, size cap, intrinsic sizing, stored markup) | `486fec3` |
 | G14 | Remote image fetch (`URL_IMAGE_UPLOADS`, bulk-fill/fill URL values, stock import downloads) | `c22b721` |
+| G18 | WebP/JPEG encoding through embedded libwebp 1.6.0 + libjpeg-turbo 3.1.0 (Pillow byte parity) | to be filled |
 | G27 | Admin kernel and CLI (staff/session/CSRF, index/app/search/autocomplete/jsi18n, never_cache/Vary, admin log/history, bootstrap commands, auth seed) | `c4f61f7` |
 | G2 | `POST /api/v1/designs/{id}/bulk-fill/` — one copy per row, row errors, name pattern/folder/export | `5ca20e3` |
 | G4 | `GET /api/v1/schema/`, `GET /api/v1/docs/` — pinned OpenAPI document + staff Swagger UI | `a02fad8` |

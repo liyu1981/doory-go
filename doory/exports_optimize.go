@@ -13,16 +13,16 @@
 package doory
 
 import (
-	"bytes"
 	"fmt"
 	"image"
 	"image/color"
-	"image/jpeg"
 	"io"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
+
+	"doory-go/internal/wasmimage"
 )
 
 const optimizeOverheadBytes = 1024 * 1024 // views.OPTIMIZE_OVERHEAD_BYTES
@@ -386,7 +386,7 @@ func convertOptimize(img image.Image, format string, request optimizeRequest) (o
 			}
 			return data, nil
 		case "webp":
-			data, err := encodeWebP(prepared)
+			data, err := encodeWebPQuality(prepared, float32(quality), false)
 			if err != nil {
 				return nil, &DocumentError{Code: "server_error", Status: http.StatusInternalServerError,
 					Message: "Something went wrong on our side."}
@@ -401,8 +401,8 @@ func convertOptimize(img image.Image, format string, request optimizeRequest) (o
 		return optimizedImage{}, derr
 	}
 	quality := request.Quality
-	if format == "png" || format == "webp" {
-		quality = 0 // lossless formats report no quality
+	if format == "png" {
+		quality = 0 // PNG reports no quality
 	}
 	if request.MaxBytes != nil && int64(len(data)) > *request.MaxBytes {
 		// Step the quality down until the file fits (the oracle's search),
@@ -413,7 +413,7 @@ func convertOptimize(img image.Image, format string, request optimizeRequest) (o
 				break
 			}
 			data, quality = candidate, q
-			if format == "png" || format == "webp" {
+			if format == "png" {
 				quality = 0
 			}
 			if int64(len(data)) <= *request.MaxBytes {
@@ -428,15 +428,11 @@ func convertOptimize(img image.Image, format string, request optimizeRequest) (o
 	}, nil
 }
 
-// encodeJPEG encodes with the requested quality (the progressive flag is
-// accepted and ignored: Go's standard JPEG encoder has no progressive mode;
-// pixels stay identical, the bytes differ — D20's structural rule).
+// encodeJPEG encodes with the requested quality through libjpeg-turbo,
+// mirroring Pillow's optimize=True and optional progressive mode.
 func encodeJPEG(img image.Image, quality int, progressive bool) ([]byte, error) {
-	var buf bytes.Buffer
-	if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: quality}); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+	pixels, width, height := rgbPixels(flattenOnWhite(img)), img.Bounds().Dx(), img.Bounds().Dy()
+	return wasmimage.EncodeJPEG(pixels, width, height, quality, true, progressive)
 }
 
 // withoutString drops one value (the auto format list without jpg for a
