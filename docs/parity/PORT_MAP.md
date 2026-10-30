@@ -146,12 +146,12 @@ behavioral verification).
 | `backend/apps/assets/providers.py` | (provider registry + photo APIs — configured paths pending with remote slice) | ⬜ |
 | `backend/apps/assets/remote.py` | doory/remote_image.go (https/443 only, public-address checks incl. NAT64/tunnels, checked redirects, pinned TLS dial, deadline, size/type limits) | ✅ |
 | `backend/apps/assets/serializers.py` | doory/assets.go (envelope incl. status/error/poster_url/audio_url/video, upload/update/query validation) | ✅ |
-| `backend/apps/assets/services.py` | doory/assets.go (prepare raster/quota/storage; markup/audio/video loud-pending, thumbnail content M14) | 🟡 |
+| `backend/apps/assets/services.py` | doory/assets.go (prepare raster/SVG/quota/storage, content sniffing, sanitised SVG with intrinsic size; audio/video loud-pending, thumbnail content M14) | 🟡 |
 | `backend/apps/assets/signals.py` | (file cleanup on delete — pending file-lifecycle slice) | ⬜ |
 | `backend/apps/assets/stock.py` | doory/stock.go (search/import validation + no-config payloads); live provider paths pending (remote/SSRF slice) | 🟡 |
 | `backend/apps/assets/stocklimits.py` | (rate tracking — pending with provider slice) | ⬜ |
 | `backend/apps/assets/storage.py` | (delete-on-commit helpers — pending with file-lifecycle slice) | ⬜ |
-| `backend/apps/assets/tests/` | doory/remote_image_test.go (URL policy, redirects, size/type checks, URL import) + ledger/test-mapping dispositions remain | 🟡 |
+| `backend/apps/assets/tests/` | doory/remote_image_test.go (URL policy, redirects, size/type checks, URL import) + doory/assets_svg_test.go (SVG sanitise/store/unsafe rejection); ledger/test-mapping dispositions remain | 🟡 |
 | `backend/apps/assets/throttling.py` | (DRF rate scopes — kernel family pending) | ⬜ |
 | `backend/apps/assets/uploads.py` | doory/assets.go (oversize reject, clean_name/clean_tags/strip — shared with brand/fonts) | ✅ |
 | `backend/apps/assets/urls.py` |  | ⬜ |
@@ -159,7 +159,7 @@ behavioral verification).
 | `backend/apps/assets/video_jobs.py` |  | ⬜ |
 | `backend/apps/assets/video_providers.py` | doory/stock.go (registry order, per-provider keys with photo-key fallback, tab-order credits for /stock/videos/providers/) | 🟡 |
 | `backend/apps/assets/video_stock.py` | doory/stock.go (search/providers/import no-config paths + serializer bounds); live provider search/resolve/download and import pending | 🟡 |
-| `backend/apps/assets/views.py` | doory/assets.go + doory/app.go (list/create/retrieve/patch/delete/usage; 0.2.0 picture-kind default filter); video 202/processing pending | 🟡 |
+| `backend/apps/assets/views.py` | doory/assets.go + doory/app.go (list/create incl. SVG/retrieve/patch/delete/usage; 0.2.0 picture-kind default filter); video 202/processing pending | 🟡 |
 
 ## `backend/apps/assets/audiolib/`
 

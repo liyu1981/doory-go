@@ -7,11 +7,11 @@
 // cleaning (path strip, control chars, collapse, lowercase dedupe), the
 // invalid_file message, usage shape.
 //
-// Slice notes (PORT_MAP pending): SVG (markup) and audio content sniffing
-// land with core/svg.py + assets/audio.py — those contents answer loud
-// notPorted errors rather than silently diverging; AVIF decode and
-// EXIF-orientation re-encode parity (Pillow encoders) pending; WebP
-// thumbnail FILE content is name-parity only until M14 (no pure-Go
+// Slice notes (PORT_MAP pending): SVG markup is sanitised, sized and stored
+// (no separate preview: the asset URL is the preview); audio uploads still
+// answer the loud notPorted error until the audio pipeline lands. AVIF
+// decode and EXIF-orientation re-encode parity (Pillow encoders) are G19/G23;
+// WebP thumbnail FILE content is name-parity only until M14 (no pure-Go
 // encoder — the response exposes only the URL).
 //
 // Ports backend/apps/assets/views.py
@@ -31,11 +31,14 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
+	"math"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"doory-go/internal/svg"
 
 	_ "golang.org/x/image/webp" // decode only: sniffing + validation
 )
@@ -393,14 +396,14 @@ func (a *App) assetsCreate(w http.ResponseWriter, r *http.Request) {
 	}
 	name := cleanAssetName(sourceName, "Untitled")
 
-	prepared, perr := prepareRaster(data)
+	prepared, perr := prepareFile(data)
 	if perr != nil {
 		writeDRF(w, perr.Status, perr.Code, perr.Message)
 		return
 	}
 
 	asset := assetRow{
-		ID: newUUID4Hex(), OwnerID: u.ID, Kind: "image", Name: name,
+		ID: newUUID4Hex(), OwnerID: u.ID, Kind: prepared.kind, Name: name,
 		Width: int64(prepared.width), Height: int64(prepared.height),
 		Size: int64(len(prepared.data)), Mime: prepared.mime,
 		Tags: mustMarshalString(tags), Meta: "{}", Status: "ready",
@@ -408,7 +411,9 @@ func (a *App) assetsCreate(w http.ResponseWriter, r *http.Request) {
 	// storage: upload_to uses uuid STRING values (probe0007 step10):
 	// assets/<owner-dashed>/<id-dashed>.<ext> + thumbs/<id>.webp
 	asset.File = "assets/" + dashedUUID(u.ID) + "/" + dashedUUID(asset.ID) + "." + prepared.ext
-	asset.Thumbnail = "assets/" + dashedUUID(u.ID) + "/thumbs/" + dashedUUID(asset.ID) + ".webp"
+	if prepared.kind == "image" {
+		asset.Thumbnail = "assets/" + dashedUUID(u.ID) + "/thumbs/" + dashedUUID(asset.ID) + ".webp"
+	}
 
 	used, _ := a.storageUsed(u.ID)
 	if used+asset.Size > a.Settings.UserStorageQuotaBytes {
@@ -428,12 +433,14 @@ func (a *App) assetsCreate(w http.ResponseWriter, r *http.Request) {
 		writeDRF(w, http.StatusInternalServerError, "server_error", "Something went wrong on our side.")
 		return
 	}
-	// Thumbnail: NAME parity only until a pure-Go WebP encoder lands (M14
-	// backlog; responses expose the URL, never the bytes). The original
-	// bytes are stored under the probed .webp path so the file exists.
-	thumbPath := filepath.Join(a.Settings.MediaRoot, asset.Thumbnail)
-	if err := os.MkdirAll(filepath.Dir(thumbPath), 0o755); err == nil {
-		_ = os.WriteFile(thumbPath, prepared.data, 0o644)
+	// Thumbnail: raster NAME parity only until a pure-Go WebP encoder lands
+	// (M14 backlog; responses expose the URL, never the bytes). SVGs have no
+	// separate thumbnail (the asset URL is the preview).
+	if asset.Thumbnail != "" {
+		thumbPath := filepath.Join(a.Settings.MediaRoot, asset.Thumbnail)
+		if err := os.MkdirAll(filepath.Dir(thumbPath), 0o755); err == nil {
+			_ = os.WriteFile(thumbPath, prepared.data, 0o644)
+		}
 	}
 
 	now := formatDjangoDateTime(time.Now())
@@ -458,6 +465,7 @@ func (a *App) assetsCreate(w http.ResponseWriter, r *http.Request) {
 // formats: DECODE decides (never the filename); dimension/pixel bounds;
 // clean files store their ORIGINAL bytes (probe0007: size == upload size).
 type preparedRaster struct {
+	kind   string
 	data   []byte
 	mime   string
 	ext    string
@@ -474,14 +482,6 @@ func prepareRaster(data []byte) (*preparedRaster, *DocumentError) {
 		// Content decides the type: markup/audio answer loud notPorted
 		// errors (their pipelines are family-pending), everything else gets
 		// the probe-proven unsupported message.
-		if looksLikeMarkup(data) {
-			return nil, &DocumentError{Code: "server_error", Status: 500,
-				Message: "route registered but not ported: assets._prepare_svg (core/svg.py pending)"}
-		}
-		if looksLikeAudio(data) {
-			return nil, &DocumentError{Code: "server_error", Status: 500,
-				Message: "route registered but not ported: assets._prepare_audio (assets/audio.py pending)"}
-		}
 		return nil, &DocumentError{Code: "invalid_file", Status: 400,
 			Message: "Unsupported image type. Use PNG, JPEG, WebP, GIF or AVIF."}
 	}
@@ -506,7 +506,57 @@ func prepareRaster(data []byte) (*preparedRaster, *DocumentError) {
 		return nil, &DocumentError{Code: "invalid_file", Status: 400,
 			Message: "Unsupported image type. Use PNG, JPEG, WebP, GIF or AVIF."}
 	}
-	return &preparedRaster{data: data, mime: mime, ext: ext, width: width, height: height}, nil
+	return &preparedRaster{kind: "image", data: data, mime: mime, ext: ext,
+		width: width, height: height}, nil
+}
+
+// prepareSVG ports assets.services._prepare_svg: sanitise, inspect the
+// intrinsic size, cap it at MAX_SVG_DIMENSION and store the sanitised bytes.
+func prepareSVG(data []byte) (*preparedRaster, *DocumentError) {
+	if len(data) > svg.MaxBytes {
+		return nil, &DocumentError{Code: "file_too_large", Status: 413,
+			Message: "The SVG is too large."}
+	}
+	clean, err := svg.Sanitize(data, false)
+	if err != nil {
+		return nil, &DocumentError{Code: "invalid_file", Status: 400,
+			Message: "The file is not a valid, safe SVG."}
+	}
+	info, err := svg.Info(clean)
+	if err != nil {
+		return nil, &DocumentError{Code: "invalid_file", Status: 400,
+			Message: "The file is not a valid, safe SVG."}
+	}
+	scale := 1.0
+	largest := math.Max(math.Max(info.Width, info.Height), 1)
+	if largest > maxImageDimension {
+		scale = maxImageDimension / largest
+	}
+	width := int(math.Max(1, math.Round(info.Width*scale)))
+	height := int(math.Max(1, math.Round(info.Height*scale)))
+	clean, err = svg.WithIntrinsicSize(clean, width, height)
+	if err != nil {
+		return nil, &DocumentError{Code: "invalid_file", Status: 400,
+			Message: "The file is not a valid, safe SVG."}
+	}
+	return &preparedRaster{kind: "svg", data: clean, mime: "image/svg+xml", ext: "svg",
+		width: width, height: height}, nil
+}
+
+// prepareFile ports assets.services.prepare_file: content, never the
+// filename, decides the type.
+func prepareFile(data []byte) (*preparedRaster, *DocumentError) {
+	if len(data) == 0 {
+		return nil, &DocumentError{Code: "invalid_file", Status: 400, Message: "The file is empty."}
+	}
+	if looksLikeAudio(data) {
+		return nil, &DocumentError{Code: "server_error", Status: 500,
+			Message: "route registered but not ported: assets._prepare_audio (assets/audio.py pending)"}
+	}
+	if looksLikeMarkup(data) {
+		return prepareSVG(data)
+	}
+	return prepareRaster(data)
 }
 
 // looksLikeMarkup mirrors services._looks_like_markup (BOM, first 2 KiB,

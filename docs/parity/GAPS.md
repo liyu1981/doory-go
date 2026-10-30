@@ -39,7 +39,6 @@ flowchart TB
     G7["G7 stock video import"]
     G12["G12 stock photo search/import"]
     G13["G13 Freesound search/import"]
-    G10["G10 SVG upload"]
     G11["G11 audio upload"]
     G22["G22 DRF rate throttles"]
 
@@ -90,6 +89,9 @@ flowchart TB
     G20["G20 D7 S3 media"]
     G21["G21 D4 Postgres dialect lane"]
     G23["G23 image normalisation edges"]
+
+    G23 --> G18
+    G23 --> G19
   end
 
   %% verification / bookkeeping (not feature prerequisites)
@@ -119,7 +121,6 @@ parity-completeness, not a hard feature blocker.
 | G7 | G15 | hard | G15 provides the video probe/convert/store pipeline |
 | G7 | G22 | soft | needs the video upload rate charge |
 | G9 | G16 | hard | response readers/style pipeline |
-| G10 | — | — | SVG rasterisation is self-contained |
 | G11 | G15 | soft | shares the ffmpeg harness |
 | G12 | G22 | soft | needs the stock rate charge |
 | G13 | G22 | soft | needs the stock rate charge |
@@ -131,7 +132,7 @@ parity-completeness, not a hard feature blocker.
 | G20 | — | — | S3 storage seam |
 | G21 | — | — | Postgres dialect runner lane |
 | G22 | — | — | cross-cutting DRF throttle slice |
-| G23 | — | — | image normalisation edges |
+| G23 | G18, G19 | hard | EXIF/normalisation parity needs the encoder and AVIF paths |
 | G24 | — | — | verification of all families |
 | G25 | — | — | test-mapping bookkeeping |
 | G26 | — | — | PORT_MAP review bookkeeping |
@@ -166,7 +167,6 @@ which upstream function is missing — never a silent wrong answer.
 |---|---|---|---|
 | G7 | `POST /api/v1/stock/videos/import/` (and the live branch of `GET /stock/videos/`) | `video_stock.import_video`: resolve via the provider API, download with host checks, probe, convert, insert the asset | Video family (G15). The no-config payloads and serializer bounds are ported. |
 | G9 | `POST /api/v1/ai/providers/{id}/test/`, `/load-models/` | `services.test_provider` (sample picture call, preview, AICall log), `catalog.list_remote_models` | Same provider transport as the AI family's run path, plus the sample image and the remote catalogue mapping. Row lookups are ported. |
-| G10 | `POST /api/v1/assets/` with an SVG upload | `assets._prepare_svg` (`core/svg.py`: sanitise, cap, rasterise preview) | SVG pipeline. The port answers the loud notPorted error today. |
 | G11 | `POST /api/v1/assets/` with an audio upload | `assets._prepare_audio` (`assets/audio.py`: container/codec probe, duration, waveform) | Audio pipeline. Note the audio *library* install (`sync_audio`) is ported; only uploads are not. |
 
 ## C. Live-network paths that only work in their no-config shape
@@ -216,6 +216,7 @@ which upstream function is missing — never a silent wrong answer.
 | — | 0.2.0 routes the rebuilt frontend called: `size-presets/mine`, `auth/oidc/{start,callback,connection}` (no-provider surface), `stock/videos{,/providers,/import}`, `designs/{id}/{fields,thumbnail}`, `designs/bulk`, `exports/optimize`, `auth/password/reset{,/confirm}`, `auth/email/{verify,resend}` | `2892176`, `dc77682` |
 | — | Starter content + fonts embedded and installed by `entrypoint` (D19); in-process built-in optimizer (D22) | `dc77682` |
 | G1 | `POST /api/v1/designs/{id}/fill/` — fill template fields as a copy or in place | `d98f9a4` |
+| G10 | SVG asset upload (sanitise, size cap, intrinsic sizing, stored markup) | to be filled |
 | G14 | Remote image fetch (`URL_IMAGE_UPLOADS`, bulk-fill/fill URL values, stock import downloads) | `c22b721` |
 | G27 | Admin kernel and CLI (staff/session/CSRF, index/app/search/autocomplete/jsi18n, never_cache/Vary, admin log/history, bootstrap commands, auth seed) | `c4f61f7` |
 | G2 | `POST /api/v1/designs/{id}/bulk-fill/` — one copy per row, row errors, name pattern/folder/export | `5ca20e3` |
