@@ -214,7 +214,7 @@ which upstream function is missing — never a silent wrong answer.
 | G1 | `POST /api/v1/designs/{id}/fill/` — fill template fields as a copy or in place | `d98f9a4` |
 | G10 | SVG asset upload (sanitise, size cap, intrinsic sizing, stored markup) | `486fec3` |
 | G14 | Remote image fetch (`URL_IMAGE_UPLOADS`, bulk-fill/fill URL values, stock import downloads) | `c22b721` |
-| G18 | WebP/JPEG encoding through embedded libwebp 1.6.0 + libjpeg-turbo 3.1.0 (Pillow byte parity) | to be filled |
+| G18 | WebP/JPEG encoding through embedded libwebp 1.6.0 + libjpeg-turbo 3.1.0 (Pillow byte parity) | `fcb66a5` |
 | G27 | Admin kernel and CLI (staff/session/CSRF, index/app/search/autocomplete/jsi18n, never_cache/Vary, admin log/history, bootstrap commands, auth seed) | `c4f61f7` |
 | G2 | `POST /api/v1/designs/{id}/bulk-fill/` — one copy per row, row errors, name pattern/folder/export | `5ca20e3` |
 | G4 | `GET /api/v1/schema/`, `GET /api/v1/docs/` — pinned OpenAPI document + staff Swagger UI | `a02fad8` |
