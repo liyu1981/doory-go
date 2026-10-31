@@ -1537,3 +1537,253 @@ func TestAdminEnvProviderTestNeedsChangePermission(t *testing.T) {
 	res, body = e.postForm("/admin/ai/provider/env/env-1/test/", url.Values{})
 	e.wantStatus(res, http.StatusForbidden, "env test POST", body)
 }
+
+// ---- G28 engine/delete coverage ----
+
+func (e *adminEnv) makeApiToken(owner *UserRow, name, prefix string) string {
+	e.t.Helper()
+	id := newUUID4Hex()
+	now := e.now()
+	e.exec(`INSERT INTO apitokens_apitoken
+		(id, created_at, updated_at, name, prefix, secret_hash, scopes, last_used_at, expires_at,
+		 revoked_at, password_digest, owner_id)
+		VALUES (?, ?, ?, ?, ?, 'hash', '[]', NULL, NULL, NULL, 'digest', ?)`,
+		id, now, now, name, prefix, owner.ID)
+	return id
+}
+
+func (e *adminEnv) makeAsset(owner *UserRow, name, file, thumbnail string) string {
+	e.t.Helper()
+	id := newUUID4Hex()
+	now := e.now()
+	e.exec(`INSERT INTO assets_asset
+		(id, created_at, updated_at, kind, name, file, thumbnail, width, height, size, mime, tags, meta,
+		 owner_id, audio, error, filmstrip, poster, status)
+		VALUES (?, ?, ?, 'image', ?, ?, ?, 10, 10, 10, 'image/png', '[]', '{}', ?, '', '', '', '', 'ready')`,
+		id, now, now, name, file, thumbnail, owner.ID)
+	return id
+}
+
+func TestAdminApiTokenChangeAndDelete(t *testing.T) {
+	e := newAdminEnv(t)
+	e.adminUser()
+	owner := e.makeUser("token-owner@example.com", false, false)
+	token := e.makeApiToken(owner, "CI token", "ci_")
+	e.mustGet("/admin/apitokens/apitoken/")
+	e.mustGet("/admin/apitokens/apitoken/" + token + "/change/")
+	res, body := e.postForm("/admin/apitokens/apitoken/"+token+"/change/", url.Values{})
+	e.wantStatus(res, http.StatusFound, "api token change", body)
+	res, body = e.postForm("/admin/apitokens/apitoken/"+token+"/delete/", url.Values{"post": {"yes"}})
+	e.wantStatus(res, http.StatusFound, "api token delete", body)
+	if e.count(`SELECT COUNT(*) FROM apitokens_apitoken WHERE id = ?`, token) != 0 {
+		t.Fatalf("api token survived delete")
+	}
+}
+
+func TestAdminCommentOrderingAndReplyCascade(t *testing.T) {
+	e := newAdminEnv(t)
+	e.adminUser()
+	owner := e.makeUser("comment-owner@example.com", false, false)
+	design := e.makeDesign(owner, "Comments", "", false)
+	parent := e.makeComment(design, owner.ID, "parent-marker")
+	child := newUUID4Hex()
+	now := e.now()
+	e.exec(`INSERT INTO sharing_comment
+		(id, created_at, updated_at, body, page_id, x, y, resolved, author_id, design_id, parent_id)
+		VALUES (?, ?, ?, 'child-marker', '', NULL, NULL, FALSE, ?, ?, ?)`,
+		child, now, now, owner.ID, design, parent)
+
+	list := e.mustGet("/admin/sharing/comment/")
+	if strings.Index(list, "parent-marker") < 0 || strings.Index(list, "child-marker") < 0 ||
+		strings.Index(list, "parent-marker") > strings.Index(list, "child-marker") {
+		t.Fatalf("comment list is not oldest-first")
+	}
+	res, body := e.postForm("/admin/sharing/comment/"+parent+"/delete/", url.Values{"post": {"yes"}})
+	e.wantStatus(res, http.StatusFound, "comment parent delete", body)
+	if e.count(`SELECT COUNT(*) FROM sharing_comment WHERE design_id = ?`, design) != 0 {
+		t.Fatalf("reply survived its parent's delete")
+	}
+}
+
+func TestAdminFolderDeleteClearsReferences(t *testing.T) {
+	e := newAdminEnv(t)
+	e.adminUser()
+	owner := e.makeUser("folder-owner@example.com", false, false)
+	parent := e.makeFolder(owner, "Clients")
+	child := e.makeFolder(owner, "2026")
+	design := e.makeDesign(owner, "In folder", "", false)
+	e.exec(`UPDATE designs_folder SET parent_id = ? WHERE id = ?`, parent, child)
+	e.exec(`UPDATE designs_design SET folder_id = ? WHERE id = ?`, parent, design)
+
+	res, body := e.postForm("/admin/designs/folder/"+parent+"/delete/", url.Values{"post": {"yes"}})
+	e.wantStatus(res, http.StatusFound, "folder delete", body)
+	if e.count(`SELECT COUNT(*) FROM designs_folder WHERE id = ?`, parent) != 0 {
+		t.Fatalf("folder survived delete")
+	}
+	if e.count(`SELECT COUNT(*) FROM designs_folder WHERE id = ? AND parent_id IS NULL`, child) != 1 {
+		t.Fatalf("child folder was not detached")
+	}
+	if e.count(`SELECT COUNT(*) FROM designs_design WHERE id = ? AND folder_id IS NULL`, design) != 1 {
+		t.Fatalf("design was not detached from the deleted folder")
+	}
+}
+
+func TestAdminDesignDeleteRemovesVersionThumbnailsAndRelations(t *testing.T) {
+	e := newAdminEnv(t)
+	e.adminUser()
+	owner := e.makeUser("design-delete@example.com", false, false)
+	design := e.makeDesign(owner, "Delete me", "", false)
+	version := e.makeVersion(design, owner.ID, "")
+	comment := e.makeComment(design, owner.ID, "goes with the design")
+	link := e.makeShareLink(design, owner.ID, "view", "token-design-delete", "", true)
+	thumb := "designs/" + owner.ID + "/versions/" + version + ".webp"
+	e.exec(`UPDATE designs_designversion SET thumbnail = ? WHERE id = ?`, thumb, version)
+	if err := os.MkdirAll(filepath.Dir(e.mediaPath(thumb)), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(e.mediaPath(thumb), []byte("webp"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	res, body := e.postForm("/admin/designs/design/"+design+"/delete/", url.Values{"post": {"yes"}})
+	e.wantStatus(res, http.StatusFound, "design delete", body)
+	for _, pair := range [][2]string{
+		{"designs_design", design}, {"designs_designversion", version},
+		{"sharing_comment", comment}, {"sharing_sharelink", link},
+	} {
+		if e.count(`SELECT COUNT(*) FROM `+pair[0]+` WHERE id = ?`, pair[1]) != 0 {
+			t.Fatalf("%s row survived design delete", pair[0])
+		}
+	}
+	if _, err := os.Stat(e.mediaPath(thumb)); !os.IsNotExist(err) {
+		t.Fatalf("version thumbnail file survived: %v", err)
+	}
+}
+
+func TestAdminAssetDeleteRemovesBrandLogoJoinAndFiles(t *testing.T) {
+	e := newAdminEnv(t)
+	e.adminUser()
+	owner := e.makeUser("asset-delete@example.com", false, false)
+	file := "assets/" + owner.ID + "/pic.png"
+	thumb := "assets/" + owner.ID + "/thumbs/pic.webp"
+	asset := e.makeAsset(owner, "pic", file, thumb)
+	kit := newUUID4Hex()
+	now := e.now()
+	e.exec(`INSERT INTO brand_brandkit
+		(id, created_at, updated_at, name, is_default, colors, fonts, owner_id)
+		VALUES (?, ?, ?, 'Kit', FALSE, '[]', '[]', ?)`, kit, now, now, owner.ID)
+	e.exec(`INSERT INTO brand_brandkit_logos (brandkit_id, asset_id) VALUES (?, ?)`, kit, asset)
+	for _, name := range []string{file, thumb} {
+		if err := os.MkdirAll(filepath.Dir(e.mediaPath(name)), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(e.mediaPath(name), []byte("bytes"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	res, body := e.postForm("/admin/assets/asset/"+asset+"/delete/", url.Values{"post": {"yes"}})
+	e.wantStatus(res, http.StatusFound, "asset delete", body)
+	if e.count(`SELECT COUNT(*) FROM brand_brandkit_logos WHERE asset_id = ?`, asset) != 0 {
+		t.Fatalf("brand-kit logo join survived asset delete")
+	}
+	for _, name := range []string{file, thumb} {
+		if _, err := os.Stat(e.mediaPath(name)); !os.IsNotExist(err) {
+			t.Fatalf("asset file %s survived: %v", name, err)
+		}
+	}
+}
+
+func TestAdminUserDeleteCascadesOwnedRows(t *testing.T) {
+	e := newAdminEnv(t)
+	actor := e.adminUser()
+	target := e.makeUser("delete-target@example.com", false, false)
+	design := e.makeDesign(target, "Owned design", "", false)
+	version := e.makeVersion(design, target.ID, "")
+	folder := e.makeFolder(target, "Owned folder")
+	assetFile := "assets/" + target.ID + "/owned.png"
+	asset := e.makeAsset(target, "owned", assetFile, "")
+	token := e.makeApiToken(target, "Owned token", "own_")
+	rootDesign := e.makeDesign(actor, "Actor design", "", false)
+	targetComment := e.makeComment(rootDesign, target.ID, "target comment")
+	link := e.makeShareLink(rootDesign, target.ID, "view", "target-created-link", "", true)
+
+	res, body := e.postForm("/admin/accounts/user/"+target.ID+"/delete/", url.Values{"post": {"yes"}})
+	e.wantStatus(res, http.StatusFound, "user delete", body)
+	for _, pair := range [][2]string{
+		{"accounts_user", target.ID}, {"designs_design", design},
+		{"designs_designversion", version}, {"designs_folder", folder},
+		{"assets_asset", asset}, {"apitokens_apitoken", token},
+		{"sharing_comment", targetComment},
+	} {
+		if e.count(`SELECT COUNT(*) FROM `+pair[0]+` WHERE id = ?`, pair[1]) != 0 {
+			t.Fatalf("%s row survived user delete", pair[0])
+		}
+	}
+	if e.count(`SELECT COUNT(*) FROM sharing_sharelink WHERE id = ? AND created_by_id IS NULL`, link) != 1 {
+		t.Fatalf("share link creator was not nulled")
+	}
+}
+
+func TestAdminGroupDeleteClearsMemberships(t *testing.T) {
+	e := newAdminEnv(t)
+	e.adminUser()
+	member := e.makeUser("group-member@example.com", false, false)
+	group := int64(0)
+	res, err := e.db.Exec(`INSERT INTO auth_group (name) VALUES ('Moderators')`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	group, _ = res.LastInsertId()
+	e.exec(`INSERT INTO accounts_user_groups (user_id, group_id) VALUES (?, ?)`, member.ID, group)
+	path := "/admin/auth/group/" + strconv.FormatInt(group, 10)
+	res2, body := e.postForm(path+"/delete/", url.Values{"post": {"yes"}})
+	e.wantStatus(res2, http.StatusFound, "group delete", body)
+	if e.count(`SELECT COUNT(*) FROM auth_group WHERE id = ?`, group) != 0 ||
+		e.count(`SELECT COUNT(*) FROM accounts_user_groups WHERE group_id = ?`, group) != 0 {
+		t.Fatalf("group or membership survived delete")
+	}
+}
+
+func TestAdminBrandKitChangeAndDeleteClearsLogos(t *testing.T) {
+	e := newAdminEnv(t)
+	e.adminUser()
+	owner := e.makeUser("brand-owner@example.com", false, false)
+	asset := e.makeAsset(owner, "logo", "", "")
+	kit := newUUID4Hex()
+	now := e.now()
+	e.exec(`INSERT INTO brand_brandkit
+		(id, created_at, updated_at, name, is_default, colors, fonts, owner_id)
+		VALUES (?, ?, ?, 'Old kit', FALSE, '[{"name":"Ink","hex":"#000"}]', '[]', ?)`,
+		kit, now, now, owner.ID)
+	e.exec(`INSERT INTO brand_brandkit_logos (brandkit_id, asset_id) VALUES (?, ?)`, kit, asset)
+	page := e.mustGet("/admin/brand/brandkit/" + kit + "/change/")
+	if !strings.Contains(page, "Old kit") || !strings.Contains(page, "Ink") {
+		t.Fatalf("brand kit page lost its name or colours")
+	}
+	res, body := e.postForm("/admin/brand/brandkit/"+kit+"/change/",
+		url.Values{"name": {"New kit"}, "is_default": {"on"}})
+	e.wantStatus(res, http.StatusFound, "brand kit change", body)
+	if e.count(`SELECT COUNT(*) FROM brand_brandkit WHERE id = ? AND name = 'New kit'`, kit) != 1 {
+		t.Fatalf("brand kit name did not change")
+	}
+	res, body = e.postForm("/admin/brand/brandkit/"+kit+"/delete/", url.Values{"post": {"yes"}})
+	e.wantStatus(res, http.StatusFound, "brand kit delete", body)
+	if e.count(`SELECT COUNT(*) FROM brand_brandkit_logos WHERE brandkit_id = ?`, kit) != 0 {
+		t.Fatalf("brand-kit logo join survived kit delete")
+	}
+}
+
+func TestAdminApiTokenRevokeAction(t *testing.T) {
+	e := newAdminEnv(t)
+	e.adminUser()
+	owner := e.makeUser("revoke-owner@example.com", false, false)
+	token := e.makeApiToken(owner, "Revoke me", "rev_")
+	res, body := e.postForm("/admin/apitokens/apitoken/", url.Values{
+		"action": {"revoke"}, "_selected_action": {token},
+	})
+	e.wantStatus(res, http.StatusFound, "revoke action", body)
+	if e.count(`SELECT COUNT(*) FROM apitokens_apitoken WHERE id = ? AND revoked_at IS NOT NULL`, token) != 1 {
+		t.Fatalf("revoke action did not set revoked_at")
+	}
+}

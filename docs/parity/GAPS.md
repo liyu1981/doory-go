@@ -66,17 +66,12 @@ flowchart TB
   subgraph Admin["Admin program (D2)"]
     direction TB
     G17["G17 D2 admin umbrella"]
-    G28["G28 admin model engine"]
     G29["G29 admin content authoring"]
     G31["G31 admin verification"]
 
-    G17 --> G28
     G17 --> G29
     G17 --> G30
     G17 --> G31
-    G29 --> G28
-    G30 --> G28
-    G31 --> G28
     G31 --> G29
     G31 --> G30
   end
@@ -104,8 +99,8 @@ flowchart TB
 
   %% Layout-only links: keep the clusters stacked vertically (they are invisible).
   G11 ~~~ G16
-  G16 ~~~ G28
-  G28 ~~~ G19
+  G16 ~~~ G29
+  G29 ~~~ G19
   G19 ~~~ G24
 ```
 
@@ -124,7 +119,7 @@ parity-completeness, not a hard feature blocker.
 | G13 | G22 | soft | needs the stock rate charge |
 | G15 | G22 | soft | needs the video upload rate charge |
 | G16 | — | — | AI response readers/style encoders |
-| G17 | G28, G29, G30, G31 | hard | admin program umbrella |
+| G17 | G29, G30, G31 | hard | admin program umbrella |
 | G19 | — | — | AVIF encoder missing |
 | G20 | — | — | S3 storage seam |
 | G21 | — | — | Postgres dialect runner lane |
@@ -133,10 +128,9 @@ parity-completeness, not a hard feature blocker.
 | G24 | — | — | verification of all families |
 | G25 | — | — | test-mapping bookkeeping |
 | G26 | — | — | PORT_MAP review bookkeeping |
-| G28 | — | — | model engine (admin kernel is closed) |
-| G29 | G28 | hard | content authoring builds on the engine |
-| G30 | G9, G16, G28 | hard | AI pages build on AI transport and admin engine |
-| G31 | G28, G29, G30 | hard | admin verification covers the whole program |
+| G29 | — | — | content authoring (admin engine is closed) |
+| G30 | G9, G16 | hard | AI pages build on AI transport |
+| G31 | G29, G30 | hard | admin verification covers the remaining program |
 | G32 | — | — | verification of the closed SSO work |
 | G33 | — | — | verification of the WASM codec output |
 
@@ -179,7 +173,7 @@ which upstream function is missing — never a silent wrong answer.
 
 | id | divergence | status |
 |---|---|---|
-| G17 | **D2 — Django admin** | Owner approved the Go admin on 2026-10-26: full route-shape coverage, server-rendered (no-Unfold) HTML, staff read + superuser writes until per-model permissions land. G27 is closed; the remaining work is split into G28–G31. |
+| G17 | **D2 — Django admin** | Owner approved the Go admin on 2026-10-26: full route-shape coverage, server-rendered (no-Unfold) HTML, staff read + superuser writes until per-model permissions land. G27 and G28 are closed; the remaining work is split into G29–G31. |
 | G19 | **D21 — AVIF** | Not made at all (no pure-Go encoder); `/config/` advertises `png,jpg,webp` and the endpoint rejects `avif`. Closes with an AVIF encoder. |
 | G20 | **D7 — S3 media storage** | Local media only; the `storages` seam is not ported. |
 | G21 | **D4 — Postgres dialect lane** | Schema digest + `pg-smoke` run on Postgres; the runner does **not** replay each scenario on Postgres. Wiring the dialect matrix into `test/parity` closes it. |
@@ -200,7 +194,6 @@ which upstream function is missing — never a silent wrong answer.
 
 | id | slice | what closes it |
 |---|---|---|
-| G28 | Admin model engine and moderation | Descriptor-driven changelist/add/change/delete/history/actions engine; User + auth.Group, ApiToken, Asset, BrandKit, Design/DesignVersion/Folder, ShareLink, Comment; upstream action semantics (mark-verified/activate/deactivate never self, revoke, trash/restore, link toggle, comment delete) and the delete-file cleanup those paths need. |
 | G29 | Admin content authoring | TemplateCategory/Template (JSON document + thumbnail + validate/duplicate/feature), ElementPack/Element (SVG + bulk upload + publish), FontFamily/FontVariant inline upload, SizePresetGroup/SizePreset (tags/aliases/meta + activate clash check); post_delete cleanup for template thumbnails, element SVGs, pack thumbnails and font files. |
 | G30 | Admin AI pages | Operator Provider CRUD (secret keep/clear/host-change drop, tasks/style validation, allowed users, provider-model inline), env-provider panel, UserProvider/AICall read-only; `load-models`/`test` confirm + result pages. The transport-dependent half waits on G9; until then those two actions answer a tracked not-ported page. |
 | G31 | Admin verification and bookkeeping | Port the 73 upstream `test_admin.py` behaviours to Go integration tests; scenario `22-admin` covers all 11 `admin.py` rows + 4 admin templates with shared wire/state assertions; admin CRUD smoke in `test/pgsmoke`; PORT_MAP/test-mapping/coverage updates; self-hosting docs; D2 evidence (markup stays a recorded difference). |
@@ -214,6 +207,7 @@ which upstream function is missing — never a silent wrong answer.
 | G1 | `POST /api/v1/designs/{id}/fill/` — fill template fields as a copy or in place | `d98f9a4` |
 | G10 | SVG asset upload (sanitise, size cap, intrinsic sizing, stored markup) | `486fec3` |
 | G14 | Remote image fetch (`URL_IMAGE_UPLOADS`, bulk-fill/fill URL values, stock import downloads) | `c22b721` |
+| G28 | Admin model engine and moderation (User/Group, ApiToken, Asset, BrandKit, Design/DesignVersion/Folder, ShareLink, Comment; actions, cascades and file cleanup) | to be filled |
 | G18 | WebP/JPEG encoding through embedded libwebp 1.6.0 + libjpeg-turbo 3.1.0 (Pillow byte parity) | `fcb66a5` |
 | G27 | Admin kernel and CLI (staff/session/CSRF, index/app/search/autocomplete/jsi18n, never_cache/Vary, admin log/history, bootstrap commands, auth seed) | `c4f61f7` |
 | G2 | `POST /api/v1/designs/{id}/bulk-fill/` — one copy per row, row errors, name pattern/folder/export | `5ca20e3` |

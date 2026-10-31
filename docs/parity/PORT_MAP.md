@@ -42,7 +42,7 @@ behavioral verification).
 
 | upstream | go | status |
 |---|---|---|
-| `backend/apps/accounts/admin.py` |  | ⬜ |
+| `backend/apps/accounts/admin.py` | doory/admin_models.go (User changelist/form/actions/password; D2 markup) | ✅ |
 | `backend/apps/accounts/apps.py` |  | ⬜ |
 | `backend/apps/accounts/backends.py` |  | ⬜ |
 | `backend/apps/accounts/checks.py` | doory/checks.go (systemCheckWarnings: OIDC configuration problems as accounts.W001, printed before every management command) | ✅ |
@@ -115,7 +115,7 @@ behavioral verification).
 
 | upstream | go | status |
 |---|---|---|
-| `backend/apps/apitokens/admin.py` |  | ⬜ |
+| `backend/apps/apitokens/admin.py` | doory/admin_models_apitokens.go (read-only token page, revoke action, delete) | ✅ |
 | `backend/apps/apitokens/apps.py` |  | ⬜ |
 | `backend/apps/apitokens/migrations/` |  | ⬜ |
 | `backend/apps/apitokens/models.py` | doory/apitokens.go (ApiToken row, live filter, meta ordering) | 🟡 |
@@ -130,7 +130,7 @@ behavioral verification).
 
 | upstream | go | status |
 |---|---|---|
-| `backend/apps/assets/admin.py` | (admin surface — divergence D2) | ⬜ |
+| `backend/apps/assets/admin.py` | doory/admin_models_misc.go (asset preview/tags/attribution, read-only change, file cleanup; D2 markup) | ✅ |
 | `backend/apps/assets/apps.py` |  | ⬜ |
 | `backend/apps/assets/audio.py` | doory/commands_audio.go validateAudioContainer (per-extension container check for sync_audio; the deep metadata parse — duration/channels for uploads — stays pending with the upload pipeline) | 🟡 |
 | `backend/apps/assets/audio_stock.py` | doory/stock.go (search/info/import/preview no-config shapes incl. Freesound messages); live paths pending | 🟡 |
@@ -173,7 +173,7 @@ behavioral verification).
 
 | upstream | go | status |
 |---|---|---|
-| `backend/apps/brand/admin.py` |  | ⬜ |
+| `backend/apps/brand/admin.py` | doory/admin_models_misc.go (brand-kit changelist/change/delete, logo counts; D2 markup) | ✅ |
 | `backend/apps/brand/apps.py` |  | ⬜ |
 | `backend/apps/brand/migrations/` |  | ⬜ |
 | `backend/apps/brand/models.py` | doory/brand.go (row CRUD, ordering, single-default clearing) | ✅ |
@@ -242,7 +242,7 @@ behavioral verification).
 
 | upstream | go | status |
 |---|---|---|
-| `backend/apps/designs/admin.py` | — | ⬜ |
+| `backend/apps/designs/admin.py` | doory/admin_models_designs.go (Design/Version/Folder pages, trash actions, purge cascade and files; D2 markup) | ✅ |
 | `backend/apps/designs/apps.py` | — | ⬜ |
 | `backend/apps/designs/edits.py` | (pending: fill/fields actions) | ⬜ |
 | `backend/apps/designs/exceptions.py` | doory/document.go + doory/designs_views.go (invalid_document/inline_asset/document_too_large/design_trashed/not_in_trash codes + revision_conflict 409 body) | ✅ |
@@ -436,7 +436,7 @@ behavioral verification).
 
 | upstream | go | status |
 |---|---|---|
-| `backend/apps/sharing/admin.py` | (admin surface — divergence D2) | ⬜ |
+| `backend/apps/sharing/admin.py` | doory/admin_models_misc.go (ShareLink toggle, Comment read-only/delete with reply cascade; D2 markup) | ✅ |
 | `backend/apps/sharing/apps.py` |  | ⬜ |
 | `backend/apps/sharing/exceptions.py` | doory/sharing.go + doory/sharing_public.go (bad_request codes, password_required, share_role_insufficient, comments_disabled, payload_too_large) | ✅ |
 | `backend/apps/sharing/migrations/` |  | ⬜ |

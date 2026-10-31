@@ -133,6 +133,9 @@ func adminAssetModel() *adminModel {
 		var file, thumbnail, poster, filmstrip, audio string
 		_ = a.DB.QueryRow(`SELECT file, thumbnail, poster, filmstrip, audio FROM assets_asset WHERE id = ?`,
 			id).Scan(&file, &thumbnail, &poster, &filmstrip, &audio)
+		// Django deletes the through rows of M2M relations that point at the
+		// asset before the asset itself.
+		_, _ = a.DB.Exec(`DELETE FROM brand_brandkit_logos WHERE asset_id = ?`, id)
 		if _, err := a.DB.Exec(`DELETE FROM assets_asset WHERE id = ?`, id); err != nil {
 			return err
 		}
@@ -383,6 +386,8 @@ func adminShareLinkModel() *adminModel {
 		return nil, err
 	}
 	m.Delete = func(a *App, actor *UserRow, id string) error {
+		// collab.RoomConnection.share_link is CASCADE upstream.
+		_, _ = a.DB.Exec(`DELETE FROM collab_roomconnection WHERE share_link_id = ?`, id)
 		_, err := a.DB.Exec(`DELETE FROM sharing_sharelink WHERE id = ?`, id)
 		return err
 	}
@@ -411,7 +416,7 @@ func adminCommentModel() *adminModel {
 		Filters: []adminFilter{
 			{Label: "Resolved", Param: "resolved__exact", Kind: "bool", Column: "c.resolved"},
 		},
-		Ordering:  []string{"c.created_at DESC"},
+		Ordering:  []string{"c.created_at ASC", "c.id ASC"},
 		SelectSQL: "c.id, c.body, COALESCE(u.email, ''), COALESCE(d.title, ''), c.resolved, c.created_at",
 		FromSQL: "sharing_comment c LEFT JOIN accounts_user u ON u.id = c.author_id " +
 			"LEFT JOIN designs_design d ON d.id = c.design_id",
@@ -421,10 +426,7 @@ func adminCommentModel() *adminModel {
 			if err := rows.Scan(&id, &body, &author, &design, &resolved, &createdAt); err != nil {
 				return adminListRow{}, err
 			}
-			short := body
-			if len(short) > 80 {
-				short = short[:80]
-			}
+			short := shortBody(body)
 			return adminListRow{ID: id, Cells: map[string]adminCell{
 				"short_body": adminTextCell(short),
 				"author":     adminTextCell(author),
@@ -482,9 +484,8 @@ func adminCommentModel() *adminModel {
 		{Name: "updated_at", Label: "Updated at", Kind: adminReadonly},
 	}}}
 	m.Delete = func(a *App, actor *UserRow, id string) error {
-		_, _ = a.DB.Exec(`UPDATE sharing_comment SET parent_id = NULL WHERE parent_id = ?`, id)
-		_, err := a.DB.Exec(`DELETE FROM sharing_comment WHERE id = ?`, id)
-		return err
+		// parent is on_delete=CASCADE upstream: replies go with their parent.
+		return a.adminDeleteComments([]string{id})
 	}
 	m.Repr = func(a *App, id string) string {
 		var body string
@@ -495,8 +496,9 @@ func adminCommentModel() *adminModel {
 }
 
 func shortBody(body string) string {
-	if len(body) > 80 {
-		return body[:80]
+	runes := []rune(body)
+	if len(runes) > 80 {
+		return string(runes[:80])
 	}
 	return body
 }

@@ -52,8 +52,9 @@ func adminApiTokenModel() *adminModel {
 				"revoked_at":   adminDateCell(revoked),
 			}}, nil
 		},
-		AllowAdd: false, AllowChange: false, AllowDelete: false,
-		NoChangePermission: true,
+		// has_add_permission is False upstream; the read-only change page and
+		// the default delete permission stay available to staff.
+		AllowAdd: false, AllowChange: true, AllowDelete: true,
 		Actions: []adminAction{
 			{Name: "revoke", Label: "Revoke the selected tokens",
 				Run: func(a *App, actor *UserRow, ids []string) ([]adminMessage, error) {
@@ -91,6 +92,13 @@ func adminApiTokenModel() *adminModel {
 			Raw: map[string]any{},
 		}, nil
 	}
+	m.Change = func(a *App, actor *UserRow, id string, form *adminForm) (adminErrors, error) {
+		// Every field is read-only; Django still saves the object (touching
+		// auto_now) instead of treating the POST as forbidden.
+		_, err := a.DB.Exec(`UPDATE apitokens_apitoken SET updated_at = ? WHERE id = ?`,
+			formatDjangoDateTime(time.Now()), id)
+		return nil, err
+	}
 	m.Fieldsets = []adminFieldset{{Title: "", Fields: []adminField{
 		{Name: "name", Label: "Name", Kind: adminReadonly, Wide: true},
 		{Name: "prefix", Label: "Prefix", Kind: adminReadonly},
@@ -101,6 +109,10 @@ func adminApiTokenModel() *adminModel {
 		{Name: "expires_at", Label: "Expires at", Kind: adminReadonly},
 		{Name: "revoked_at", Label: "Revoked at", Kind: adminReadonly},
 	}}}
+	m.Delete = func(a *App, actor *UserRow, id string) error {
+		_, err := a.DB.Exec(`DELETE FROM apitokens_apitoken WHERE id = ?`, id)
+		return err
+	}
 	m.Repr = func(a *App, id string) string {
 		var name string
 		_ = a.DB.QueryRow(`SELECT name FROM apitokens_apitoken WHERE id = ?`, id).Scan(&name)

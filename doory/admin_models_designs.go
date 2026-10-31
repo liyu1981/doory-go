@@ -169,15 +169,10 @@ func adminDesignModel() *adminModel {
 		return nil, err
 	}
 	m.Delete = func(a *App, actor *UserRow, id string) error {
-		var thumbnail string
-		_ = a.DB.QueryRow(`SELECT thumbnail FROM designs_design WHERE id = ?`, id).Scan(&thumbnail)
-		for _, table := range []string{"designs_designversion", "sharing_comment", "sharing_sharelink"} {
-			_, _ = a.DB.Exec("DELETE FROM "+table+" WHERE design_id = ?", id)
-		}
-		if _, err := a.DB.Exec(`DELETE FROM designs_design WHERE id = ?`, id); err != nil {
+		if _, err := a.purgeDesigns([]string{id}); err != nil {
 			return err
 		}
-		a.deleteMediaFile(thumbnail)
+		a.notifyDesignsRecheck([]string{id})
 		return nil
 	}
 	m.Repr = func(a *App, id string) string {
@@ -349,8 +344,7 @@ func adminFolderModel() *adminModel {
 		return nil, err
 	}
 	m.Delete = func(a *App, actor *UserRow, id string) error {
-		_, err := a.DB.Exec(`DELETE FROM designs_folder WHERE id = ?`, id)
-		return err
+		return a.adminDeleteFolder(id)
 	}
 	m.Repr = func(a *App, id string) string {
 		var name string

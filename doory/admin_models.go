@@ -301,6 +301,8 @@ func adminModelsAuth() []*adminModel {
 				"permission_id", adminIDValues(form.All("permissions")))
 		},
 		Delete: func(a *App, actor *UserRow, id string) error {
+			_, _ = a.DB.Exec(`DELETE FROM accounts_user_groups WHERE group_id = ?`, id)
+			_, _ = a.DB.Exec(`DELETE FROM auth_group_permissions WHERE group_id = ?`, id)
 			_, err := a.DB.Exec(`DELETE FROM auth_group WHERE id = ?`, id)
 			return err
 		},
@@ -592,15 +594,7 @@ func adminModelsAccounts() []*adminModel {
 			"permission_id", adminIDValues(form.All("user_permissions")))
 	}
 	user.Delete = func(a *App, actor *UserRow, id string) error {
-		var avatar string
-		_ = a.DB.QueryRow(`SELECT avatar FROM accounts_user WHERE id = ?`, id).Scan(&avatar)
-		if _, err := a.DB.Exec(`DELETE FROM accounts_user WHERE id = ?`, id); err != nil {
-			return err
-		}
-		if avatar != "" {
-			a.deleteMediaFile(avatar)
-		}
-		return nil
+		return a.adminDeleteUserCascade(actor, id)
 	}
 	user.Repr = func(a *App, id string) string {
 		var email string
