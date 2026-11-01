@@ -191,7 +191,7 @@ which upstream function is missing — never a silent wrong answer.
 | G14 | Remote image fetch (`URL_IMAGE_UPLOADS`, bulk-fill/fill URL values, stock import downloads) | `c22b721` |
 | G28 | Admin model engine and moderation (User/Group, ApiToken, Asset, BrandKit, Design/DesignVersion/Folder, ShareLink, Comment; actions, cascades and file cleanup) | `984a65b` |
 | G29 | Admin content authoring (Template/Category, ElementPack/Element, FontFamily/Variant, SizePresetGroup/SizePreset; thumbnails, bulk uploads, validate/duplicate/feature, preset validation and activate clash, delete cleanup) | `948a24c` |
-| G22 | DRF default + scoped rate throttles (anon/user, auth, oidc, upload, stock, stock preview, video upload, bulk fill/images, export, optimize/offsite, ai) | to be filled |
+| G22 | DRF default + scoped rate throttles (anon/user, auth, oidc, upload, stock, stock preview, video upload, bulk fill/images, export, optimize/offsite, ai) | `9008929` |
 | G18 | WebP/JPEG encoding through embedded libwebp 1.6.0 + libjpeg-turbo 3.1.0 (Pillow byte parity) | `fcb66a5` |
 | G27 | Admin kernel and CLI (staff/session/CSRF, index/app/search/autocomplete/jsi18n, never_cache/Vary, admin log/history, bootstrap commands, auth seed) | `c4f61f7` |
 | G2 | `POST /api/v1/designs/{id}/bulk-fill/` — one copy per row, row errors, name pattern/folder/export | `5ca20e3` |
