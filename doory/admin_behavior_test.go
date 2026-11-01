@@ -1787,3 +1787,219 @@ func TestAdminApiTokenRevokeAction(t *testing.T) {
 		t.Fatalf("revoke action did not set revoked_at")
 	}
 }
+
+// ---- presets fixtures ----
+
+func (e *adminEnv) makePresetGroup(slug, label, parentID string) string {
+	e.t.Helper()
+	id := newUUID4Hex()
+	now := e.now()
+	// The migrations seed the catalogue, so keep fixture slugs unique.
+	slug = slug + "-" + id[:6]
+	e.exec(`INSERT INTO presets_sizepresetgroup
+		(id, created_at, updated_at, slug, label, icon, sort_order, is_active, parent_id)
+		VALUES (?, ?, ?, ?, ?, '', 0, TRUE, ?)`, id, now, now, slug, label, nullIfEmpty(parentID))
+	return id
+}
+
+func (e *adminEnv) makePreset(groupID, slug, label string, active bool) string {
+	e.t.Helper()
+	id := newUUID4Hex()
+	now := e.now()
+	slug = slug + "-" + id[:6]
+	e.exec(`INSERT INTO presets_sizepreset
+		(id, created_at, updated_at, slug, label, width, height, unit, icon, sort_order, is_active,
+		 is_quick, tags, aliases, meta, group_id)
+		VALUES (?, ?, ?, ?, ?, 1080, 1080, 'px', '', 0, ?, FALSE, '[]', '[]', '{}', ?)`,
+		id, now, now, slug, label, boolSQL(active), groupID)
+	return id
+}
+
+func TestAdminPresetGroupPathValidationAndCascade(t *testing.T) {
+	e := newAdminEnv(t)
+	e.adminUser()
+	parent := e.makePresetGroup("social", "Social", "")
+	child := e.makePresetGroup("instagram", "Instagram", parent)
+	preset := e.makePreset(child, "post", "Post", true)
+
+	body := e.mustGet("/admin/presets/sizepresetgroup/")
+	if !strings.Contains(body, "Social → Instagram") {
+		t.Fatalf("nested group path missing: %.500s", body)
+	}
+
+	for _, tc := range []struct {
+		label, slug, icon string
+		want              string
+	}{
+		{"Bad Slug", "Bad Slug", "", "Lower-case letters, digits and hyphens."},
+		{"Icon", "icon", "Not A Lucide Icon", "Use a Lucide icon name"},
+	} {
+		res, page := e.postForm("/admin/presets/sizepresetgroup/add/", url.Values{
+			"label": {tc.label}, "slug": {tc.slug}, "icon": {tc.icon}, "is_active": {"on"},
+		})
+		e.wantStatus(res, http.StatusOK, "invalid group", page)
+		if !strings.Contains(page, tc.want) {
+			t.Fatalf("missing validation %q in %.400s", tc.want, page)
+		}
+	}
+
+	// A group cannot be moved inside its own descendant.
+	res, page := e.postForm("/admin/presets/sizepresetgroup/"+parent+"/change/", url.Values{
+		"label": {"Social"}, "slug": {"social"}, "icon": {""}, "parent": {child}, "is_active": {"on"},
+	})
+	e.wantStatus(res, http.StatusOK, "cyclic parent", page)
+	if !strings.Contains(page, "inside itself") {
+		t.Fatalf("cycle validation missing: %.400s", page)
+	}
+
+	// Deleting the parent cascades to the child group and its presets.
+	res, page = e.postForm("/admin/presets/sizepresetgroup/"+parent+"/delete/", url.Values{"post": {"yes"}})
+	e.wantStatus(res, http.StatusFound, "group delete", page)
+	for _, pair := range [][2]string{
+		{"presets_sizepresetgroup", parent}, {"presets_sizepresetgroup", child},
+		{"presets_sizepreset", preset},
+	} {
+		if e.count(`SELECT COUNT(*) FROM `+pair[0]+` WHERE id = ?`, pair[1]) != 0 {
+			t.Fatalf("%s row survived group cascade", pair[0])
+		}
+	}
+}
+
+func TestAdminSizePresetValuesAndActivateClash(t *testing.T) {
+	e := newAdminEnv(t)
+	e.adminUser()
+	group := e.makePresetGroup("social", "Social", "")
+	fields := url.Values{
+		"label": {"Portrait post"}, "slug": {"portrait-post"}, "group": {group},
+		"width": {"1080"}, "height": {"1080"}, "unit": {"px"}, "icon": {""},
+		"tags": {"4:5, paid, 4:5"}, "aliases": {"Old-Post"}, "meta": {`{"safe_zone":{"top":0.1}}`},
+		"is_quick": {"on"}, "is_active": {"on"},
+	}
+	res, body := e.postForm("/admin/presets/sizepreset/add/", fields)
+	e.wantStatus(res, http.StatusFound, "add preset", body)
+	var tags, aliases, meta string
+	if err := e.db.QueryRow(`SELECT tags, aliases, meta FROM presets_sizepreset WHERE slug = 'portrait-post'`).
+		Scan(&tags, &aliases, &meta); err != nil {
+		t.Fatal(err)
+	}
+	if tags != `["4:5", "paid"]` || aliases != `["Old-Post"]` ||
+		meta != `{"safe_zone": {"top": 0.1}}` {
+		t.Fatalf("stored tags=%s aliases=%s meta=%s", tags, aliases, meta)
+	}
+
+	active := e.makePreset(group, "poster", "Poster", true)
+	e.exec(`UPDATE presets_sizepreset SET aliases = '["legacy-poster"]' WHERE id = ?`, active)
+	clashing := e.makePreset(group, "banner", "Banner", false)
+	e.exec(`UPDATE presets_sizepreset SET aliases = '["poster"]' WHERE id = ?`, clashing)
+	res, body = e.postForm("/admin/presets/sizepreset/", url.Values{
+		"action": {"activate"}, "_selected_action": {clashing},
+	})
+	e.wantStatus(res, http.StatusFound, "activate clash", body)
+	page := e.mustGet(res.Header.Get("Location"))
+	if !strings.Contains(page, "Nothing was activated") {
+		t.Fatalf("clash message missing: %.500s", page)
+	}
+	if e.count(`SELECT COUNT(*) FROM presets_sizepreset WHERE id = ? AND is_active = TRUE`, clashing) != 0 {
+		t.Fatalf("clashing preset was activated")
+	}
+}
+
+func TestAdminSizePresetRejectsInvalidSizeAndMeta(t *testing.T) {
+	e := newAdminEnv(t)
+	e.adminUser()
+	group := e.makePresetGroup("social", "Social", "")
+	base := url.Values{
+		"label": {"Bad"}, "slug": {"bad"}, "group": {group}, "width": {"1080"}, "height": {"1080"},
+		"unit": {"px"}, "icon": {""}, "tags": {""}, "aliases": {""}, "meta": {"{}"}, "is_active": {"on"},
+	}
+	cases := []url.Values{}
+	invalidDecimals := cloneValues(base)
+	invalidDecimals.Set("width", "1.2345")
+	cases = append(cases, invalidDecimals)
+	invalidMeta := cloneValues(base)
+	invalidMeta.Set("slug", "bad-meta")
+	invalidMeta.Set("meta", `{"safe_zone":{"top":0.9}}`)
+	cases = append(cases, invalidMeta)
+	invalidIcon := cloneValues(base)
+	invalidIcon.Set("slug", "bad-icon")
+	invalidIcon.Set("icon", "Not An Icon")
+	cases = append(cases, invalidIcon)
+	for _, fields := range cases {
+		res, body := e.postForm("/admin/presets/sizepreset/add/", fields)
+		e.wantStatus(res, http.StatusOK, "invalid preset", body)
+	}
+	if e.count(`SELECT COUNT(*) FROM presets_sizepreset WHERE slug IN ('bad', 'bad-meta', 'bad-icon')`) != 0 {
+		t.Fatalf("invalid presets were stored")
+	}
+}
+
+func cloneValues(values url.Values) url.Values {
+	out := url.Values{}
+	for key, items := range values {
+		out[key] = append([]string(nil), items...)
+	}
+	return out
+}
+
+func TestAdminPackThumbnailRejectsInvalidImage(t *testing.T) {
+	e := newAdminEnv(t)
+	e.adminUser()
+	fields := url.Values{
+		"name": {"Pack"}, "slug": {"pack"}, "kind": {"shape"}, "license": {"CC0-1.0"},
+		"source_url": {""}, "description": {""}, "sort_order": {"0"}, "is_published": {"on"},
+	}
+	res, body := e.postMultipart("/admin/elements/elementpack/add/", fields, map[string][2]string{
+		"thumbnail": {"t.png", "<svg onload=alert(1)>"},
+	})
+	e.wantStatus(res, http.StatusOK, "invalid pack thumbnail", body)
+	if e.count(`SELECT COUNT(*) FROM elements_elementpack`) != 0 {
+		t.Fatalf("pack was created with an invalid thumbnail")
+	}
+}
+
+func TestAdminContentDeleteCleanup(t *testing.T) {
+	e := newAdminEnv(t)
+	e.adminUser()
+
+	// Element SVG.
+	pack := e.makePack("cleanup", "shape")
+	element := e.makeElement(pack, "Cleanup", "elements/cleanup/one.svg")
+	if err := adminWriteMedia(e.settings.MediaRoot, "elements/cleanup/one.svg", []byte(adminRedSquare)); err != nil {
+		t.Fatal(err)
+	}
+	res, body := e.postForm("/admin/elements/element/"+element+"/delete/", url.Values{"post": {"yes"}})
+	e.wantStatus(res, http.StatusFound, "element delete", body)
+	if _, err := os.Stat(e.mediaPath("elements/cleanup/one.svg")); !os.IsNotExist(err) {
+		t.Fatalf("element SVG survived delete: %v", err)
+	}
+
+	// Pack thumbnail plus every element SVG inside it.
+	packThumb := "elements/packs/cleanup.webp"
+	e.exec(`UPDATE elements_elementpack SET thumbnail = ? WHERE id = ?`, packThumb, pack)
+	second := e.makeElement(pack, "Second", "elements/cleanup/two.svg")
+	for _, name := range []string{packThumb, "elements/cleanup/two.svg"} {
+		if err := adminWriteMedia(e.settings.MediaRoot, name, []byte("bytes")); err != nil {
+			t.Fatal(err)
+		}
+	}
+	res, body = e.postForm("/admin/elements/elementpack/"+pack+"/delete/", url.Values{"post": {"yes"}})
+	e.wantStatus(res, http.StatusFound, "pack delete", body)
+	for _, name := range []string{packThumb, "elements/cleanup/two.svg"} {
+		if _, err := os.Stat(e.mediaPath(name)); !os.IsNotExist(err) {
+			t.Fatalf("pack file %s survived delete: %v", name, err)
+		}
+	}
+	_ = second
+
+	// Font variant files.
+	family := e.makeFontFamily("Cleanup Font", "")
+	var file string
+	if err := e.db.QueryRow(`SELECT file FROM fonts_fontvariant WHERE family_id = ?`, family).Scan(&file); err != nil {
+		t.Fatal(err)
+	}
+	res, body = e.postForm("/admin/fonts/fontfamily/"+family+"/delete/", url.Values{"post": {"yes"}})
+	e.wantStatus(res, http.StatusFound, "font family delete", body)
+	if _, err := os.Stat(e.mediaPath(file)); !os.IsNotExist(err) {
+		t.Fatalf("font file survived delete: %v", err)
+	}
+}

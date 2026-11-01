@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"html/template"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -76,25 +75,41 @@ func adminPresetGroupModel() *adminModel {
 				OptionsFn: adminPresetGroupChoices},
 		},
 		Ordering: []string{"g.sort_order ASC", "g.label ASC"},
-		SelectSQL: "g.id, g.label, g.slug, g.parent_id, g.icon, " +
+		SelectSQL: "g.id, g.label, g.slug, COALESCE(p1.label, ''), COALESCE(p2.label, ''), " +
+			"COALESCE(p3.label, ''), COALESCE(p4.label, ''), COALESCE(p5.label, ''), " +
+			"COALESCE(p6.label, ''), COALESCE(p7.label, ''), COALESCE(p8.label, ''), g.icon, " +
 			"(SELECT COUNT(*) FROM presets_sizepreset p WHERE p.group_id = g.id), g.is_active",
-		FromSQL: "presets_sizepresetgroup g",
+		FromSQL: "presets_sizepresetgroup g " +
+			"LEFT JOIN presets_sizepresetgroup p1 ON p1.id = g.parent_id " +
+			"LEFT JOIN presets_sizepresetgroup p2 ON p2.id = p1.parent_id " +
+			"LEFT JOIN presets_sizepresetgroup p3 ON p3.id = p2.parent_id " +
+			"LEFT JOIN presets_sizepresetgroup p4 ON p4.id = p3.parent_id " +
+			"LEFT JOIN presets_sizepresetgroup p5 ON p5.id = p4.parent_id " +
+			"LEFT JOIN presets_sizepresetgroup p6 ON p6.id = p5.parent_id " +
+			"LEFT JOIN presets_sizepresetgroup p7 ON p7.id = p6.parent_id " +
+			"LEFT JOIN presets_sizepresetgroup p8 ON p8.id = p7.parent_id",
 		ScanList: func(a *App, rows *sql.Rows) (adminListRow, error) {
 			var id, label, slug, icon string
-			var parent sql.NullString
 			var count, active int
-			if err := rows.Scan(&id, &label, &slug, &parent, &icon, &count, &active); err != nil {
+			var parents [8]string
+			if err := rows.Scan(&id, &label, &slug, &parents[0], &parents[1], &parents[2], &parents[3],
+				&parents[4], &parents[5], &parents[6], &parents[7], &icon, &count, &active); err != nil {
 				return adminListRow{}, err
 			}
-			path := ""
-			if parent.Valid {
-				path = adminPresetGroupPath(nil, "")
+			parts := []string{label}
+			for _, parent := range parents {
+				if parent == "" {
+					break
+				}
+				parts = append(parts, parent)
 			}
-			_ = path
+			for i, j := 0, len(parts)-1; i < j; i, j = i+1, j-1 {
+				parts[i], parts[j] = parts[j], parts[i]
+			}
 			return adminListRow{ID: id, Cells: map[string]adminCell{
 				"label":        adminTextCell(label),
 				"slug":         adminTextCell(slug),
-				"path":         adminTextCell(label),
+				"path":         adminTextCell(strings.Join(parts, " → ")),
 				"icon":         adminTextCell(icon),
 				"preset_count": adminIntCell(count),
 				"is_active":    adminTextCell(adminBoolText(active)),
@@ -181,10 +196,8 @@ func adminPresetGroupModel() *adminModel {
 		return nil, err
 	}
 	m.Delete = func(a *App, actor *UserRow, id string) error {
-		_, _ = a.DB.Exec(`UPDATE presets_sizepresetgroup SET parent_id = NULL WHERE parent_id = ?`, id)
-		_, _ = a.DB.Exec(`DELETE FROM presets_sizepreset WHERE group_id = ?`, id)
-		_, err := a.DB.Exec(`DELETE FROM presets_sizepresetgroup WHERE id = ?`, id)
-		return err
+		// parent is on_delete=CASCADE upstream: descendants and their presets go too.
+		return a.adminDeletePresetGroup(id)
 	}
 	m.Repr = func(a *App, id string) string {
 		var label string
@@ -200,29 +213,96 @@ func adminPresetGroupValues(a *App, form *adminForm, id string) (map[string]stri
 		"label":  strings.TrimSpace(form.Value("label")),
 		"slug":   strings.TrimSpace(form.Value("slug")),
 		"icon":   strings.TrimSpace(form.Value("icon")),
-		"parent": strings.TrimSpace(form.Value("parent")),
+		"parent": hexUUID(strings.TrimSpace(form.Value("parent"))),
 	}
 	if values["label"] == "" {
 		errs.add("label", "This field is required.")
+	} else if len([]rune(values["label"])) > 80 {
+		errs.add("label", "Ensure this value has at most 80 characters.")
 	}
 	if values["slug"] == "" {
 		errs.add("slug", "This field is required.")
-	}
-	values["parent"] = hexUUID(values["parent"])
-	if values["parent"] != "" {
-		if values["parent"] == id {
-			errs.add("parent", "A group cannot be its own parent.")
-		} else {
-			var exists int
-			_ = a.DB.QueryRow(`SELECT COUNT(*) FROM presets_sizepresetgroup WHERE id = ?`,
-				values["parent"]).Scan(&exists)
-			if exists == 0 {
-				errs.add("parent", "Select a valid choice. That choice is not one of the available choices.")
-			}
+	} else if !groupSlugPattern.MatchString(values["slug"]) {
+		errs.add("slug", "Lower-case letters, digits and hyphens.")
+	} else {
+		var taken int
+		_ = a.DB.QueryRow(`SELECT COUNT(*) FROM presets_sizepresetgroup WHERE slug = ? AND id <> ?`,
+			values["slug"], id).Scan(&taken)
+		if taken > 0 {
+			errs.add("slug", "Size preset group with this Slug already exists.")
 		}
 	}
-	_ = a
+	if values["icon"] != "" && !iconNamePattern.MatchString(values["icon"]) {
+		errs.add("icon", "Use a Lucide icon name such as `smartphone` or `file-text`.")
+	}
+	if values["parent"] != "" {
+		if values["parent"] == id {
+			errs.add("parent", "A group cannot be inside itself.")
+		} else if !a.adminPresetGroupExists(values["parent"]) {
+			errs.add("parent", "Select a valid choice. That choice is not one of the available choices.")
+		} else if id != "" && a.adminPresetGroupDescendant(id, values["parent"]) {
+			errs.add("parent", "A group cannot be inside itself.")
+		}
+	}
 	return values, errs
+}
+
+func (a *App) adminPresetGroupExists(id string) bool {
+	var n int
+	_ = a.DB.QueryRow(`SELECT COUNT(*) FROM presets_sizepresetgroup WHERE id = ?`, id).Scan(&n)
+	return n > 0
+}
+
+// adminPresetGroupDescendant reports whether candidate is inside parentID.
+func (a *App) adminPresetGroupDescendant(parentID, candidate string) bool {
+	seen := map[string]bool{}
+	for candidate != "" && !seen[candidate] {
+		if candidate == parentID {
+			return true
+		}
+		seen[candidate] = true
+		var next sql.NullString
+		if err := a.DB.QueryRow(`SELECT parent_id FROM presets_sizepresetgroup WHERE id = ?`,
+			candidate).Scan(&next); err != nil || !next.Valid {
+			return false
+		}
+		candidate = next.String
+	}
+	return false
+}
+
+// adminDeletePresetGroup ports the CASCADE from SizePresetGroup.parent.
+func (a *App) adminDeletePresetGroup(id string) error {
+	ids := []string{id}
+	for i := 0; i < len(ids); i++ {
+		rows, err := a.DB.Query(`SELECT id FROM presets_sizepresetgroup WHERE parent_id = ?`, ids[i])
+		if err != nil {
+			return err
+		}
+		for rows.Next() {
+			var child string
+			if err := rows.Scan(&child); err != nil {
+				rows.Close()
+				return err
+			}
+			ids = append(ids, child)
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			return err
+		}
+	}
+	q := adminPlaceholders(len(ids))
+	args := adminStrings(ids)
+	if _, err := a.DB.Exec(`DELETE FROM presets_sizepreset WHERE group_id IN (`+q+`)`, args...); err != nil {
+		return err
+	}
+	for i := len(ids) - 1; i >= 0; i-- {
+		if _, err := a.DB.Exec(`DELETE FROM presets_sizepresetgroup WHERE id = ?`, ids[i]); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func adminSizePresetModel() *adminModel {
@@ -283,9 +363,34 @@ func adminSizePresetModel() *adminModel {
 		Actions: []adminAction{
 			{Name: "activate", Label: "Activate",
 				Run: func(a *App, actor *UserRow, ids []string) ([]adminMessage, error) {
-					n, err := a.adminUpdateSelected("presets_sizepreset", "is_active", "TRUE", ids,
-						"is_active = FALSE")
-					return []adminMessage{adminSuccess(fmt.Sprintf("%d preset(s) activated.", n))}, err
+					// Activating in bulk skips the form, so check that no slug or alias now
+					// means two presets; roll the whole selection back on a clash.
+					tx, err := a.DB.Begin()
+					if err != nil {
+						return nil, err
+					}
+					defer func() { _ = tx.Rollback() }()
+					var n int64
+					if len(ids) > 0 {
+						q := `UPDATE presets_sizepreset SET is_active = TRUE
+							WHERE is_active = FALSE AND id IN (` + adminPlaceholders(len(ids)) + `)`
+						res, uerr := tx.Exec(q, adminStrings(ids)...)
+						if uerr != nil {
+							return nil, uerr
+						}
+						n, _ = res.RowsAffected()
+					}
+					clash, cerr := a.findPresetNameClash(tx)
+					if cerr != nil {
+						return nil, cerr
+					}
+					if clash != "" {
+						return []adminMessage{adminError("Nothing was activated: " + clash)}, nil
+					}
+					if err := tx.Commit(); err != nil {
+						return nil, err
+					}
+					return []adminMessage{adminSuccess(fmt.Sprintf("%d preset(s) activated.", n))}, nil
 				}},
 			{Name: "deactivate", Label: "Deactivate",
 				Run: func(a *App, actor *UserRow, ids []string) ([]adminMessage, error) {
@@ -416,9 +521,13 @@ func adminSizePresetValues(a *App, form *adminForm, id string) (map[string]strin
 	}
 	if values["label"] == "" {
 		errs.add("label", "This field is required.")
+	} else if len([]rune(values["label"])) > 120 {
+		errs.add("label", "Ensure this value has at most 120 characters.")
 	}
 	if values["slug"] == "" {
 		errs.add("slug", "This field is required.")
+	} else if !presetSlugPattern.MatchString(values["slug"]) {
+		errs.add("slug", "Letters, digits, dots, hyphens and underscores.")
 	} else {
 		var taken int
 		_ = a.DB.QueryRow(`SELECT COUNT(*) FROM presets_sizepreset WHERE slug = ? AND id <> ?`,
@@ -429,13 +538,11 @@ func adminSizePresetValues(a *App, form *adminForm, id string) (map[string]strin
 	}
 	if values["group"] == "" {
 		errs.add("group", "This field is required.")
-	} else {
-		var exists int
-		_ = a.DB.QueryRow(`SELECT COUNT(*) FROM presets_sizepresetgroup WHERE id = ?`,
-			values["group"]).Scan(&exists)
-		if exists == 0 {
-			errs.add("group", "Select a valid choice. That choice is not one of the available choices.")
-		}
+	} else if !a.adminPresetGroupExists(values["group"]) {
+		errs.add("group", "Select a valid choice. That choice is not one of the available choices.")
+	}
+	if values["icon"] != "" && !iconNamePattern.MatchString(values["icon"]) {
+		errs.add("icon", "Use a Lucide icon name such as `smartphone` or `file-text`.")
 	}
 	validUnit := false
 	for _, choice := range adminPresetUnits {
@@ -446,23 +553,29 @@ func adminSizePresetValues(a *App, form *adminForm, id string) (map[string]strin
 	if !validUnit {
 		errs.add("unit", "Select a valid choice. That choice is not one of the available choices.")
 	}
-	for _, side := range []string{"width", "height"} {
-		if values[side] == "" {
-			errs.add(side, "This field is required.")
-			continue
-		}
-		number, err := strconv.ParseFloat(values[side], 64)
-		if err != nil || number <= 0 {
-			errs.add(side, "The "+side+" must be a number greater than 0.")
+	widthNode, widthOK := adminPresetNumberNode(values["width"])
+	heightNode, heightOK := adminPresetNumberNode(values["height"])
+	if !widthOK {
+		errs.add("width", "The width must be a number.")
+	}
+	if !heightOK {
+		errs.add("height", "The height must be a number.")
+	}
+	if widthOK && heightOK && validUnit {
+		width, height, sizeErr := checkPresetSize(widthNode, heightNode, values["unit"])
+		if sizeErr != nil {
+			errs.add("width", sizeErr.Error())
+		} else {
+			values["width"], values["height"] = width, height
 		}
 	}
-	tags, tagErr := adminPresetLabelList(form.Value("tags"), "tags", 20, nil)
+	tags, tagErr := adminPresetLabelList(form.Value("tags"), "tags", presetMaxTags, nil, true)
 	if tagErr != "" {
 		errs.add("tags", tagErr)
 	}
 	values["tags_json"] = pyJSONStringList(tags)
-	aliasPattern := presetSlugPattern
-	aliases, aliasErr := adminPresetLabelList(form.Value("aliases"), "aliases", 20, aliasPattern)
+	aliases, aliasErr := adminPresetLabelList(form.Value("aliases"), "aliases", presetMaxAliases,
+		presetSlugPattern, false)
 	if aliasErr != "" {
 		errs.add("aliases", aliasErr)
 	}
@@ -470,11 +583,36 @@ func adminSizePresetValues(a *App, form *adminForm, id string) (map[string]strin
 	if values["meta"] == "" {
 		values["meta"] = "{}"
 	}
+	metaNode, metaErr := parseJSONNode([]byte(values["meta"]))
+	if metaErr != nil {
+		errs.add("meta", "Meta must be a JSON object.")
+	} else if canonical, merr := checkPresetMeta(metaNode); merr != nil {
+		errs.add("meta", merr.Error())
+	} else {
+		values["meta"] = canonical
+	}
+	if !errs.any() && form.Has("is_active") {
+		if clash := adminPresetAliasClash(a, values["slug"], aliases, id); clash != "" {
+			errs.add("aliases", clash)
+		}
+	}
 	return values, errs
 }
 
-// adminPresetLabelList is the admin's comma-separated label parser.
-func adminPresetLabelList(raw, what string, limit int, pattern *regexp.Regexp) ([]string, string) {
+func adminPresetNumberNode(raw string) (*jsonNode, bool) {
+	if raw == "" {
+		return nil, false
+	}
+	node, err := parseJSONNode([]byte(raw))
+	if err != nil || node.kind != "number" {
+		return nil, false
+	}
+	return node, true
+}
+
+// adminPresetLabelList is the admin's comma-separated label parser. Tags are
+// lower-cased; aliases keep their spelling and follow the preset slug rule.
+func adminPresetLabelList(raw, what string, limit int, pattern *regexp.Regexp, lower bool) ([]string, string) {
 	var out []string
 	seen := map[string]bool{}
 	for _, part := range strings.Split(raw, ",") {
@@ -482,17 +620,58 @@ func adminPresetLabelList(raw, what string, limit int, pattern *regexp.Regexp) (
 		if value == "" || seen[value] {
 			continue
 		}
-		if len([]rune(value)) > 32 {
+		if pattern != nil {
+			if !pattern.MatchString(value) {
+				return nil, "Letters, digits, dots, hyphens and underscores."
+			}
+		} else if len([]rune(value)) > presetMaxTagLength {
 			return nil, "Each " + what + " entry must be at most 32 characters."
 		}
-		if pattern != nil && !pattern.MatchString(value) {
-			return nil, "Letters, digits, dots, hyphens and underscores."
+		if lower {
+			value = strings.ToLower(value)
 		}
 		seen[value] = true
-		out = append(out, strings.ToLower(value))
+		out = append(out, value)
 	}
 	if len(out) > limit {
 		return nil, fmt.Sprintf("Use at most %d %s.", limit, what)
 	}
 	return out, ""
+}
+
+// adminPresetAliasClash ports presets.models.alias_clash for the admin form.
+func adminPresetAliasClash(a *App, slug string, aliases []string, excludeID string) string {
+	for _, alias := range aliases {
+		if alias == slug {
+			return "An alias cannot repeat the preset's own slug."
+		}
+	}
+	names := map[string]bool{slug: true}
+	for _, alias := range aliases {
+		names[alias] = true
+	}
+	rows, err := a.DB.Query(`SELECT slug, aliases FROM presets_sizepreset
+		WHERE is_active = TRUE AND id <> ?`, excludeID)
+	if err != nil {
+		return ""
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var otherSlug, rawAliases string
+		if err := rows.Scan(&otherSlug, &rawAliases); err != nil {
+			continue
+		}
+		otherAliases := parseJSONStringList(rawAliases)
+		for _, alias := range aliases {
+			if alias == otherSlug {
+				return fmt.Sprintf("'%s' is the slug of another preset.", otherSlug)
+			}
+		}
+		for _, otherAlias := range otherAliases {
+			if names[otherAlias] {
+				return fmt.Sprintf("'%s' is already an alias of '%s'.", otherAlias, otherSlug)
+			}
+		}
+	}
+	return ""
 }

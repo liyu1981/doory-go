@@ -114,9 +114,13 @@ func adminCategoryValues(a *App, form *adminForm, id string) (map[string]string,
 	}
 	if values["name"] == "" {
 		errs.add("name", "This field is required.")
+	} else if len([]rune(values["name"])) > 80 {
+		errs.add("name", "Ensure this value has at most 80 characters.")
 	}
 	if values["slug"] == "" {
 		errs.add("slug", "This field is required.")
+	} else if len([]rune(values["slug"])) > 80 || !adminDjangoSlugPattern.MatchString(values["slug"]) {
+		errs.add("slug", "Enter a valid “slug” consisting of letters, numbers, underscores or hyphens.")
 	} else {
 		var taken int
 		_ = a.DB.QueryRow(`SELECT COUNT(*) FROM gallery_templatecategory WHERE slug = ? AND id <> ?`,
@@ -124,6 +128,9 @@ func adminCategoryValues(a *App, form *adminForm, id string) (map[string]string,
 		if taken > 0 {
 			errs.add("slug", "Template category with this Slug already exists.")
 		}
+	}
+	if len([]rune(values["icon"])) > 64 {
+		errs.add("icon", "Ensure this value has at most 64 characters.")
 	}
 	return values, errs
 }
@@ -456,11 +463,15 @@ func adminTemplateValues(a *App, form *adminForm, id string, isAdd bool) (map[st
 	}
 	if values["title"] == "" {
 		errs.add("title", "This field is required.")
+	} else if len([]rune(values["title"])) > 200 {
+		errs.add("title", "Ensure this value has at most 200 characters.")
 	}
 	if values["slug"] == "" {
 		errs.add("slug", "This field is required.")
-	} else if !templateSlugPattern.MatchString(values["slug"]) {
-		errs.add("slug", "Enter a valid “slug” consisting of lowercase letters, numbers, underscores or hyphens.")
+	} else if len([]rune(values["slug"])) > 120 {
+		errs.add("slug", "Ensure this value has at most 120 characters.")
+	} else if !adminDjangoSlugPattern.MatchString(values["slug"]) {
+		errs.add("slug", "Enter a valid “slug” consisting of letters, numbers, underscores or hyphens.")
 	} else {
 		var taken int
 		_ = a.DB.QueryRow(`SELECT COUNT(*) FROM gallery_template WHERE slug = ? AND id <> ?`,
@@ -474,6 +485,9 @@ func adminTemplateValues(a *App, form *adminForm, id string, isAdd bool) (map[st
 		errs.add("tags", tagErr.Error())
 	}
 	values["tags"] = adminJSONText(tags)
+	if len([]rune(values["preset"])) > 64 {
+		errs.add("preset", "Ensure this value has at most 64 characters.")
+	}
 	if values["category"] != "" {
 		var exists int
 		_ = a.DB.QueryRow(`SELECT COUNT(*) FROM gallery_templatecategory WHERE id = ?`,

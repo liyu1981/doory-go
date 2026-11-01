@@ -9,10 +9,14 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
+
+// adminDjangoSlugPattern is Django's SlugField pattern (allow_unicode=False).
+var adminDjangoSlugPattern = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
 
 // adminRegistry is AdminSite._registry in registration order. The order drives
 // the index page grouping; Django sorts apps/models alphabetically on the

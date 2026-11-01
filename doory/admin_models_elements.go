@@ -4,9 +4,11 @@
 package doory
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
 	"html/template"
+	"image"
 	"net/http"
 	"strings"
 	"time"
@@ -175,6 +177,10 @@ func adminElementPackModel() *adminModel {
 	}
 	m.Add = func(a *App, actor *UserRow, form *adminForm) (string, adminErrors, error) {
 		values, errs := adminPackValues(a, form, "")
+		thumbnail, thumbErr := adminPackThumbnail(form)
+		if thumbErr != "" {
+			errs.add("thumbnail", thumbErr)
+		}
 		if errs.any() {
 			return "", errs, nil
 		}
@@ -190,13 +196,17 @@ func adminElementPackModel() *adminModel {
 		if err != nil {
 			return "", nil, err
 		}
-		if err := a.adminStorePackThumb(a, id, values["slug"], form); err != nil {
+		if err := a.adminStorePackThumb(a, id, values["slug"], thumbnail); err != nil {
 			return "", nil, err
 		}
 		return id, nil, nil
 	}
 	m.Change = func(a *App, actor *UserRow, id string, form *adminForm) (adminErrors, error) {
 		values, errs := adminPackValues(a, form, id)
+		thumbnail, thumbErr := adminPackThumbnail(form)
+		if thumbErr != "" {
+			errs.add("thumbnail", thumbErr)
+		}
 		if errs.any() {
 			return errs, nil
 		}
@@ -208,7 +218,7 @@ func adminElementPackModel() *adminModel {
 		if err != nil {
 			return nil, err
 		}
-		return nil, a.adminStorePackThumb(a, id, values["slug"], form)
+		return nil, a.adminStorePackThumb(a, id, values["slug"], thumbnail)
 	}
 	m.Delete = func(a *App, actor *UserRow, id string) error {
 		var thumbnail string
@@ -290,10 +300,12 @@ func adminPackValues(a *App, form *adminForm, id string) (map[string]string, adm
 	}
 	if values["name"] == "" {
 		errs.add("name", "This field is required.")
+	} else if len([]rune(values["name"])) > 120 {
+		errs.add("name", "Ensure this value has at most 120 characters.")
 	}
 	if values["slug"] == "" {
 		errs.add("slug", "This field is required.")
-	} else if !templateSlugPattern.MatchString(values["slug"]) {
+	} else if len([]rune(values["slug"])) > 80 || !adminDjangoSlugPattern.MatchString(values["slug"]) {
 		errs.add("slug", "Enter a valid “slug” consisting of letters, numbers, underscores or hyphens.")
 	} else {
 		var taken int
@@ -339,33 +351,47 @@ func adminLicenseValid(value string) bool {
 	return value != ""
 }
 
-// adminStorePackThumb re-encodes an uploaded pack thumbnail to a 480 px WebP
-// at elements/packs/<slug>.webp.
-func (a *App) adminStorePackThumb(app *App, id, slug string, form *adminForm) error {
+// adminPackThumbnail ports ElementPackAdminForm.clean_thumbnail: validate and
+// re-encode an uploaded pack thumbnail to a 480 px WebP. Returns nil data when
+// no file was uploaded.
+func adminPackThumbnail(form *adminForm) ([]byte, string) {
 	upload := form.File("thumbnail")
 	if upload == nil {
-		return nil
+		return nil, ""
 	}
-	if len(upload.Data) == 0 || len(upload.Data) > 4*1024*1024 {
-		return nil
+	if len(upload.Data) == 0 {
+		return nil, "The file is empty."
 	}
-	width, height, _, err := decodeImageConfig(upload.Data)
-	if err != nil || width < 1 || height < 1 {
-		return nil
+	if len(upload.Data) > 4*1024*1024 {
+		return nil, "The file is too large."
+	}
+	cfg, _, err := image.DecodeConfig(bytes.NewReader(upload.Data))
+	if err != nil || cfg.Width < 1 || cfg.Height < 1 ||
+		cfg.Width > maxImageDimension || cfg.Height > maxImageDimension ||
+		int64(cfg.Width)*int64(cfg.Height) > maxImagePixels {
+		return nil, "Unsupported image type. Use PNG, JPEG, WebP, GIF or AVIF."
 	}
 	img, _, err := decodeImageData(upload.Data)
 	if err != nil {
-		return nil
+		return nil, "The file is not a valid image."
 	}
 	data, err := encodeWebP(fitThumbnail(img, 480))
 	if err != nil {
-		return err
+		return nil, "Could not create a thumbnail."
+	}
+	return data, ""
+}
+
+// adminStorePackThumb writes a prepared thumbnail at elements/packs/<slug>.webp.
+func (a *App) adminStorePackThumb(app *App, id, slug string, data []byte) error {
+	if data == nil {
+		return nil
 	}
 	name := availableThumbnailName(a.Settings.MediaRoot, "elements/packs/"+slug+".webp")
 	if err := adminWriteMedia(a.Settings.MediaRoot, name, data); err != nil {
 		return err
 	}
-	_, err = a.DB.Exec(`UPDATE elements_elementpack SET thumbnail = ? WHERE id = ?`, name, id)
+	_, err := a.DB.Exec(`UPDATE elements_elementpack SET thumbnail = ? WHERE id = ?`, name, id)
 	return err
 }
 

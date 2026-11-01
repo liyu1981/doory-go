@@ -278,7 +278,7 @@ behavioral verification).
 
 | upstream | go | status |
 |---|---|---|
-| `backend/apps/elements/admin.py` |  | ⬜ |
+| `backend/apps/elements/admin.py` | doory/admin_models_elements.go + doory/admin_change.go (pack/element forms, thumbnail validation, bulk upload, publish actions, delete cleanup; D2 markup) | ✅ |
 | `backend/apps/elements/apps.py` |  | ⬜ |
 | `backend/apps/elements/bulk.py` | doory/elements_import.go bulkImport (batched create/update/unchanged, per-key outcomes) | ✅ |
 | `backend/apps/elements/filters.py` | doory/elements.go (pack/kind/style/ordering validation with Django FORM messages; q+relevance pending with content seeding) | 🟡 |
@@ -294,7 +294,7 @@ behavioral verification).
 | `backend/apps/elements/search.py` | doory/elements_tags.go (fold/search_name/search_tags/clean_tags) + doory/elements.go (existing query ranking) | ✅ |
 | `backend/apps/elements/seed.py` | doory/commands_elements.go runSeedElements (builtin packs + generated graphics; D14) | 🟡 |
 | `backend/apps/elements/serializers.py` | doory/elements.go (pack/item envelopes; preview_svg annotation pending with content) | 🟡 |
-| `backend/apps/elements/signals.py` |  | ⬜ |
+| `backend/apps/elements/signals.py` | doory/admin_models_elements.go (Element SVG and ElementPack thumbnail cleanup on delete) | ✅ |
 | `backend/apps/elements/sources.py` | doory/elements_sources.go (npm tarball + integrity, url files + SHA-256, directory source, glob matcher, archive path rules) | ✅ |
 | `backend/apps/elements/svgdata.py` | doory/elements_import.go processSVG (sanitize + info + colours) | ✅ |
 | `backend/apps/elements/tagdata.py` | doory/elements_tags.go (json-map, tabler, iconify-categories, phosphor-js) | ✅ |
@@ -306,7 +306,7 @@ behavioral verification).
 
 | upstream | go | status |
 |---|---|---|
-| `backend/apps/elements/templates/admin/elements/bulk_upload.html` |  | ⬜ |
+| `backend/apps/elements/templates/admin/elements/bulk_upload.html` | doory/admin_models_elements.go + embedded admin upload template (multi-file form, per-file errors, max 100) | ✅ |
 
 ## `backend/apps/exports/`
 
@@ -347,7 +347,7 @@ behavioral verification).
 
 | upstream | go | status |
 |---|---|---|
-| `backend/apps/fonts/admin.py` | — (admin surface — divergence D2) | ⬜ |
+| `backend/apps/fonts/admin.py` | doory/admin_models_fonts.go (family form + inline variants, font sniff/format/size, publish actions, file cleanup; D2 markup) | ✅ |
 | `backend/apps/fonts/apps.py` |  | ⬜ |
 | `backend/apps/fonts/catalog.py` | — (catalogue data build — ops family content) | ⬜ |
 | `backend/apps/fonts/filters.py` | doory/fonts.go (q/category/script/ordering incl. the code-NULL script validator) | ✅ |
@@ -357,7 +357,7 @@ behavioral verification).
 | `backend/apps/fonts/models.py` | doory/fonts.go + doory/fonts_upload.go (row ops, variant rows, path semantics); write-path guard (bulk) pending | 🟡 |
 | `backend/apps/fonts/probe_worker.py` | internal/fontparse (sfnt/WOFF/WOFF2 tables, cmap, weight/style/category/scripts — cross-proven vs probe_worker in fontparse_test.go) | ✅ |
 | `backend/apps/fonts/serializers.py` | doory/fonts.go + doory/fonts_upload.go (family/variant envelope grouping, upload validation) | ✅ |
-| `backend/apps/fonts/signals.py` |  | ⬜ |
+| `backend/apps/fonts/signals.py` | doory/admin_models_fonts.go + doory/fonts_upload.go (variant files removed with the family/variant row) | ✅ |
 | `backend/apps/fonts/sources.py` | — (Fontsource fetch — ops family content) | ⬜ |
 | `backend/apps/fonts/sync.py` | — (sync_fonts command — ops family content) | ⬜ |
 | `backend/apps/fonts/tests/` | (dispositions: ledger/test-mapping-v*.json) | 🟡 |
@@ -370,11 +370,11 @@ behavioral verification).
 
 | upstream | go | status |
 |---|---|---|
-| `backend/apps/gallery/admin.py` |  | ⬜ |
+| `backend/apps/gallery/admin.py` | doory/admin_models_gallery.go (category/template forms, JSON document upload validation, thumbnail WebP, publish/feature/duplicate/validate actions, delete cleanup; D2 markup) | ✅ |
 | `backend/apps/gallery/apps.py` |  | ⬜ |
 | `backend/apps/gallery/filters.py` | doory/gallery.go (category/q/orientation/preset/featured/ordering + total tie-breaks) | 🟡 |
 | `backend/apps/gallery/importer.py` | (seed_templates/import_template command — ops family content) | ⬜ |
-| `backend/apps/gallery/management/` | doory/commands_gallery.go + doory/gallery_import.go (seed_gallery, seed_templates [embedded data/templates, photos, thumbnails, font warning], import_template [paths --publish --create-categories]). Thumbnails: the oracle re-encodes WebP through Pillow; the port stores the validated WebP bytes (M7 encoder gap) and the cli-driver compares those files by dimensions. | 🟡 |
+| `backend/apps/gallery/management/` | doory/commands_gallery.go + doory/gallery_import.go (seed_gallery, seed_templates [embedded data/templates, photos, thumbnails, font warning], import_template [paths --publish --create-categories]). Thumbnails are re-encoded to WebP through libwebp; the resampling filter still differs (D15). | 🟡 |
 | `backend/apps/gallery/migrations/` |  | ⬜ |
 | `backend/apps/gallery/models.py` | doory/gallery.go (row reads + orientation derivation); apply_document pending with import_template | 🟡 |
 | `backend/apps/gallery/serializers.py` | doory/gallery.go (category/summary/detail envelopes) | 🟡 |
@@ -383,7 +383,7 @@ behavioral verification).
 | `backend/apps/gallery/sitemap.py` | doory/gallery.go (exact bytes, SITE_URL base, published-template loop) | ✅ |
 | `backend/apps/gallery/tests/` | doory/gallery_use_test.go (create-from-template/use-count/not-found); remaining gallery cases pending | 🟡 |
 | `backend/apps/gallery/urls.py` |  | ⬜ |
-| `backend/apps/gallery/validators.py` |  | ⬜ |
+| `backend/apps/gallery/validators.py` | doory/gallery_import.go + doory/admin_models_gallery.go (validate_template_document, tag normalisation, admin document form) | ✅ |
 | `backend/apps/gallery/views.py` | doory/gallery.go (categories/list/detail/use + TemplateFilter) | 🟡 |
 
 ## `backend/apps/mcp/`
@@ -421,7 +421,7 @@ behavioral verification).
 
 | upstream | go | status |
 |---|---|---|
-| `backend/apps/presets/admin.py` |  | ⬜ |
+| `backend/apps/presets/admin.py` | doory/admin_models_presets.go (group/preset forms, path column, size/tags/aliases/meta validation, alias + activate clash, cascade delete; D2 markup) | ✅ |
 | `backend/apps/presets/apps.py` |  | ⬜ |
 | `backend/apps/presets/importer.py` | doory/migrations/0002_presets.seed.sqlite.sql (row dump via pnpm seedgen — content parity without porting write()); FORMAT_VERSION via doory/presets.go | ✅ |
 | `backend/apps/presets/management/` | doory/commands_seed.go + doory/presets_import.go (seed_size_presets --update; import_size_presets paths --mode --dry-run with the full validator) | ✅ |
@@ -429,7 +429,7 @@ behavioral verification).
 | `backend/apps/presets/models.py` | doory/presets.go (row reads + width_px/height_px as to_px properties) + doory/presets.go my_sizes (SizeChoices row) | 🟡 |
 | `backend/apps/presets/tests/` | (dispositions: ledger/test-mapping-v*.json) | 🟡 |
 | `backend/apps/presets/urls.py` | doory/app.go (/size-presets/ + /size-presets/mine/) | ✅ |
-| `backend/apps/presets/validators.py` | doory/presets.go (to_px + UNITS exact big.Rat rounding); pending: check_size (import-path validation) | 🟡 |
+| `backend/apps/presets/validators.py` | doory/presets.go (to_px + UNITS exact big.Rat rounding) + doory/presets_import.go (check_size/check_meta/normalize_tags/normalize_aliases used by the importer and admin forms) | ✅ |
 | `backend/apps/presets/views.py` | doory/presets.go (size_presets tree + my_sizes GET/PATCH: pinned/recent/collapsed, slug validation, updated_at) | ✅ |
 
 ## `backend/apps/sharing/`
