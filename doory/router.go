@@ -99,10 +99,16 @@ type Route struct {
 	// DRF's finalize_response runs even for permission401s (probe0008
 	// steps17/18/32).
 	SharedHeaders bool
-	Csrf          CsrfMode
-	Session       SessionMode
-	Require       RequireMode
-	Handler       http.HandlerFunc
+	// ThrottleScopes are DRF scoped throttle classes applied to every method;
+	// MethodThrottleScopes adds scoped classes for one method only.
+	ThrottleScopes           []string
+	MethodThrottleScopes     map[string][]string
+	NoDefaultThrottle        bool
+	NoDefaultThrottleMethods map[string]bool
+	Csrf                     CsrfMode
+	Session                  SessionMode
+	Require                  RequireMode
+	Handler                  http.HandlerFunc
 }
 
 // currentUser returns the session-resolved user stashed by dispatch (nil
@@ -306,6 +312,11 @@ func (rt *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		(route.Require == RequireAlways || (route.Require == RequireUnsafe && unsafe)) {
 		writeDRF(w, http.StatusUnauthorized, "not_authenticated",
 			"Authentication credentials were not provided.")
+		return
+	}
+
+	// DRF check_throttles runs after authentication and permission checks.
+	if !rt.app.allowRouteThrottles(w, r, route, user) {
 		return
 	}
 

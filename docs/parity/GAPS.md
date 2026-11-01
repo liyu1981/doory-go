@@ -40,13 +40,8 @@ flowchart TB
     G12["G12 stock photo search/import"]
     G13["G13 Freesound search/import"]
     G11["G11 audio upload"]
-    G22["G22 DRF rate throttles"]
 
     G7 --> G15
-    G7 -.-> G22
-    G12 -.-> G22
-    G13 -.-> G22
-    G15 -.-> G22
     G11 -.-> G15
   end
 
@@ -109,18 +104,13 @@ parity-completeness, not a hard feature blocker.
 | gap | depends on | kind | note |
 |---|---|---|---|
 | G7 | G15 | hard | G15 provides the video probe/convert/store pipeline |
-| G7 | G22 | soft | needs the video upload rate charge |
 | G9 | G16 | hard | response readers/style pipeline |
 | G11 | G15 | soft | shares the ffmpeg harness |
-| G12 | G22 | soft | needs the stock rate charge |
-| G13 | G22 | soft | needs the stock rate charge |
-| G15 | G22 | soft | needs the video upload rate charge |
 | G16 | — | — | AI response readers/style encoders |
 | G17 | G30, G31 | hard | admin program umbrella |
 | G19 | — | — | AVIF encoder missing |
 | G20 | — | — | S3 storage seam |
 | G21 | — | — | Postgres dialect runner lane |
-| G22 | — | — | cross-cutting DRF throttle slice |
 | G23 | G19 | hard | EXIF/normalisation parity still needs the AVIF path |
 | G24 | — | — | verification of all families |
 | G25 | — | — | test-mapping bookkeeping |
@@ -133,8 +123,6 @@ parity-completeness, not a hard feature blocker.
 Notes:
 
 - G11 shares the ffmpeg harness with G15, but does not require video import itself.
-- G22 is a cross-cutting throttle slice: G7/G12/G13/G15 need their rate charges
-  for full parity, but their core pipelines can be built first.
 
 ## A. Routes upstream has and the port does not register
 
@@ -173,7 +161,6 @@ which upstream function is missing — never a silent wrong answer.
 | G19 | **D21 — AVIF** | Not made at all (no pure-Go encoder); `/config/` advertises `png,jpg,webp` and the endpoint rejects `avif`. Closes with an AVIF encoder. |
 | G20 | **D7 — S3 media storage** | Local media only; the `storages` seam is not ported. |
 | G21 | **D4 — Postgres dialect lane** | Schema digest + `pg-smoke` run on Postgres; the runner does **not** replay each scenario on Postgres. Wiring the dialect matrix into `test/parity` closes it. |
-| G22 | **D6/D11-family leftovers** | Scoped DRF rate throttles are not enforced end-to-end (the account lockout is); `REST_FRAMEWORK` rates still need the kernel throttle slice. |
 | G23 | Image normalisation edges | EXIF orientation/normalisation and AVIF decode paths differ from Pillow's; loud or structural today, not byte-equal. The WebP/JPEG encoder half is closed by G18. |
 
 ## E. Verification and bookkeeping deficits
@@ -204,6 +191,7 @@ which upstream function is missing — never a silent wrong answer.
 | G14 | Remote image fetch (`URL_IMAGE_UPLOADS`, bulk-fill/fill URL values, stock import downloads) | `c22b721` |
 | G28 | Admin model engine and moderation (User/Group, ApiToken, Asset, BrandKit, Design/DesignVersion/Folder, ShareLink, Comment; actions, cascades and file cleanup) | `984a65b` |
 | G29 | Admin content authoring (Template/Category, ElementPack/Element, FontFamily/Variant, SizePresetGroup/SizePreset; thumbnails, bulk uploads, validate/duplicate/feature, preset validation and activate clash, delete cleanup) | `948a24c` |
+| G22 | DRF default + scoped rate throttles (anon/user, auth, oidc, upload, stock, stock preview, video upload, bulk fill/images, export, optimize/offsite, ai) | to be filled |
 | G18 | WebP/JPEG encoding through embedded libwebp 1.6.0 + libjpeg-turbo 3.1.0 (Pillow byte parity) | `fcb66a5` |
 | G27 | Admin kernel and CLI (staff/session/CSRF, index/app/search/autocomplete/jsi18n, never_cache/Vary, admin log/history, bootstrap commands, auth seed) | `c4f61f7` |
 | G2 | `POST /api/v1/designs/{id}/bulk-fill/` — one copy per row, row errors, name pattern/folder/export | `5ca20e3` |

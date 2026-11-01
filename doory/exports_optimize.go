@@ -93,6 +93,14 @@ func (a *App) exportsOptimize(w http.ResponseWriter, r *http.Request) {
 		writeDRFValidation(w, fields)
 		return
 	}
+	// Off-site optimizers charge the `optimize_offsite` scope once per image,
+	// on top of the view's `optimize` throttle.
+	if optimizer, _ := a.optimizerChoice(request); optimizer != "" && a.optimizerSendsOffsite(optimizer) {
+		if ok, wait := a.chargeThrottle(currentUser(r), "optimize_offsite"); !ok {
+			writeDRFThrottledDetail(w, wait, throttledDefault)
+			return
+		}
+	}
 	result, derr := a.optimizeImage(data, request)
 	if derr != nil {
 		writeDRF(w, derr.Status, derr.Code, derr.Message)
@@ -235,6 +243,41 @@ type optimizedImage struct {
 	optimized   bool
 }
 
+// optimizerChoice resolves the request's optimizer id, keeping the
+// "unavailable" error for an id this server does not offer.
+func (a *App) optimizerChoice(request optimizeRequest) (string, *DocumentError) {
+	if request.Optimize == "false" {
+		return "", nil
+	}
+	if request.Optimize == "true" {
+		if def := a.imageOptimizeConfig().Default; def != nil {
+			return *def, nil
+		}
+		return "", nil
+	}
+	offered := []string{}
+	for _, candidate := range a.imageOptimizeConfig().Optimizers {
+		offered = append(offered, candidate.ID)
+	}
+	if !stringInList(offered, request.Optimize) {
+		return "", &DocumentError{
+			Code: "optimizer_unavailable", Status: http.StatusBadRequest,
+			Message: fmt.Sprintf("This server has no image optimizer %q (it offers: %s).",
+				request.Optimize, strings.Join(offered, ", ")),
+		}
+	}
+	return request.Optimize, nil
+}
+
+func (a *App) optimizerSendsOffsite(id string) bool {
+	for _, candidate := range a.imageOptimizeConfig().Optimizers {
+		if candidate.ID == id {
+			return candidate.SendsOffsite
+		}
+	}
+	return false
+}
+
 // optimizeImage ports services.optimize_image for the formats this server
 // makes (png/jpg/webp; AVIF is D21).
 func (a *App) optimizeImage(png []byte, request optimizeRequest) (optimizedImage, *DocumentError) {
@@ -250,26 +293,9 @@ func (a *App) optimizeImage(png []byte, request optimizeRequest) (optimizedImage
 	}
 	// The optimizer choice happens before the image is touched: an id this
 	// server doesn't offer is an error; `true` without one is a no-op.
-	optimizer := ""
-	if request.Optimize != "false" {
-		if request.Optimize == "true" {
-			if def := a.imageOptimizeConfig().Default; def != nil {
-				optimizer = *def
-			}
-		} else {
-			offered := []string{}
-			for _, candidate := range a.imageOptimizeConfig().Optimizers {
-				offered = append(offered, candidate.ID)
-			}
-			if !stringInList(offered, request.Optimize) {
-				return optimizedImage{}, &DocumentError{
-					Code: "optimizer_unavailable", Status: http.StatusBadRequest,
-					Message: fmt.Sprintf("This server has no image optimizer %q (it offers: %s).",
-						request.Optimize, strings.Join(offered, ", ")),
-				}
-			}
-			optimizer = request.Optimize
-		}
+	optimizer, choiceErr := a.optimizerChoice(request)
+	if choiceErr != nil {
+		return optimizedImage{}, choiceErr
 	}
 	unreadable := &DocumentError{
 		Code: "invalid_image", Status: http.StatusBadRequest,

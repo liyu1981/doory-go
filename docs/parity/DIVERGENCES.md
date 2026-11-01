@@ -94,11 +94,14 @@ Rules (PiG §6):
 - SCRUTINIZED: approved
 - status: active
 - summary: Same KDF parameters as probed from the oracle; Django's cache-based
-  throttling maps to a Go-native store. Observable behavior (429 shapes,
-  retry-after) is scenario-proven; internal storage is not.
+  throttling maps to the in-process `throttleGuard` (`doory/throttle.go`) and
+  route metadata (`Route.ThrottleScopes`/`MethodThrottleScopes`). Observable
+  behavior (429 shapes, retry-after, per-user/per-IP identities) is proven by
+  the throttle tests and parity-fast scenarios; the storage is not Redis-backed.
 - remove-when: n/a (implementation substitution with proven observable
   behavior).
-- evidence: PLAN.md §6 (D6), family accounts.
+- evidence: PLAN.md §6 (D6), `doory/throttle.go`, `doory/throttle_test.go`,
+  family accounts; G22.
 
 ## D7 — static serving: whitenoise → embedded precompressed assets
 

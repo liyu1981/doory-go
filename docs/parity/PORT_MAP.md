@@ -87,7 +87,7 @@ behavioral verification).
 | `backend/apps/ai/services.py` | doory/ai_taskview.go + ai_run.go (run to transport; load-models/test pending) | 🟡 |
 | `backend/apps/ai/tasks.py` | doory/ai.go (TASKS registry; validate_options over empty schemas) | ✅ |
 | `backend/apps/ai/tests/` | (dispositions: ledger/test-mapping-v*.json) | 🟡 |
-| `backend/apps/ai/throttling.py` | (AIRateThrottle - kernel rate limits pending) | ⬜ |
+| `backend/apps/ai/throttling.py` | doory/throttle.go + doory/app.go (route scopes ai/upload on task/load-models/test) | ✅ |
 | `backend/apps/ai/transport.py` | doory/ai_policy.go (policies, check_url form, refused dial -> ai_unreachable) | 🟡 |
 | `backend/apps/ai/urls.py` | doory/app.go (5 routes; load-models/test not registered - pending) | 🟡 |
 | `backend/apps/ai/views.py` | doory/ai_views.go (providers/models/tasks + load-models/test routes with their row lookups); remote catalogue + sample call pending | 🟡 |
@@ -152,7 +152,7 @@ behavioral verification).
 | `backend/apps/assets/stocklimits.py` | (rate tracking — pending with provider slice) | ⬜ |
 | `backend/apps/assets/storage.py` | (delete-on-commit helpers — pending with file-lifecycle slice) | ⬜ |
 | `backend/apps/assets/tests/` | doory/remote_image_test.go (URL policy, redirects, size/type checks, URL import) + doory/assets_svg_test.go (SVG sanitise/store/unsafe rejection); ledger/test-mapping dispositions remain | 🟡 |
-| `backend/apps/assets/throttling.py` | (DRF rate scopes — kernel family pending) | ⬜ |
+| `backend/apps/assets/throttling.py` | doory/throttle.go + doory/app.go (upload/stock/stock_preview/video_upload route scopes) | ✅ |
 | `backend/apps/assets/uploads.py` | doory/assets.go (oversize reject, clean_name/clean_tags/strip — shared with brand/fonts) | ✅ |
 | `backend/apps/assets/urls.py` |  | ⬜ |
 | `backend/apps/assets/video.py` | doory/stock.go (available(): VIDEO_ENABLED + ffmpeg/ffprobe on PATH); probe/work_dir/conversion pending | 🟡 |
@@ -257,7 +257,7 @@ behavioral verification).
 | `backend/apps/designs/services.py` | doory/designs.go + designs_views.go + designs_actions.go (create/update/trash/restore/duplicate/versions, bulk_apply, set_thumbnail, purge); filling.create_from_template/fill pending | 🟡 |
 | `backend/apps/designs/signals.py` | (thumbnail file cleanup on delete — assets family) | ⬜ |
 | `backend/apps/designs/tests/` | (dispositions: ledger/test-mapping-v*.json) | 🟡 |
-| `backend/apps/designs/throttling.py` | (fill/bulk throttles — pending with fill actions; kernel ports DRF rates) | ⬜ |
+| `backend/apps/designs/throttling.py` | doory/throttle.go + doory/design_bulk_fill.go + doory/design_fill.go (bulk_fill/bulk_fill_images/export charges, one-fill lock) | ✅ |
 | `backend/apps/designs/urls.py` | doory/app.go (router: list/detail/actions/versions + {uuid}/{design_pk} templates) | ✅ |
 | `backend/apps/designs/validators.py` | doory/document.go (complete: structure/motion/audio/walk/size bound) | ✅ |
 | `backend/apps/designs/views.py` | doory/designs.go + doory/designs_views.go + doory/designs_actions.go (list/create/retrieve/patch/destroy/restore/duplicate/trash + fields/bulk/thumbnail) + doory/design_fill.go (fill) + doory/design_bulk_fill.go (bulk-fill) | 🟡 |
@@ -328,7 +328,7 @@ behavioral verification).
 | `backend/apps/exports/serializers.py` | doory/exports.go (PdfExport/ImageExport) + doory/exports_optimize.go (ImageOptimizeSerializer), D21 for avif | 🟡 |
 | `backend/apps/exports/services.py` | doory/exports.go + doory/render.go + doory/exports_optimize.go (sanitize->layout->render pipeline, optimize_image for png/jpg/webp with libwebp/libjpeg-turbo, max_bytes search, palette, D21 for avif); multi-page/video pending | 🟡 |
 | `backend/apps/exports/tests/` | (dispositions: ledger/test-mapping-v*.json) | 🟡 |
-| `backend/apps/exports/throttling.py` | (ExportRateThrottle — kernel rate limits pending) | ⬜ |
+| `backend/apps/exports/throttling.py` | doory/throttle.go + doory/app.go + doory/exports_optimize.go (export/optimize/optimize_offsite scopes) | ✅ |
 | `backend/apps/exports/urls.py` |  | ⬜ |
 | `backend/apps/exports/views.py` | doory/exports.go + doory/exports_optimize.go (pdf/image/download + optimize view) | 🟡 |
 
@@ -444,7 +444,7 @@ behavioral verification).
 | `backend/apps/sharing/serializers.py` | doory/sharing.go + doory/sharing_public.go (link/comment/shared envelopes incl. pyFloat coordinates; pending: some nested-update edge messages) | 🟡 |
 | `backend/apps/sharing/services.py` | doory/sharing.go (active links, limits) + doory/sharing_public.go (resolve, password windows, save w/ CAS) | 🟡 |
 | `backend/apps/sharing/tests/` | (dispositions: ledger/test-mapping-v*.json) | 🟡 |
-| `backend/apps/sharing/throttling.py` | (UploadScope throttle — kernel rate limits pending; client_ip ported in doory/sharing_public.go) | 🟡 |
+| `backend/apps/sharing/throttling.py` | doory/throttle.go + doory/app.go (upload scope on comment POST; client IP honoured under NUM_PROXIES) | ✅ |
 | `backend/apps/sharing/urls.py` |  | ⬜ |
 | `backend/apps/sharing/views.py` | doory/sharing.go (owner links+comments) + doory/sharing_public.go (shared design/save/comments, gate) + doory/app.go routes | 🟡 |
 

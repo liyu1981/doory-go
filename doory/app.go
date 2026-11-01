@@ -16,6 +16,7 @@ type App struct {
 	Router   *Router
 	lockout  *lockoutGuard
 	gate     *passwordGate
+	throttle *throttleGuard
 
 	// collab: the process-wide room registry (lazily built).
 	collabOnce sync.Once
@@ -34,13 +35,14 @@ type App struct {
 // (ledger/routes-v*.json): kernel + accounts auth. Route styles/modes come
 // from the semantics table, never guesswork.
 func NewApp(s *Settings, db *sql.DB) *App {
-	a := &App{Settings: s, DB: db, lockout: newLockoutGuard(), gate: newPasswordGate()}
+	a := &App{Settings: s, DB: db, lockout: newLockoutGuard(), gate: newPasswordGate(),
+		throttle: newThrottleGuard()}
 	rt := newRouter(a)
 	rt.Register(
 		Route{
 			// @api_view(["GET"]) — Allow "GET, OPTIONS", auth classes []
 			Path: "/api/v1/health/", Methods: []string{"GET"}, Style: AllowAPIView,
-			Handler: a.health,
+			NoDefaultThrottle: true, Handler: a.health,
 		},
 		Route{
 			Path: "/api/v1/config/", Methods: []string{"GET"}, Style: AllowAPIView,
@@ -67,21 +69,21 @@ func NewApp(s *Settings, db *sql.DB) *App {
 		Route{
 			// RegisterView (AuthView): APIView subclass, CsrfProtectedMixin
 			// (anonymous too), default auth classes consult the session.
-			Path: "/api/v1/auth/register/", Methods: []string{"POST"}, Style: AllowClass,
+			Path: "/api/v1/auth/register/", NoDefaultThrottle: true, ThrottleScopes: []string{"auth"}, Methods: []string{"POST"}, Style: AllowClass,
 			Csrf: CSRFAlways, Session: SessionConsult, Handler: a.registerView,
 		},
 		Route{
-			Path: "/api/v1/auth/login/", Methods: []string{"POST"}, Style: AllowClass,
+			Path: "/api/v1/auth/login/", NoDefaultThrottle: true, ThrottleScopes: []string{"auth"}, Methods: []string{"POST"}, Style: AllowClass,
 			Csrf: CSRFAlways, Session: SessionConsult, Handler: a.loginView,
 		},
 		Route{
 			// GoogleLoginView (AuthView): AllowAny, CSRF always, default
 			// session authentication. The credential is a Google ID token.
-			Path: "/api/v1/auth/google/", Methods: []string{"POST"}, Style: AllowClass,
+			Path: "/api/v1/auth/google/", NoDefaultThrottle: true, ThrottleScopes: []string{"auth"}, Methods: []string{"POST"}, Style: AllowClass,
 			Csrf: CSRFAlways, Session: SessionConsult, Require: RequireNever, Handler: a.googleLogin,
 		},
 		Route{
-			Path: "/api/v1/auth/logout/", Methods: []string{"POST"}, Style: AllowClass,
+			Path: "/api/v1/auth/logout/", NoDefaultThrottle: true, ThrottleScopes: []string{"auth"}, Methods: []string{"POST"}, Style: AllowClass,
 			Csrf: CSRFAlways, Session: SessionConsult, Require: RequireAlways,
 			Handler: a.logoutView,
 		},
@@ -91,7 +93,8 @@ func NewApp(s *Settings, db *sql.DB) *App {
 			// is registered (Allow) but its handler slice (confirm_identity,
 			// cascade) is family-pending — see views_auth.go.
 			Path: "/api/v1/auth/me/", Methods: []string{"GET", "PATCH", "DELETE"}, Style: AllowClass,
-			Csrf: CSRFAlways, Session: SessionConsult, Require: RequireUnsafe,
+			MethodThrottleScopes: map[string][]string{"PATCH": {"upload"}, "DELETE": {"auth"}},
+			Csrf:                 CSRFAlways, Session: SessionConsult, Require: RequireUnsafe,
 			Handler: a.meView,
 		},
 		Route{
@@ -99,46 +102,46 @@ func NewApp(s *Settings, db *sql.DB) *App {
 			// read the session (default SessionAuthentication -> Vary:
 			// Cookie). Without a configured provider they redirect to
 			// /login?sso_error=<code> (0.2.0; probes in test/parity).
-			Path: "/api/v1/auth/oidc/start/", Methods: []string{"GET"}, Style: AllowClass,
+			Path: "/api/v1/auth/oidc/start/", NoDefaultThrottle: true, ThrottleScopes: []string{"oidc"}, Methods: []string{"GET"}, Style: AllowClass,
 			Session: SessionConsult, Require: RequireNever,
 			Handler: a.oidcStart,
 		},
 		Route{
-			Path: "/api/v1/auth/oidc/callback/", Methods: []string{"GET"}, Style: AllowClass,
+			Path: "/api/v1/auth/oidc/callback/", NoDefaultThrottle: true, ThrottleScopes: []string{"oidc"}, Methods: []string{"GET"}, Style: AllowClass,
 			Session: SessionConsult, Require: RequireNever,
 			Handler: a.oidcCallback,
 		},
 		Route{
 			// OidcConnectionView (AuthView -> CsrfProtectedMixin): connect
 			// (POST) and disconnect (DELETE), IsAuthenticated, CSRF always.
-			Path: "/api/v1/auth/oidc/connection/", Methods: []string{"POST", "DELETE"}, Style: AllowClass,
+			Path: "/api/v1/auth/oidc/connection/", NoDefaultThrottle: true, ThrottleScopes: []string{"auth"}, Methods: []string{"POST", "DELETE"}, Style: AllowClass,
 			Csrf: CSRFAlways, Session: SessionConsult, Require: RequireAlways,
 			Handler: a.oidcConnection,
 		},
 		Route{
 			// PasswordReset/Confirm + EmailVerify (AuthView: AllowAny, CSRF
 			// always) and EmailResend (IsAuthenticated).
-			Path: "/api/v1/auth/password/reset/", Methods: []string{"POST"}, Style: AllowClass,
+			Path: "/api/v1/auth/password/reset/", NoDefaultThrottle: true, ThrottleScopes: []string{"auth"}, Methods: []string{"POST"}, Style: AllowClass,
 			Csrf: CSRFAlways, Session: SessionConsult, Require: RequireNever,
 			Handler: a.passwordResetRequest,
 		},
 		Route{
-			Path: "/api/v1/auth/password/reset/confirm/", Methods: []string{"POST"}, Style: AllowClass,
+			Path: "/api/v1/auth/password/reset/confirm/", NoDefaultThrottle: true, ThrottleScopes: []string{"auth"}, Methods: []string{"POST"}, Style: AllowClass,
 			Csrf: CSRFAlways, Session: SessionConsult, Require: RequireNever,
 			Handler: a.passwordResetConfirm,
 		},
 		Route{
-			Path: "/api/v1/auth/email/verify/", Methods: []string{"POST"}, Style: AllowClass,
+			Path: "/api/v1/auth/email/verify/", NoDefaultThrottle: true, ThrottleScopes: []string{"auth"}, Methods: []string{"POST"}, Style: AllowClass,
 			Csrf: CSRFAlways, Session: SessionConsult, Require: RequireNever,
 			Handler: a.emailVerify,
 		},
 		Route{
-			Path: "/api/v1/auth/email/resend/", Methods: []string{"POST"}, Style: AllowClass,
+			Path: "/api/v1/auth/email/resend/", NoDefaultThrottle: true, ThrottleScopes: []string{"auth"}, Methods: []string{"POST"}, Style: AllowClass,
 			Csrf: CSRFAlways, Session: SessionConsult, Require: RequireAlways,
 			Handler: a.emailResend,
 		},
 		Route{
-			Path: "/api/v1/auth/password/change/", Methods: []string{"POST"}, Style: AllowClass,
+			Path: "/api/v1/auth/password/change/", NoDefaultThrottle: true, ThrottleScopes: []string{"auth"}, Methods: []string{"POST"}, Style: AllowClass,
 			Csrf: CSRFAlways, Session: SessionConsult, Require: RequireAlways,
 			Handler: a.passwordChangeView,
 		},
@@ -308,7 +311,9 @@ func NewApp(s *Settings, db *sql.DB) *App {
 			// UserFontListCreate: list + multipart upload (session +
 			// IsAuthenticated; CSRF for authenticated unsafe).
 			Path: "/api/v1/fonts/mine/", Methods: []string{"GET", "POST"}, Style: AllowClass,
-			Csrf: CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
+			MethodThrottleScopes:     map[string][]string{"POST": {"upload"}},
+			NoDefaultThrottleMethods: map[string]bool{"POST": true},
+			Csrf:                     CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
 			Handler: a.fontMine,
 		},
 		Route{
@@ -320,7 +325,8 @@ func NewApp(s *Settings, db *sql.DB) *App {
 			// AssetViewSet: list/create + detail CRUD + usage action
 			// (probe0007: auth required everywhere; stock too).
 			Path: "/api/v1/assets/", Methods: []string{"GET", "POST"}, Style: AllowClass,
-			Csrf: CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
+			MethodThrottleScopes: map[string][]string{"POST": {"upload"}},
+			Csrf:                 CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
 			Handler: a.assetsList,
 		},
 		Route{
@@ -342,19 +348,22 @@ func NewApp(s *Settings, db *sql.DB) *App {
 		},
 		Route{
 			Path: "/api/v1/stock/photos/", Methods: []string{"GET"}, Style: AllowClass,
-			Session: SessionConsult, Require: RequireAlways,
+			ThrottleScopes: []string{"stock"},
+			Session:        SessionConsult, Require: RequireAlways,
 			Handler: a.stockPhotosSearch,
 		},
 		Route{
 			Path: "/api/v1/stock/photos/import/", Methods: []string{"POST"}, Style: AllowClass,
-			Csrf: CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
+			ThrottleScopes: []string{"upload"},
+			Csrf:           CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
 			Handler: a.stockPhotoImport,
 		},
 		Route{
 			// Stock videos (0.2.0): the same @api_view/APIView shapes as the
 			// photo endpoints (IsAuthenticated, no CSRF on the GETs).
 			Path: "/api/v1/stock/videos/", Methods: []string{"GET"}, Style: AllowClass,
-			Session: SessionConsult, Require: RequireAlways,
+			ThrottleScopes: []string{"stock"},
+			Session:        SessionConsult, Require: RequireAlways,
 			Handler: a.stockVideosSearch,
 		},
 		Route{
@@ -364,12 +373,14 @@ func NewApp(s *Settings, db *sql.DB) *App {
 		},
 		Route{
 			Path: "/api/v1/stock/videos/import/", Methods: []string{"POST"}, Style: AllowClass,
-			Csrf: CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
+			ThrottleScopes: []string{"video_upload"},
+			Csrf:           CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
 			Handler: a.stockVideoImport,
 		},
 		Route{
 			Path: "/api/v1/stock/audio/", Methods: []string{"GET"}, Style: AllowClass,
-			Session: SessionConsult, Require: RequireAlways,
+			ThrottleScopes: []string{"stock"},
+			Session:        SessionConsult, Require: RequireAlways,
 			Handler: a.stockAudioSearch,
 		},
 		Route{
@@ -379,12 +390,14 @@ func NewApp(s *Settings, db *sql.DB) *App {
 		},
 		Route{
 			Path: "/api/v1/stock/audio/import/", Methods: []string{"POST"}, Style: AllowClass,
-			Csrf: CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
+			ThrottleScopes: []string{"upload"},
+			Csrf:           CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
 			Handler: a.stockAudioImport,
 		},
 		Route{
 			Path: "/api/v1/stock/audio/{sound_id}/preview/", Methods: []string{"GET"}, Style: AllowClass,
-			Session: SessionConsult, Require: RequireAlways,
+			ThrottleScopes: []string{"stock_preview"},
+			Session:        SessionConsult, Require: RequireAlways,
 			Handler: a.stockAudioPreview,
 		},
 		Route{
@@ -400,7 +413,8 @@ func NewApp(s *Settings, db *sql.DB) *App {
 		},
 		Route{
 			Path: "/api/v1/designs/{design_pk}/comments/", Methods: []string{"GET", "POST"}, Style: AllowClass,
-			Csrf: CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
+			MethodThrottleScopes: map[string][]string{"POST": {"upload"}},
+			Csrf:                 CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
 			Handler: a.commentsList,
 		},
 		Route{
@@ -418,7 +432,8 @@ func NewApp(s *Settings, db *sql.DB) *App {
 		},
 		Route{
 			Path: "/api/v1/shared/{token}/comments/", Methods: []string{"GET", "POST"}, Style: AllowClass,
-			Csrf: CSRFWhenAuthed, Session: SessionConsult, Require: RequireUnsafe, SharedHeaders: true,
+			MethodThrottleScopes: map[string][]string{"POST": {"upload"}},
+			Csrf:                 CSRFWhenAuthed, Session: SessionConsult, Require: RequireUnsafe, SharedHeaders: true,
 			Handler: a.sharedCommentsList,
 		},
 		Route{
@@ -429,12 +444,14 @@ func NewApp(s *Settings, db *sql.DB) *App {
 		Route{
 			// Exports (apps/exports): pdf + image render + signed download.
 			Path: "/api/v1/exports/pdf/", Methods: []string{"POST"}, Style: AllowClass,
-			Csrf: CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
+			ThrottleScopes: []string{"upload"},
+			Csrf:           CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
 			Handler: a.pdfExport,
 		},
 		Route{
 			Path: "/api/v1/designs/{uuid}/export/image/", Methods: []string{"POST"}, Style: AllowClass,
-			Csrf: CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
+			ThrottleScopes: []string{"export"},
+			Csrf:           CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
 			Handler: a.imageExport,
 		},
 		Route{
@@ -467,12 +484,14 @@ func NewApp(s *Settings, db *sql.DB) *App {
 		},
 		Route{
 			Path: "/api/v1/ai/providers/{uuid}/load-models/", Methods: []string{"POST"}, Style: AllowClass,
-			Csrf: CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
+			ThrottleScopes: []string{"ai"},
+			Csrf:           CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
 			Handler: a.HandleProviderLoadModels,
 		},
 		Route{
 			Path: "/api/v1/ai/providers/{uuid}/test/", Methods: []string{"POST"}, Style: AllowClass,
-			Csrf: CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
+			ThrottleScopes: []string{"ai"},
+			Csrf:           CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
 			Handler: a.HandleProviderTest,
 		},
 		Route{
@@ -482,7 +501,8 @@ func NewApp(s *Settings, db *sql.DB) *App {
 		},
 		Route{
 			Path: "/api/v1/ai/{task}/", Methods: []string{"POST"}, Style: AllowClass,
-			Csrf: CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
+			ThrottleScopes: []string{"ai", "upload"},
+			Csrf:           CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
 			Handler: a.HandleTaskView,
 		},
 		Route{
@@ -530,7 +550,8 @@ func NewApp(s *Settings, db *sql.DB) *App {
 			// (IsAuthenticated; the optimize scope's throttle is pending with
 			// the kernel rate-limit slice).
 			Path: "/api/v1/exports/optimize/", Methods: []string{"POST"}, Style: AllowClass,
-			Csrf: CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
+			ThrottleScopes: []string{"optimize"},
+			Csrf:           CSRFWhenAuthed, Session: SessionConsult, Require: RequireAlways,
 			Handler: a.exportsOptimize,
 		},
 		Route{

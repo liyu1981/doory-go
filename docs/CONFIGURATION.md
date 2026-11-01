@@ -81,9 +81,10 @@ Everything that must survive lives under one directory:
 ## HTTPS / proxy
 
 - `SECURE_COOKIES` (default `true`) — Secure flag on session/CSRF cookies. Set `false` only for plain HTTP.
-- `SECURE_SSL_REDIRECT` and `NUM_PROXIES` are accepted for upstream
-  compatibility but **not read by this binary yet**: terminate TLS and set
-  forwarding headers in the reverse proxy instead.
+- `SECURE_SSL_REDIRECT` is accepted for upstream compatibility but is **not
+  read by this binary**: terminate TLS and set forwarding headers in the
+  reverse proxy instead. `NUM_PROXIES` (default `1`) says how many trusted
+  proxies append to `X-Forwarded-For`; throttles use the address it names.
 
 ## Listener
 

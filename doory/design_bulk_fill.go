@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -42,35 +41,6 @@ type bulkImageURL struct {
 	URL              string `json:"url"`
 	Bytes            int    `json:"bytes"`
 	ExpiresInSeconds int    `json:"expires_in_seconds"`
-}
-
-// Simple fixed-window per-user rate counters for the bulk-row and export
-// charges (the wider DRF throttle table is still G22).
-type bulkRateWindow struct {
-	start time.Time
-	count int
-}
-
-var (
-	bulkRateMu sync.Mutex
-	bulkRates  = map[string]*bulkRateWindow{}
-)
-
-func allowBulkRate(userID, kind string, limit int) (bool, float64) {
-	bulkRateMu.Lock()
-	defer bulkRateMu.Unlock()
-	key := kind + ":" + userID
-	now := time.Now()
-	window := bulkRates[key]
-	if window == nil || now.Sub(window.start) >= time.Minute {
-		bulkRates[key] = &bulkRateWindow{start: now, count: 1}
-		return true, 0
-	}
-	if window.count >= limit {
-		return false, time.Until(window.start.Add(time.Minute)).Seconds()
-	}
-	window.count++
-	return true, 0
 }
 
 func (a *App) designBulkFill(w http.ResponseWriter, r *http.Request) {
@@ -164,13 +134,13 @@ func (a *App) designBulkFill(w http.ResponseWriter, r *http.Request) {
 		if len(body.RowNumbers) == len(body.Rows) {
 			number = body.RowNumbers[index]
 		}
-		if ok, wait := allowBulkRate(u.ID, "bulk_fill", 120); !ok {
+		if ok, wait := a.allowThrottle("bulk_fill", u.ID); !ok {
 			rows = append(rows, bulkFillRow{Row: number, OK: false,
 				Error: throttledMessageDetail("Request was throttled.", wait)})
 			continue
 		}
 		title := rowName(namePattern, template.Title, number, values)
-		result, fillErr, docErr := a.fillDesign(template, u, values, true, title, folder)
+		result, fillErr, docErr := a.fillDesign(template, u, values, true, title, folder, "bulk_fill_images")
 		if fillErr != nil {
 			rows = append(rows, bulkFillRow{Row: number, OK: false, Error: fillErr.Error()})
 			continue
@@ -186,7 +156,7 @@ func (a *App) designBulkFill(w http.ResponseWriter, r *http.Request) {
 		}
 		created++
 		if export != "" {
-			if ok, wait := allowBulkRate(u.ID, "export", 30); !ok {
+			if ok, wait := a.allowThrottle("export", u.ID); !ok {
 				row.ExportError = throttledMessageDetail("Request was throttled.", wait)
 			} else if image, err := a.bulkExportImage(result.Design, export, u); err != nil {
 				row.ExportError = err.Error()

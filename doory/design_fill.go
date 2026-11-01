@@ -175,7 +175,7 @@ func (a *App) designFill(w http.ResponseWriter, r *http.Request) {
 	}
 	defer releaseFillLock(u.ID)
 
-	result, fillErr, docErr := a.fillDesign(d, u, body.Values, asCopy, name, nil)
+	result, fillErr, docErr := a.fillDesign(d, u, body.Values, asCopy, name, nil, "upload")
 	if fillErr != nil {
 		fillValidation(w, fillErr.Fields)
 		return
@@ -192,7 +192,7 @@ func (a *App) designFill(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) fillDesign(template *designRow, owner *UserRow, values map[string]any,
-	asCopy bool, name string, folder *string) (*fillResult, *fillProblem, *DocumentError) {
+	asCopy bool, name string, folder *string, urlScope string) (*fillResult, *fillProblem, *DocumentError) {
 	document, err := parseJSONValue([]byte(template.Document))
 	if err != nil {
 		return nil, nil, &DocumentError{Code: "invalid_document", Status: http.StatusBadRequest,
@@ -203,7 +203,7 @@ func (a *App) fillDesign(template *designRow, owner *UserRow, values map[string]
 		return nil, nil, &DocumentError{Code: "invalid_document", Status: http.StatusBadRequest,
 			Message: "The design has no pages."}
 	}
-	raw, problem, docErr := a.rawFillOperations(doc, owner, values)
+	raw, problem, docErr := a.rawFillOperations(doc, owner, values, urlScope)
 	if problem != nil || docErr != nil {
 		return nil, problem, docErr
 	}
@@ -258,7 +258,7 @@ type fillRaw struct {
 	skipped []string
 }
 
-func (a *App) rawFillOperations(document map[string]any, owner *UserRow, values map[string]any) (*fillRaw, *fillProblem, *DocumentError) {
+func (a *App) rawFillOperations(document map[string]any, owner *UserRow, values map[string]any, urlScope string) (*fillRaw, *fillProblem, *DocumentError) {
 	entries := listFields(document)
 	byKey := map[string]fieldEntry{}
 	for _, entry := range entries {
@@ -280,7 +280,7 @@ func (a *App) rawFillOperations(document map[string]any, owner *UserRow, values 
 			raw.skipped = append(raw.skipped, key)
 			continue
 		}
-		ops, err := a.fieldFillOperations(entry, value, owner)
+		ops, err := a.fieldFillOperations(entry, value, owner, urlScope)
 		if err != nil {
 			problems[key] = err.Error()
 			continue
@@ -299,7 +299,7 @@ func (a *App) rawFillOperations(document map[string]any, owner *UserRow, values 
 	return raw, nil, nil
 }
 
-func (a *App) fieldFillOperations(entry fieldEntry, value any, owner *UserRow) ([]fillOp, error) {
+func (a *App) fieldFillOperations(entry fieldEntry, value any, owner *UserRow, urlScope string) ([]fillOp, error) {
 	ids := make([]string, 0, len(entry.ObjectIDs))
 	for _, raw := range entry.ObjectIDs {
 		if id, ok := raw.(string); ok {
@@ -328,7 +328,7 @@ func (a *App) fieldFillOperations(entry fieldEntry, value any, owner *UserRow) (
 		}
 		base = fillOp{Kind: "color", Color: color}
 	default:
-		image, err := a.resolveFillImage(owner, value)
+		image, err := a.resolveFillImage(owner, value, urlScope)
 		if err != nil {
 			return nil, err
 		}
@@ -373,11 +373,14 @@ func fillTextValue(value any) (string, error) {
 
 var fillImageKeys = map[string]bool{"asset_id": true, "element_id": true, "url": true, "focal": true}
 
-func (a *App) resolveFillImage(owner *UserRow, value any) (fillImage, error) {
+func (a *App) resolveFillImage(owner *UserRow, value any, urlScope string) (fillImage, error) {
 	if text, ok := value.(string); ok {
 		text = strings.TrimSpace(text)
 		lower := strings.ToLower(text)
 		if strings.HasPrefix(lower, "http://") || strings.HasPrefix(lower, "https://") {
+			if ok, wait := a.allowThrottle(urlScope, owner.ID); !ok {
+				return fillImage{}, fmt.Errorf("%s", throttledMessageDetail("Request was throttled.", wait))
+			}
 			asset, err := a.importRemoteImage(owner, text, "")
 			if err != nil {
 				return fillImage{}, err
@@ -441,6 +444,9 @@ func (a *App) resolveFillImage(owner *UserRow, value any) (fillImage, error) {
 		return out, nil
 	}
 	if rawURL, ok := obj["url"].(string); ok {
+		if ok, wait := a.allowThrottle(urlScope, owner.ID); !ok {
+			return fillImage{}, fmt.Errorf("%s", throttledMessageDetail("Request was throttled.", wait))
+		}
 		asset, err := a.importRemoteImage(owner, rawURL, "")
 		if err != nil {
 			return fillImage{}, err

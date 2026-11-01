@@ -67,40 +67,42 @@ type Settings struct {
 	// DevProxyURL is `doory dev`'s Vite dev server (M14): every non-API path
 	// is proxied there, mirroring frontend/vite.config.ts's server.proxy.
 	DevProxyURL              string
-	AllowedOrigins           []string // CORS_ALLOWED_ORIGINS (prod.py env.list, default none)
-	SecureCookies            bool     // SECURE_COOKIES (prod.py env read, default true): session+csrf cookie Secure attr
-	SecretKey                string   // DJANGO_SECRET_KEY (base.py env read, default dev-insecure...)
-	SecretKeyFallbacks       []string // SECRET_KEY_FALLBACKS (base.py env.list): rotated-away keys
-	MaxAPITokensPerUser      int      // MAX_API_TOKENS_PER_USER (base.py env, default 20)
-	MaxDesignsPerUser        int      // MAX_DESIGNS_PER_USER (base.py env, default 5000)
-	UserStorageQuotaBytes    int64    // USER_STORAGE_QUOTA_BYTES (base.py env, default 2GiB)
-	ServerImageExportEnabled bool     // SERVER_IMAGE_EXPORT_ENABLED (base.py env, default FALSE)
-	ExportRenderPageURL      string   // EXPORT_RENDER_PAGE_URL (default: SITE_URL origin + /render.html)
-	ExportImageMaxPixels     int      // EXPORT_IMAGE_MAX_PIXELS (default 40M)
-	ExportImageMaxDocBytes   int      // EXPORT_IMAGE_MAX_DOCUMENT_BYTES (default 5MiB)
-	ExportMaxConcurrency     int      // EXPORT_MAX_CONCURRENCY (default 2)
-	ExportTimeoutSeconds     float64  // EXPORT_TIMEOUT_SECONDS (default 30)
-	ExportChromiumPath       string   // EXPORT_CHROMIUM_PATH (empty: PATH lookup)
-	ExportChromiumNoSandbox  bool     // EXPORT_CHROMIUM_NO_SANDBOX (default false)
-	ExportWorkDir            string   // EXPORT_WORK_DIR (default os temp)
-	ExportAllowedOrigins     []string // EXPORT_ALLOWED_ORIGINS (default site origin + :8111)
-	ExportStorageRoot        string   // EXPORT_STORAGE_ROOT (default ./exports)
-	ImageOptimizers          []string // IMAGE_OPTIMIZERS (base.py env.list, default ["builtin"])
-	ImageOptimizerDefault    string   // IMAGE_OPTIMIZER_DEFAULT (default "builtin")
-	TinyPngAPIKey            string   // TINYPNG_API_KEY
-	KrakenAPIKey             string   // KRAKEN_API_KEY
-	KrakenAPISecret          string   // KRAKEN_API_SECRET
-	ImageOptimizerCustomName string   // IMAGE_OPTIMIZER_CUSTOM_NAME (default "Custom")
-	ImageOptimizerCustomURL  string   // IMAGE_OPTIMIZER_CUSTOM_URL (default "")
-	ImageOptimizerCustomKey  string   // IMAGE_OPTIMIZER_CUSTOM_KEY (default "")
-	ImageOptimizerTimeout    int      // IMAGE_OPTIMIZER_TIMEOUT (seconds per file, default 30)
-	ImageOptimizerMaxBytes   int      // IMAGE_OPTIMIZER_MAX_BYTES (default 25 MiB)
-	McpExportURLTTLSeconds   int      // MCP_EXPORT_URL_TTL_SECONDS (default 600)
-	McpCallsPerMinute        int      // MCP_CALLS_PER_MINUTE (default 120; 0 = unlimited)
-	McpMaxRequestBytes       int      // MCP_MAX_REQUEST_BYTES (default 4MB)
-	McpExportInlineMaxBytes  int      // MCP_EXPORT_INLINE_MAX_BYTES (default 1MB)
-	McpExportURLUploads      bool     // URL_IMAGE_UPLOADS (default true; MCP_URL_UPLOADS legacy)
-	BackgroundRemovalDefault string   // AI_TASK_DEFAULTS[background-removal] (base.py env, default "device")
+	AllowedOrigins           []string          // CORS_ALLOWED_ORIGINS (prod.py env.list, default none)
+	SecureCookies            bool              // SECURE_COOKIES (prod.py env read, default true): session+csrf cookie Secure attr
+	SecretKey                string            // DJANGO_SECRET_KEY (base.py env read, default dev-insecure...)
+	SecretKeyFallbacks       []string          // SECRET_KEY_FALLBACKS (base.py env.list): rotated-away keys
+	MaxAPITokensPerUser      int               // MAX_API_TOKENS_PER_USER (base.py env, default 20)
+	ThrottleRates            map[string]string // REST_FRAMEWORK DEFAULT_THROTTLE_RATES
+	NumProxies               int               // NUM_PROXIES: -1 means do not trust X-Forwarded-For
+	MaxDesignsPerUser        int               // MAX_DESIGNS_PER_USER (base.py env, default 5000)
+	UserStorageQuotaBytes    int64             // USER_STORAGE_QUOTA_BYTES (base.py env, default 2GiB)
+	ServerImageExportEnabled bool              // SERVER_IMAGE_EXPORT_ENABLED (base.py env, default FALSE)
+	ExportRenderPageURL      string            // EXPORT_RENDER_PAGE_URL (default: SITE_URL origin + /render.html)
+	ExportImageMaxPixels     int               // EXPORT_IMAGE_MAX_PIXELS (default 40M)
+	ExportImageMaxDocBytes   int               // EXPORT_IMAGE_MAX_DOCUMENT_BYTES (default 5MiB)
+	ExportMaxConcurrency     int               // EXPORT_MAX_CONCURRENCY (default 2)
+	ExportTimeoutSeconds     float64           // EXPORT_TIMEOUT_SECONDS (default 30)
+	ExportChromiumPath       string            // EXPORT_CHROMIUM_PATH (empty: PATH lookup)
+	ExportChromiumNoSandbox  bool              // EXPORT_CHROMIUM_NO_SANDBOX (default false)
+	ExportWorkDir            string            // EXPORT_WORK_DIR (default os temp)
+	ExportAllowedOrigins     []string          // EXPORT_ALLOWED_ORIGINS (default site origin + :8111)
+	ExportStorageRoot        string            // EXPORT_STORAGE_ROOT (default ./exports)
+	ImageOptimizers          []string          // IMAGE_OPTIMIZERS (base.py env.list, default ["builtin"])
+	ImageOptimizerDefault    string            // IMAGE_OPTIMIZER_DEFAULT (default "builtin")
+	TinyPngAPIKey            string            // TINYPNG_API_KEY
+	KrakenAPIKey             string            // KRAKEN_API_KEY
+	KrakenAPISecret          string            // KRAKEN_API_SECRET
+	ImageOptimizerCustomName string            // IMAGE_OPTIMIZER_CUSTOM_NAME (default "Custom")
+	ImageOptimizerCustomURL  string            // IMAGE_OPTIMIZER_CUSTOM_URL (default "")
+	ImageOptimizerCustomKey  string            // IMAGE_OPTIMIZER_CUSTOM_KEY (default "")
+	ImageOptimizerTimeout    int               // IMAGE_OPTIMIZER_TIMEOUT (seconds per file, default 30)
+	ImageOptimizerMaxBytes   int               // IMAGE_OPTIMIZER_MAX_BYTES (default 25 MiB)
+	McpExportURLTTLSeconds   int               // MCP_EXPORT_URL_TTL_SECONDS (default 600)
+	McpCallsPerMinute        int               // MCP_CALLS_PER_MINUTE (default 120; 0 = unlimited)
+	McpMaxRequestBytes       int               // MCP_MAX_REQUEST_BYTES (default 4MB)
+	McpExportInlineMaxBytes  int               // MCP_EXPORT_INLINE_MAX_BYTES (default 1MB)
+	McpExportURLUploads      bool              // URL_IMAGE_UPLOADS (default true; MCP_URL_UPLOADS legacy)
+	BackgroundRemovalDefault string            // AI_TASK_DEFAULTS[background-removal] (base.py env, default "device")
 	AIProviderEnvProvider    []AIEnvProvider
 
 	// AI knobs (base.py env reads, M10).
@@ -210,6 +212,8 @@ func FromEnv() *Settings {
 		SecretKey:                   envStr("DJANGO_SECRET_KEY", "dev-insecure-secret-key-change-me"),
 		SecretKeyFallbacks:          envList("SECRET_KEY_FALLBACKS", nil),
 		MaxAPITokensPerUser:         envInt("MAX_API_TOKENS_PER_USER", 20),
+		ThrottleRates:               defaultThrottleRates(),
+		NumProxies:                  envInt("NUM_PROXIES", 1),
 		ServerImageExportEnabled:    envBool("SERVER_IMAGE_EXPORT_ENABLED", false),
 		ExportImageMaxPixels:        envInt("EXPORT_IMAGE_MAX_PIXELS", 40_000_000),
 		ExportImageMaxDocBytes:      envInt("EXPORT_IMAGE_MAX_DOCUMENT_BYTES", 5*1024*1024),
