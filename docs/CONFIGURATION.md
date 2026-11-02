@@ -169,6 +169,8 @@ Requires Chromium on the host:
 - Stock providers: `STOCK_PROVIDERS`, `STOCK_VIDEO_PROVIDERS`,
   `UNSPLASH_ACCESS_KEY`, `PEXELS_API_KEY`, `PIXABAY_API_KEY`,
   `FREESOUND_ACCESS_KEY`, `PEXELS_VIDEO_API_KEY`, `PIXABAY_VIDEO_API_KEY`.
+- `FREESOUND_LICENSES` (default `cc0`; `by` also permits Creative Commons
+  Attribution; NC and Sampling+ are never imported).
 
 ## Video assets (optional)
 

@@ -8,8 +8,8 @@
 // invalid_file message, usage shape.
 //
 // Slice notes (PORT_MAP pending): SVG markup is sanitised, sized and stored
-// (no separate preview: the asset URL is the preview); audio uploads still
-// answer the loud notPorted error until the audio pipeline lands. AVIF
+// (no separate preview: the asset URL is the preview); audio uploads are
+// parsed and stored byte-for-byte. AVIF
 // decode and EXIF-orientation re-encode parity (Pillow encoders) are G19/G23.
 // Raster thumbnails are re-encoded through libwebp at Pillow's quality 82;
 // their resampling filter still differs (D15).
@@ -421,11 +421,15 @@ func (a *App) assetsCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	metaText := "{}"
+	if len(prepared.meta) > 0 {
+		metaText = string(encodeCompactJSON(prepared.meta))
+	}
 	asset := assetRow{
 		ID: newUUID4Hex(), OwnerID: u.ID, Kind: prepared.kind, Name: name,
 		Width: int64(prepared.width), Height: int64(prepared.height),
 		Size: int64(len(prepared.data)), Mime: prepared.mime,
-		Tags: mustMarshalString(tags), Meta: "{}", Status: "ready",
+		Tags: mustMarshalString(tags), Meta: metaText, Status: "ready",
 	}
 	// storage: upload_to uses uuid STRING values (probe0007 step10):
 	// assets/<owner-dashed>/<id-dashed>.<ext> + thumbs/<id>.webp
@@ -489,6 +493,7 @@ type preparedRaster struct {
 	width  int
 	height int
 	thumb  []byte
+	meta   map[string]any
 }
 
 func prepareRaster(data []byte) (*preparedRaster, *DocumentError) {
@@ -497,9 +502,8 @@ func prepareRaster(data []byte) (*preparedRaster, *DocumentError) {
 	}
 	cfg, format, err := image.DecodeConfig(bytes.NewReader(data))
 	if err != nil {
-		// Content decides the type: markup/audio answer loud notPorted
-		// errors (their pipelines are family-pending), everything else gets
-		// the probe-proven unsupported message.
+		// Content decides the type: markup/audio are handled before this
+		// point; everything else gets the probe-proven unsupported message.
 		return nil, &DocumentError{Code: "invalid_file", Status: 400,
 			Message: "Unsupported image type. Use PNG, JPEG, WebP, GIF or AVIF."}
 	}
@@ -574,13 +578,23 @@ func prepareFile(data []byte) (*preparedRaster, *DocumentError) {
 		return nil, &DocumentError{Code: "invalid_file", Status: 400, Message: "The file is empty."}
 	}
 	if looksLikeAudio(data) {
-		return nil, &DocumentError{Code: "server_error", Status: 500,
-			Message: "route registered but not ported: assets._prepare_audio (assets/audio.py pending)"}
+		return prepareAudio(data)
 	}
 	if looksLikeMarkup(data) {
 		return prepareSVG(data)
 	}
 	return prepareRaster(data)
+}
+
+// prepareAudio ports assets.services._prepare_audio: strict container parsing,
+// stored byte-for-byte with its duration/details in meta.audio.
+func prepareAudio(data []byte) (*preparedRaster, *DocumentError) {
+	info, err := parseAudio(data)
+	if err != nil {
+		return nil, &DocumentError{Code: "invalid_file", Status: 400, Message: err.Error()}
+	}
+	return &preparedRaster{kind: "audio", data: data, mime: info.MIME, ext: info.Ext(),
+		meta: map[string]any{"audio": info.asMeta()}}, nil
 }
 
 // looksLikeMarkup mirrors services._looks_like_markup (BOM, first 2 KiB,
@@ -596,19 +610,7 @@ func looksLikeMarkup(data []byte) bool {
 	return bytes.HasPrefix(bytes.TrimLeft(head, " \\t\\n\\r"), []byte("<"))
 }
 
-// looksLikeAudio: WAV/MP3/OGG/FLAC magic — content decides the type (like
-// assets/audio.py). The full audio pipeline is family-pending; detection
-// routes uploads to the loud notPorted error instead of a wrong message.
-func looksLikeAudio(data []byte) bool {
-	if bytes.HasPrefix(data, []byte("RIFF")) && len(data) >= 12 && bytes.Equal(data[8:12], []byte("WAVE")) {
-		return true
-	}
-	if bytes.HasPrefix(data, []byte("ID3")) || bytes.HasPrefix(data, []byte{0xFF, 0xFB}) ||
-		bytes.HasPrefix(data, []byte{0xFF, 0xF3}) || bytes.HasPrefix(data, []byte{0xFF, 0xF6}) {
-		return true
-	}
-	return bytes.HasPrefix(data, []byte("OggS")) || bytes.HasPrefix(data, []byte("fLaC"))
-}
+// looksLikeAudio lives in audio.go: WAV/MP3/OGG/FLAC/M4A/WebM magic.
 
 func (a *App) storageUsed(ownerID string) (int64, error) {
 	var total sql.NullInt64
@@ -644,6 +646,58 @@ func (a *App) tryVideoUpload(w http.ResponseWriter, u *UserRow, data []byte, nam
 	}
 	writeJSON(w, status, asset.envelope())
 	return true, true
+}
+
+// storePreparedAsset writes a prepared raster/SVG through the same storage
+// layout as a normal upload, with provider metadata (stock imports).
+func (a *App) storePreparedAsset(owner *UserRow, prepared *preparedRaster, name string, tags []string, meta map[string]any) (*assetRow, *DocumentError) {
+	id := newUUID4Hex()
+	now := formatDjangoDateTime(time.Now())
+	if prepared.meta != nil {
+		if meta == nil {
+			meta = map[string]any{}
+		}
+		for key, value := range prepared.meta {
+			meta[key] = value
+		}
+	}
+	metaText := "{}"
+	if len(meta) > 0 {
+		metaText = string(encodeCompactJSON(meta))
+	}
+	asset := assetRow{ID: id, OwnerID: owner.ID, Kind: prepared.kind, Name: name,
+		Width: int64(prepared.width), Height: int64(prepared.height), Size: int64(len(prepared.data)),
+		Mime: prepared.mime, Tags: mustMarshalString(tags), Meta: metaText, Status: "ready"}
+	asset.File = "assets/" + dashedUUID(owner.ID) + "/" + dashedUUID(id) + "." + prepared.ext
+	if prepared.kind == "image" && prepared.thumb != nil {
+		asset.Thumbnail = "assets/" + dashedUUID(owner.ID) + "/thumbs/" + dashedUUID(id) + ".webp"
+	}
+	used, _ := a.storageUsed(owner.ID)
+	if used+asset.Size > a.Settings.UserStorageQuotaBytes {
+		return nil, &DocumentError{Code: "quota_exceeded", Status: 413,
+			Message: "Your storage quota is full. Delete some uploads to free up space."}
+	}
+	if err := adminWriteMedia(a.Settings.MediaRoot, asset.File, prepared.data); err != nil {
+		return nil, &DocumentError{Code: "server_error", Status: 500, Message: "Something went wrong on our side."}
+	}
+	if asset.Thumbnail != "" {
+		if err := adminWriteMedia(a.Settings.MediaRoot, asset.Thumbnail, prepared.thumb); err != nil {
+			a.deleteMediaFile(asset.File)
+			return nil, &DocumentError{Code: "server_error", Status: 500, Message: "Something went wrong on our side."}
+		}
+	}
+	if _, err := a.DB.Exec("INSERT INTO assets_asset ("+assetCols+") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		asset.ID, asset.OwnerID, asset.Kind, asset.Name, asset.Width, asset.Height, asset.Size,
+		asset.Mime, asset.Tags, asset.Meta, asset.File, asset.Thumbnail, asset.Poster, asset.Filmstrip,
+		asset.Audio, asset.Status, asset.Error, now, now); err != nil {
+		a.deleteVideoFiles(&asset)
+		return nil, &DocumentError{Code: "server_error", Status: 500, Message: "Something went wrong on our side."}
+	}
+	row, err := a.getAssetByID(id)
+	if err != nil || row == nil {
+		return nil, &DocumentError{Code: "server_error", Status: 500, Message: "Something went wrong on our side."}
+	}
+	return row, nil
 }
 
 func (a *App) getAssetByID(id string) (*assetRow, error) {

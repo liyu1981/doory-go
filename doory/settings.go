@@ -31,6 +31,7 @@ type Settings struct {
 	PexelsAccessKey    string
 	PixabayAccessKey   string
 	FreesoundAccessKey string
+	FreesoundLicenses  []string // FREESOUND_LICENSES (default ["cc0"])
 	// Stock videos (0.2.0): their own keys, falling back to the photo key
 	// of the same provider; listed in STOCK_VIDEO_PROVIDERS tab order.
 	PexelsVideoAPIKey   string
@@ -183,6 +184,7 @@ func FromEnv() *Settings {
 		PexelsAccessKey:              envStr("PEXELS_API_KEY", ""),
 		PixabayAccessKey:             envStr("PIXABAY_API_KEY", ""),
 		FreesoundAccessKey:           envStr("FREESOUND_ACCESS_KEY", ""),
+		FreesoundLicenses:            envList("FREESOUND_LICENSES", []string{"cc0"}),
 		PexelsVideoAPIKey:            envStr("PEXELS_VIDEO_API_KEY", ""),
 		PixabayVideoAPIKey:           envStr("PIXABAY_VIDEO_API_KEY", ""),
 		StockVideoProviders:          envList("STOCK_VIDEO_PROVIDERS", []string{"pexels_video", "pixabay_video"}),

@@ -14,9 +14,11 @@
 package doory
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os/exec"
+	"sort"
 	"strings"
 )
 
@@ -56,11 +58,26 @@ type stockPayload struct {
 // order + credits + the default tab (no configuration -> empty lists and
 // an empty default — derived from the probed source logic).
 func (a *App) stockProvidersView(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, stockProvidersEnvelope{
-		Providers: []any{},
-		All:       []string{},
-		Default:   "", // STOCK_DEFAULT_TAB "all" with no configured providers
-	})
+	enabled := a.configuredPhotoProviders()
+	providers := make([]any, 0, len(enabled))
+	names := make([]string, 0, len(enabled))
+	for _, name := range enabled {
+		info := photoProviderInfos[name]
+		providers = append(providers, map[string]string{"name": info.Name, "label": info.Label,
+			"attribution": info.Attribution, "url": info.URL})
+		names = append(names, name)
+	}
+	all := []string{}
+	if len(names) > 1 {
+		all = names
+	}
+	def := ""
+	if len(all) > 0 {
+		def = "all"
+	} else if len(names) == 1 {
+		def = names[0]
+	}
+	writeJSON(w, http.StatusOK, stockProvidersEnvelope{Providers: providers, All: all, Default: def})
 }
 
 type stockProvidersEnvelope struct {
@@ -118,17 +135,25 @@ func (a *App) stockPhotosSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	requested := q.Get("provider")
-	// search(): provider "all" resolves the ALL tab first; nobody is
-	// configured, so both branches answer _not_configured.
-	if requested == "all" {
-		writeJSON(w, http.StatusOK, stockNotConfigured{
-			Configured: false, Provider: "all", Results: []any{},
-		})
+	page := atoi(q.Get("page"))
+	if page == 0 {
+		page = 1
+	}
+	perPage := atoi(q.Get("per_page"))
+	if perPage == 0 {
+		perPage = stockDefaultPerPage
+	}
+	payload, derr := a.searchStockPhotos(requested, q.Get("q"), page, perPage, q.Get("cursor"))
+	if derr != nil {
+		writeDRF(w, derr.Status, derr.Code, derr.Message)
 		return
 	}
-	writeJSON(w, http.StatusOK, stockNotConfigured{
-		Configured: false, Provider: requested, Results: []any{},
-	})
+	if configured, _ := payload["configured"].(bool); !configured {
+		writeJSON(w, http.StatusOK, stockNotConfigured{Configured: false,
+			Provider: stringFromAny(payload["provider"]), Results: []any{}})
+		return
+	}
+	writeJSON(w, http.StatusOK, payload)
 }
 
 // validLang mirrors StockSearchSerializer's lang pattern.
@@ -178,9 +203,16 @@ func (a *App) stockPhotoImport(w http.ResponseWriter, r *http.Request) {
 		writeDRFValidation(w, fields)
 		return
 	}
-	// import_photo: providers.PROVIDERS[provider].configured == false.
-	writeDRF(w, http.StatusBadRequest, "stock_not_configured",
-		"No stock photo provider is configured on this server.")
+	asset, created, derr := a.importStockPhoto(currentUser(r), body.Provider, body.ID)
+	if derr != nil {
+		writeDRF(w, derr.Status, derr.Code, derr.Message)
+		return
+	}
+	status := http.StatusOK
+	if created {
+		status = http.StatusCreated
+	}
+	writeJSON(w, status, asset.envelope())
 }
 
 // stockAudioSearch ports AudioStockSearchView.search(): no Freesound ->
@@ -218,7 +250,17 @@ func (a *App) stockAudioSearch(w http.ResponseWriter, r *http.Request) {
 		writeDRFValidation(w, fields)
 		return
 	}
-	writeJSON(w, http.StatusOK, audioNotConfigured{Results: []any{}})
+	payload, derr := a.searchFreesound(q.Get("q"), q.Get("type"), q.Get("subcategory"),
+		q.Get("length"), q.Get("sort"), atoi(q.Get("page")), atoi(q.Get("per_page")))
+	if derr != nil {
+		writeDRF(w, derr.Status, derr.Code, derr.Message)
+		return
+	}
+	if configured, _ := payload["configured"].(bool); !configured {
+		writeJSON(w, http.StatusOK, audioNotConfigured{Results: []any{}})
+		return
+	}
+	writeJSON(w, http.StatusOK, payload)
 }
 
 type audioNotConfigured struct {
@@ -231,7 +273,35 @@ type audioNotConfigured struct {
 // stockAudioInfo ports AudioStockInfoView: info() without Freesound ->
 // {"configured": false}.
 func (a *App) stockAudioInfo(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]bool{"configured": false})
+	if !a.freesoundConfigured() {
+		writeJSON(w, http.StatusOK, map[string]bool{"configured": false})
+		return
+	}
+	types := map[string][]string{}
+	for name, info := range freesoundTypes {
+		types[name] = info.Subcategories
+	}
+	lengths := make([]string, 0, len(freesoundLengths))
+	for name := range freesoundLengths {
+		lengths = append(lengths, name)
+	}
+	sorts := make([]string, 0, len(freesoundSorts))
+	for name := range freesoundSorts {
+		sorts = append(sorts, name)
+	}
+	slicesSort(lengths)
+	slicesSort(sorts)
+	writeJSON(w, http.StatusOK, struct {
+		Configured bool                `json:"configured"`
+		Provider   string              `json:"provider"`
+		Label      string              `json:"label"`
+		URL        string              `json:"url"`
+		Licenses   []string            `json:"licenses"`
+		Types      map[string][]string `json:"types"`
+		Lengths    []string            `json:"lengths"`
+		Sorts      []string            `json:"sorts"`
+	}{true, "freesound", "Freesound", "https://freesound.org/", a.freesoundAllowedLicenses(), types,
+		lengths, sorts})
 }
 
 // stockAudioImport ports AudioStockImportView: _sound() raises the
@@ -249,15 +319,80 @@ func (a *App) stockAudioImport(w http.ResponseWriter, r *http.Request) {
 		writeDRFValidation(w, []FieldError{SimpleField("id", "This field is required.", "required")})
 		return
 	}
-	writeDRF(w, http.StatusBadRequest, "stock_not_configured",
-		"Freesound is not configured on this server.")
+	if !a.freesoundConfigured() {
+		writeDRF(w, http.StatusBadRequest, "stock_not_configured", "Freesound is not configured on this server.")
+		return
+	}
+	if !freesoundID.MatchString(body.ID) {
+		writeDRF(w, http.StatusBadRequest, "invalid", "Not a valid Freesound id.")
+		return
+	}
+	sound, err := a.freesoundResolve(body.ID)
+	if err != nil {
+		if strings.Contains(err.Error(), "licence") {
+			writeDRF(w, http.StatusBadRequest, "invalid", err.Error())
+		} else {
+			derr := stockErrorDocument(err, "Freesound could not be reached. Try again shortly.")
+			writeDRF(w, derr.Status, derr.Code, derr.Message)
+		}
+		return
+	}
+	if existing := a.findAudioBySame(currentUser(r), sound.ID); existing != nil {
+		writeJSON(w, http.StatusOK, existing.envelope())
+		return
+	}
+	data, derr2 := freesoundDownload(a, sound.DownloadURL, map[string]bool{"cdn.freesound.org": true}, maxUploadBytes)
+	if derr2 != nil {
+		if _, ok := derr2.(*remoteImageTooLarge); ok {
+			writeDRF(w, http.StatusRequestEntityTooLarge, "file_too_large", "The file is too large.")
+		} else {
+			writeDRF(w, http.StatusServiceUnavailable, "stock_unavailable", "Freesound could not be reached. Try again shortly.")
+		}
+		return
+	}
+	prepared, perr := prepareFile(data)
+	if perr != nil {
+		writeDRF(w, perr.Status, perr.Code, perr.Message)
+		return
+	}
+	meta := map[string]any{"provider": "freesound", "sound_id": sound.ID, "credit": sound.credit(),
+		"attribution": map[string]any{"provider": "freesound", "author": sound.Author,
+			"author_url": sound.AuthorURL, "source_url": sound.SourceURL}}
+	asset, derr3 := a.storePreparedAsset(currentUser(r), prepared, cleanAssetName(sound.Title, "Sound"), nil, meta)
+	if derr3 != nil {
+		writeDRF(w, derr3.Status, derr3.Code, derr3.Message)
+		return
+	}
+	writeJSON(w, http.StatusCreated, audioImportEnvelope(asset, sound.credit()))
 }
 
 // stockAudioPreview ports AudioStockPreviewView: unconfigured -> DRF
 // NotFound default (NOT the custom message — audio_stock.py raises
 // NotFound()).
+func audioImportEnvelope(asset *assetRow, credit map[string]any) map[string]any {
+	data, _ := json.Marshal(asset.envelope())
+	var out map[string]any
+	_ = json.Unmarshal(data, &out)
+	out["credit"] = credit
+	return out
+}
+
 func (a *App) stockAudioPreview(w http.ResponseWriter, r *http.Request) {
-	writeDRF(w, http.StatusNotFound, "not_found", "Not found.")
+	if !a.freesoundConfigured() {
+		writeDRF(w, http.StatusNotFound, "not_found", "Not found.")
+		return
+	}
+	data, derr := a.freesoundPreview(routeParam(r, "sound_id"))
+	if derr != nil {
+		writeDRF(w, derr.Status, derr.Code, derr.Message)
+		return
+	}
+	w.Header().Set("Content-Type", "audio/mpeg")
+	w.Header().Set("Cache-Control", "private, max-age=86400")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Content-Length", fmt.Sprint(len(data)))
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(data)
 }
 
 // ---- stock videos (0.2.0, apps/assets/video_stock.py) ------------------------------------------
@@ -296,6 +431,8 @@ func (s *Settings) videoProviderKeys() map[string]string {
 		"pixabay_video": firstNonEmpty(s.PixabayVideoAPIKey, s.PixabayAccessKey),
 	}
 }
+
+func slicesSort(values []string) { sort.Strings(values) }
 
 func firstNonEmpty(values ...string) string {
 	for _, value := range values {

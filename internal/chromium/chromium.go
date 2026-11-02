@@ -56,6 +56,7 @@ type Browser struct {
 	eventNext int
 
 	mu      sync.Mutex
+	writeMu sync.Mutex
 	pending map[int]chan json.RawMessage
 }
 
@@ -202,7 +203,10 @@ func (b *Browser) call(ctx context.Context, method string, params any) (json.Raw
 	if params != nil {
 		msg["params"] = params
 	}
-	if err := b.conn.WriteJSON(msg); err != nil {
+	b.writeMu.Lock()
+	err := b.conn.WriteJSON(msg)
+	b.writeMu.Unlock()
+	if err != nil {
 		return nil, err
 	}
 	select {

@@ -32,16 +32,6 @@ is laid out top-to-bottom; the table below is the quick lookup form.
 
 ```mermaid
 flowchart TB
-  %% asset / media pipeline
-  subgraph Media["Asset / media pipeline"]
-    direction TB
-    G7["G7 stock video import"]
-    G12["G12 stock photo search/import"]
-    G13["G13 Freesound search/import"]
-    G11["G11 audio upload"]
-
-  end
-
   %% AI
   subgraph AI["AI providers"]
     direction TB
@@ -87,7 +77,6 @@ flowchart TB
   end
 
   %% Layout-only links: keep the clusters stacked vertically (they are invisible).
-  G11 ~~~ G16
   G16 ~~~ G30
   G30 ~~~ G19
   G19 ~~~ G24
@@ -132,16 +121,12 @@ which upstream function is missing — never a silent wrong answer.
 
 | id | route | branch | what closes it |
 |---|---|---|---|
-| G7 | `POST /api/v1/stock/videos/import/` (and the live branch of `GET /stock/videos/`) | `video_stock.import_video`: resolve via the provider API, download with host checks, probe, convert, insert the asset | The video pipeline is ported (G15); the provider transport uses the same live HTTP clients as video_stock. |
 | G9 | `POST /api/v1/ai/providers/{id}/test/`, `/load-models/` | `services.test_provider` (sample picture call, preview, AICall log), `catalog.list_remote_models` | Same provider transport as the AI family's run path, plus the sample image and the remote catalogue mapping. Row lookups are ported. |
-| G11 | `POST /api/v1/assets/` with an audio upload | `assets._prepare_audio` (`assets/audio.py`: container/codec probe, duration, waveform) | Audio pipeline. Note the audio *library* install (`sync_audio`) is ported; only uploads are not. |
 
 ## C. Live-network paths that only work in their no-config shape
 
 | id | area | today | what closes it |
 |---|---|---|---|
-| G12 | Stock photos: Unsplash / Pexels / Pixabay search + import | Validation + `_not_configured` payloads match the oracle; no provider call | Provider HTTP clients with the fake-provider fixtures (`assets/providers.py`, `remote.py`, counting/pausing/redaction). |
-| G13 | Freesound: search, info, import, preview | Same (no-config shapes + messages) | `assets/freesound.py` client + preview streaming. |
 | G16 | AI provider response readers / style encoders (`ai/styles/{base,multipart,json_b64,mask,custom}.py`, `results.py`) | The port builds the doory multipart request and maps errors; response decoding and style variants are partial | Port the styles + result readers; needs the fake-provider harness to prove wire behaviour. |
 
 ## D. Deliberate differences that are still open work
@@ -183,6 +168,10 @@ which upstream function is missing — never a silent wrong answer.
 | G28 | Admin model engine and moderation (User/Group, ApiToken, Asset, BrandKit, Design/DesignVersion/Folder, ShareLink, Comment; actions, cascades and file cleanup) | `984a65b` |
 | G29 | Admin content authoring (Template/Category, ElementPack/Element, FontFamily/Variant, SizePresetGroup/SizePreset; thumbnails, bulk uploads, validate/duplicate/feature, preset validation and activate clash, delete cleanup) | `948a24c` |
 | G15 | Video family (probe/transcode, background jobs, 202 polling, stills/audio, stock video search/import, video exports) | `1cf6f19` |
+| G7 | Live stock-video import/search (provider resolve + download + video asset) | to be filled |
+| G11 | Audio uploads (MP3/Ogg/WAV/M4A/WebM header validation, stored bytes, duration/details) | to be filled |
+| G12 | Stock photos (Unsplash/Pexels/Pixabay search, resolve, download, import, provider pacing) | to be filled |
+| G13 | Freesound search/info/import/preview (licence gate, CDN-only downloads) | to be filled |
 | G22 | DRF default + scoped rate throttles (anon/user, auth, oidc, upload, stock, stock preview, video upload, bulk fill/images, export, optimize/offsite, ai) | `9008929` |
 | G18 | WebP/JPEG encoding through embedded libwebp 1.6.0 + libjpeg-turbo 3.1.0 (Pillow byte parity) | `fcb66a5` |
 | G27 | Admin kernel and CLI (staff/session/CSRF, index/app/search/autocomplete/jsi18n, never_cache/Vary, admin log/history, bootstrap commands, auth seed) | `c4f61f7` |

@@ -132,26 +132,26 @@ behavioral verification).
 |---|---|---|
 | `backend/apps/assets/admin.py` | doory/admin_models_misc.go (asset preview/tags/attribution, read-only change, file cleanup; D2 markup) | ✅ |
 | `backend/apps/assets/apps.py` |  | ⬜ |
-| `backend/apps/assets/audio.py` | doory/commands_audio.go validateAudioContainer (per-extension container check for sync_audio; the deep metadata parse — duration/channels for uploads — stays pending with the upload pipeline) | 🟡 |
-| `backend/apps/assets/audio_stock.py` | doory/stock.go (search/info/import/preview no-config shapes incl. Freesound messages); live paths pending | 🟡 |
+| `backend/apps/assets/audio.py` | doory/audio.go (MP3/Ogg/WAV/M4A/WebM header parsing, durations/details) + doory/commands_audio.go container checks | ✅ |
+| `backend/apps/assets/audio_stock.py` | doory/stock.go + doory/freesound.go (search/info/import/preview, credit payload) | ✅ |
 | `backend/apps/assets/credits.py` | (stock credit ledger — pending with provider slice) | ⬜ |
 | `backend/apps/assets/exceptions.py` | doory/stock.go + doory/assets.go (stock/quota/file error codes+messages used in M7 paths) | 🟡 |
-| `backend/apps/assets/freesound.py` | (Freesound client — pending with remote slice) | ⬜ |
+| `backend/apps/assets/freesound.py` | doory/freesound.go (licence gate/filter, search/resolve, CDN preview/download) | ✅ |
 | `backend/apps/assets/management/` | doory/commands_audio.go (sync_audio) + doory/commands_video.go (sweep_video_jobs). Third-party audio packs pending. | 🟡 |
 | `backend/apps/assets/middleware.py` | doory/middleware.go (mediaSecurityHeaders: nosniff overwrite + CSP + svg attachment, chain #10) | ✅ |
 | `backend/apps/assets/migrations/` |  | ⬜ |
-| `backend/apps/assets/models.py` | doory/assets.go (row + upload_to path semantics; 0.2.0 video columns/status/error mapped, video pipeline pending) | 🟡 |
+| `backend/apps/assets/models.py` | doory/assets.go + doory/video_jobs.go (row/upload_to paths, video columns/status/error and processing lifecycle) | ✅ |
 | `backend/apps/assets/ordering.py` | doory/designs.go (applyOrdering whitelist + pk tie-break + message); other callers with assets family | 🟡 |
 | `backend/apps/assets/parsers.py` | doory/views_auth.go jsonBody (bounded JSON; BoundedJSONParser edges pending) | 🟡 |
-| `backend/apps/assets/providers.py` | (provider registry + photo APIs — configured paths pending with remote slice) | ⬜ |
+| `backend/apps/assets/providers.py` | doory/stock_photo.go (Unsplash/Pexels/Pixabay search/resolve/import, CDN host checks) | ✅ |
 | `backend/apps/assets/remote.py` | doory/remote_image.go (https/443 only, public-address checks incl. NAT64/tunnels, checked redirects, pinned TLS dial, deadline, size/type limits) | ✅ |
 | `backend/apps/assets/serializers.py` | doory/assets.go (envelope incl. status/error/poster_url/audio_url/video, upload/update/query validation) | ✅ |
-| `backend/apps/assets/services.py` | doory/assets.go (prepare raster/SVG/quota/storage, content sniffing, sanitised SVG with intrinsic size; audio/video loud-pending); thumbnails use libwebp, resampling filter remains D15 | 🟡 |
+| `backend/apps/assets/services.py` | doory/assets.go + doory/audio.go + doory/video_jobs.go (raster/SVG/audio prepare, sniffing, quota/storage, video ingest); thumbnails use libwebp, resampling filter remains D15 | ✅ |
 | `backend/apps/assets/signals.py` | (file cleanup on delete — pending file-lifecycle slice) | ⬜ |
-| `backend/apps/assets/stock.py` | doory/stock.go (search/import validation + no-config payloads); live provider paths pending (remote/SSRF slice) | 🟡 |
-| `backend/apps/assets/stocklimits.py` | (rate tracking — pending with provider slice) | ⬜ |
+| `backend/apps/assets/stock.py` | doory/stock.go + doory/stock_photo.go (configured search/import, all tab, no-config payloads) | ✅ |
+| `backend/apps/assets/stocklimits.py` | doory/stock_limits.go (per-provider rate windows + pause on 429) | ✅ |
 | `backend/apps/assets/storage.py` | (delete-on-commit helpers — pending with file-lifecycle slice) | ⬜ |
-| `backend/apps/assets/tests/` | doory/remote_image_test.go + doory/assets_svg_test.go + doory/video_test.go (SVG sanitise, video probe/conversion/background/stale/sweep, stock video search); ledger/test-mapping dispositions remain | 🟡 |
+| `backend/apps/assets/tests/` | doory/remote_image_test.go + doory/assets_svg_test.go + doory/video_test.go + doory/audio_test.go + doory/stock_photo_test.go + doory/freesound_test.go; ledger/test-mapping dispositions remain | 🟡 |
 | `backend/apps/assets/throttling.py` | doory/throttle.go + doory/app.go (upload/stock/stock_preview/video_upload route scopes) | ✅ |
 | `backend/apps/assets/uploads.py` | doory/assets.go (oversize reject, clean_name/clean_tags/strip — shared with brand/fonts) | ✅ |
 | `backend/apps/assets/urls.py` |  | ⬜ |
@@ -159,7 +159,7 @@ behavioral verification).
 | `backend/apps/assets/video_jobs.py` | doory/video_jobs.go + doory/commands_video.go (reserve/store/background conversion, stale recovery, sweep command) | ✅ |
 | `backend/apps/assets/video_providers.py` | doory/video_stock.go (Pexels/Pixabay clip search, resolve, host-checked download, filters) | ✅ |
 | `backend/apps/assets/video_stock.py` | doory/video_stock.go + doory/stock.go (provider search/all tab, import to a video asset, no-config payloads) | ✅ |
-| `backend/apps/assets/views.py` | doory/assets.go + doory/app.go (list/create incl. SVG/retrieve/patch/delete/usage; 0.2.0 picture-kind default filter); video 202/processing pending | 🟡 |
+| `backend/apps/assets/views.py` | doory/assets.go + doory/app.go (list/create incl. SVG/audio/video 201/202, retrieve/patch/delete/usage, picture-kind default filter) | ✅ |
 
 ## `backend/apps/assets/audiolib/`
 

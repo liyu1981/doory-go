@@ -598,6 +598,10 @@ func (a *App) downloadVideo(rawURL string, hosts map[string]bool, maxBytes int) 
 	return nil, remoteError("Too many redirects.")
 }
 
+var videoStockDownload = func(a *App, rawURL string, hosts map[string]bool, maxBytes int) ([]byte, error) {
+	return a.downloadVideo(rawURL, hosts, maxBytes)
+}
+
 func (a *App) importStockVideo(owner *UserRow, name, id string) (*assetRow, bool, *DocumentError) {
 	if !a.videoAvailable() {
 		return nil, false, &DocumentError{Code: "video_unavailable", Status: 400,
@@ -631,7 +635,7 @@ func (a *App) importStockVideo(owner *UserRow, name, id string) (*assetRow, bool
 	if name == "pixabay_video" {
 		hosts = map[string]bool{"cdn.pixabay.com": true}
 	}
-	data, derr2 := a.downloadVideo(resolved.DownloadURL, hosts, a.Settings.MaxVideoUploadBytes)
+	data, derr2 := videoStockDownload(a, resolved.DownloadURL, hosts, a.Settings.MaxVideoUploadBytes)
 	if derr2 != nil {
 		if _, ok := derr2.(*remoteImageTooLarge); ok {
 			return nil, false, &DocumentError{Code: "file_too_large", Status: 413, Message: "The video is too large."}

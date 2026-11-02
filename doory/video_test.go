@@ -210,3 +210,38 @@ func TestSweepVideoJobsCommand(t *testing.T) {
 		t.Fatalf("processing row was not failed by the sweep")
 	}
 }
+
+func TestStockVideoImportStoresClip(t *testing.T) {
+	clip := makeTestClip(t, false, "libx264")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/videos/videos/123" {
+			http.NotFound(w, r)
+			return
+		}
+		_, _ = w.Write([]byte(`{"id":123,"width":320,"height":240,"duration":1,"image":"https://images.pexels.com/x.jpg","url":"https://www.pexels.com/video/123/","user":{"name":"Ada","url":"https://www.pexels.com/@ada"},"video_files":[{"link":"https://videos.pexels.com/x.mp4","width":320,"height":240,"file_type":"video/mp4"}]}`))
+	}))
+	defer server.Close()
+	oldBase, oldDownload := videoPexelsBase, videoStockDownload
+	videoPexelsBase = server.URL
+	videoStockDownload = func(a *App, rawURL string, hosts map[string]bool, maxBytes int) ([]byte, error) { return clip, nil }
+	t.Cleanup(func() { videoPexelsBase, videoStockDownload = oldBase, oldDownload })
+
+	env := newAdminEnv(t)
+	user := env.makeUser("video-import@example.com", false, false)
+	env.loginAs(user)
+	env.app.Settings.PexelsVideoAPIKey = "key"
+	res, body := env.doJSON("/api/v1/stock/videos/import/", `{"provider":"pexels_video","id":"123"}`)
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("video import = %d: %s", res.StatusCode, body)
+	}
+	var payload struct {
+		Kind, Status, Mime string
+		Video              struct{ Filmstrip map[string]any } `json:"video"`
+	}
+	if err := json.Unmarshal([]byte(body), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if payload.Kind != "video" || payload.Status != "ready" || payload.Mime != "video/mp4" || payload.Video.Filmstrip == nil {
+		t.Fatalf("video import envelope = %+v", payload)
+	}
+}
