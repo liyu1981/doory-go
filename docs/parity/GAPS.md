@@ -168,10 +168,10 @@ which upstream function is missing — never a silent wrong answer.
 | G28 | Admin model engine and moderation (User/Group, ApiToken, Asset, BrandKit, Design/DesignVersion/Folder, ShareLink, Comment; actions, cascades and file cleanup) | `984a65b` |
 | G29 | Admin content authoring (Template/Category, ElementPack/Element, FontFamily/Variant, SizePresetGroup/SizePreset; thumbnails, bulk uploads, validate/duplicate/feature, preset validation and activate clash, delete cleanup) | `948a24c` |
 | G15 | Video family (probe/transcode, background jobs, 202 polling, stills/audio, stock video search/import, video exports) | `1cf6f19` |
-| G7 | Live stock-video import/search (provider resolve + download + video asset) | to be filled |
-| G11 | Audio uploads (MP3/Ogg/WAV/M4A/WebM header validation, stored bytes, duration/details) | to be filled |
-| G12 | Stock photos (Unsplash/Pexels/Pixabay search, resolve, download, import, provider pacing) | to be filled |
-| G13 | Freesound search/info/import/preview (licence gate, CDN-only downloads) | to be filled |
+| G7 | Live stock-video import/search (provider resolve + download + video asset) | `a2c04ba` |
+| G11 | Audio uploads (MP3/Ogg/WAV/M4A/WebM header validation, stored bytes, duration/details) | `a2c04ba` |
+| G12 | Stock photos (Unsplash/Pexels/Pixabay search, resolve, download, import, provider pacing) | `a2c04ba` |
+| G13 | Freesound search/info/import/preview (licence gate, CDN-only downloads) | `a2c04ba` |
 | G22 | DRF default + scoped rate throttles (anon/user, auth, oidc, upload, stock, stock preview, video upload, bulk fill/images, export, optimize/offsite, ai) | `9008929` |
 | G18 | WebP/JPEG encoding through embedded libwebp 1.6.0 + libjpeg-turbo 3.1.0 (Pillow byte parity) | `fcb66a5` |
 | G27 | Admin kernel and CLI (staff/session/CSRF, index/app/search/autocomplete/jsi18n, never_cache/Vary, admin log/history, bootstrap commands, auth seed) | `c4f61f7` |
