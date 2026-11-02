@@ -253,6 +253,16 @@ type renderResult struct {
 	PageIndex    int
 	Placeholders int
 	MissingFonts []string
+	Mime         string
+	Bytes        int
+	FPS          int
+	Frames       int
+	DurationMS   int
+	Video        string
+	Audio        string
+	Warnings     []string
+	PageIDs      []string
+	PageIndexes  []int
 }
 
 // workerReport mirrors the worker's report JSON contract.
@@ -277,12 +287,26 @@ type workerReport struct {
 	PageIndex    int      `json:"page_index"`
 	Placeholders int      `json:"placeholders"`
 	MissingFonts []string `json:"missing_fonts"`
+	Mime         string   `json:"mime"`
+	Bytes        int      `json:"bytes"`
+	FPS          int      `json:"fps"`
+	Frames       int      `json:"frames"`
+	DurationMS   int      `json:"duration_ms"`
+	Video        string   `json:"video"`
+	Audio        string   `json:"audio"`
+	Warnings     []string `json:"warnings"`
+	PageIDs      []string `json:"page_ids"`
+	PageIndexes  []int    `json:"page_indexes"`
 }
 
 // runWorker ports renderer._run_worker: spec + subprocess + deadline +
 // report mapping. `prepare` writes the spec fields unique to the mode.
 func (a *App) runWorker(mime string, prepare func(workdir string) (map[string]any, string, error)) (*renderResult, *DocumentError) {
-	timeout := time.Duration(a.Settings.ExportTimeoutSeconds * float64(time.Second))
+	return a.runWorkerTimeout(mime, a.Settings.ExportTimeoutSeconds, prepare)
+}
+
+func (a *App) runWorkerTimeout(mime string, timeoutSeconds float64, prepare func(workdir string) (map[string]any, string, error)) (*renderResult, *DocumentError) {
+	timeout := time.Duration(timeoutSeconds * float64(time.Second))
 	root := a.Settings.ExportWorkDir
 	if root != "" {
 		if err := os.MkdirAll(root, 0o755); err != nil {
@@ -312,7 +336,7 @@ func (a *App) runWorker(mime string, prepare func(workdir string) (map[string]an
 		"no_sandbox":      a.Settings.ExportChromiumNoSandbox,
 		"allowed_origins": a.Settings.ExportAllowedOrigins,
 		"path_prefixes":   []string{"/media/", "/static/"},
-		"timeout_s":       a.Settings.ExportTimeoutSeconds,
+		"timeout_s":       timeoutSeconds,
 		"max_asset_bytes": maxRenderAssetBytes,
 	}
 	for k, v := range special {
@@ -384,7 +408,10 @@ func (a *App) runWorker(mime string, prepare func(workdir string) (map[string]an
 		Data: data, AllowedTotal: report.AllowedTotal, BlockedTotal: report.BlockedTotal,
 		Width: report.Width, Height: report.Height, PageID: report.PageID,
 		PageIndex: report.PageIndex, Placeholders: report.Placeholders,
-		MissingFonts: report.MissingFonts,
+		MissingFonts: report.MissingFonts, Mime: report.Mime, Bytes: report.Bytes,
+		FPS: report.FPS, Frames: report.Frames, DurationMS: report.DurationMS,
+		Video: report.Video, Audio: report.Audio, Warnings: report.Warnings,
+		PageIDs: report.PageIDs, PageIndexes: report.PageIndexes,
 	}, nil
 }
 

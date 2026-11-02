@@ -262,11 +262,8 @@ func (a *App) stockAudioPreview(w http.ResponseWriter, r *http.Request) {
 
 // ---- stock videos (0.2.0, apps/assets/video_stock.py) ------------------------------------------
 //
-// Like the photo endpoints, only the no-configuration behaviour is ported:
-// the provider calls (search, resolve, download) and the ffmpeg conversion
-// pipeline are pending with the video family. The availability and limits
-// here are real (ffmpeg/ffprobe on PATH, VIDEO_ENABLED), so a server with
-// the tools reports itself ready exactly like the oracle.
+// The availability and limits are real (ffmpeg/ffprobe on PATH, VIDEO_ENABLED);
+// configured providers search, resolve and import through video_stock.go.
 
 // videoProviders mirrors video_providers.VIDEO_PROVIDERS registration order.
 var videoProviders = []string{"pexels_video", "pixabay_video"}
@@ -407,18 +404,27 @@ func (a *App) stockVideosSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	requested := q.Get("provider")
-	// video_stock.search(): "all" (or no provider with several enabled)
-	// resolves the All tab first; nobody is configured -> _not_configured
-	// with "all" or the requested name ("" when none was asked for).
-	if requested == "all" {
+	page := atoi(q.Get("page"))
+	if page == 0 {
+		page = 1
+	}
+	perPage := atoi(q.Get("per_page"))
+	if perPage == 0 {
+		perPage = stockDefaultPerPage
+	}
+	payload, derr := a.searchVideos(requested, q.Get("q"), page, perPage, q.Get("cursor"),
+		q.Get("orientation"), q.Get("duration"))
+	if derr != nil {
+		writeDRF(w, derr.Status, derr.Code, derr.Message)
+		return
+	}
+	if configured, _ := payload["configured"].(bool); !configured {
 		writeJSON(w, http.StatusOK, videoStockPayload{
-			Configured: false, Provider: "all", Results: []any{},
+			Configured: false, Provider: stringFromAny(payload["provider"]), Results: []any{},
 		})
 		return
 	}
-	writeJSON(w, http.StatusOK, videoStockPayload{
-		Configured: false, Provider: requested, Results: []any{},
-	})
+	writeJSON(w, http.StatusOK, payload)
 }
 
 // videoProviderCredit is one entry of the providers payload.
@@ -479,10 +485,8 @@ func (a *App) stockVideosProviders(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// stockVideoImport ports StockVideoImportView for servers that cannot take
-// clips at all: the serializer first (provider choice + id bounds), then
-// video_stock.import_video's availability check. Live imports (download +
-// ffmpeg conversion) are pending with the video family.
+// stockVideoImport ports StockVideoImportView: serializer bounds, then the
+// provider resolve/download/probe/conversion pipeline.
 func (a *App) stockVideoImport(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Provider string `json:"provider"`
@@ -507,13 +511,17 @@ func (a *App) stockVideoImport(w http.ResponseWriter, r *http.Request) {
 		writeDRFValidation(w, fields)
 		return
 	}
-	if !a.videoAvailable() {
-		writeDRF(w, http.StatusBadRequest, "video_unavailable",
-			"This server can't take videos (ffmpeg is not installed).")
+	asset, created, derr := a.importStockVideo(currentUser(r), body.Provider, body.ID)
+	if derr != nil {
+		writeDRF(w, derr.Status, derr.Code, derr.Message)
 		return
 	}
-	// video.available() but the provider search/download/conversion pipeline
-	// is not ported yet: say so instead of pretending nothing happened.
-	writeDRF(w, http.StatusInternalServerError, "server_error",
-		"route registered but not ported: video_stock.import_video (assets/video*.py pending)")
+	status := http.StatusOK
+	if created {
+		status = http.StatusCreated
+		if asset.Status == "processing" {
+			status = http.StatusAccepted
+		}
+	}
+	writeJSON(w, status, asset.envelope())
 }

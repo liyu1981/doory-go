@@ -152,6 +152,10 @@ type remoteHTTPResponse struct {
 }
 
 func remoteDoReal(ctx context.Context, target remoteImageTarget) (remoteHTTPResponse, error) {
+	return remoteDoRealWithMax(ctx, target, maxUploadBytes)
+}
+
+func remoteDoRealWithMax(ctx context.Context, target remoteImageTarget, maxBytes int) (remoteHTTPResponse, error) {
 	dialer := &net.Dialer{Timeout: remoteImageConnect}
 	transport := &http.Transport{
 		DialContext: func(ctx context.Context, network, _ string) (net.Conn, error) {
@@ -183,7 +187,7 @@ func remoteDoReal(ctx context.Context, target remoteImageTarget) (remoteHTTPResp
 		return remoteHTTPResponse{}, err
 	}
 	defer response.Body.Close()
-	body, err := io.ReadAll(io.LimitReader(response.Body, maxUploadBytes+1))
+	body, err := io.ReadAll(io.LimitReader(response.Body, int64(maxBytes)+1))
 	if err != nil {
 		return remoteHTTPResponse{}, err
 	}

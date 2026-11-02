@@ -80,6 +80,7 @@ var cliCommands = []cliCommand{
 	{name: "sync_element_packs", usage: "sync_element_packs [-h] [--pack ID [ID ...]] [--list] [--dry-run] [--force] [--prune] [--brand-logos | --no-brand-logos] [--concurrency N] [--from-dir DIR]", run: runSyncElementPacks},
 	{name: "sync_audio", usage: "sync_audio [-h] [--from-dir DIR] [--pack ID [ID ...]] [--all-packs] [--list] [--dry-run] [--force] [--prune]", run: runSyncAudio},
 	{name: "sync_fonts", usage: "sync_fonts [-h] [--all | --popular N | --from-dir DIR] [--subsets SUBSETS] [--weights WEIGHTS] [--styles STYLES] [--concurrency N] [--license LICENSE] [families ...]", run: runSyncFonts},
+	{name: "sweep_video_jobs", usage: "sweep_video_jobs [-h]", run: runSweepVideoJobs},
 }
 
 // RunCLI dispatches one command line; returns the process exit code.

@@ -38,11 +38,17 @@ type Settings struct {
 	StockVideoProviders []string
 	// Video clips: on when VIDEO_ENABLED and both commands exist; the
 	// upload/stock endpoints report availability and limits from here.
-	VideoEnabled            bool
-	FFmpegPath              string
-	FFprobePath             string
-	MaxVideoUploadBytes     int
-	MaxVideoDurationSeconds int
+	VideoEnabled                 bool
+	FFmpegPath                   string
+	FFprobePath                  string
+	MaxVideoUploadBytes          int
+	MaxVideoDurationSeconds      int
+	VideoMaxConcurrency          int
+	VideoMaxProcessingPerUser    int
+	VideoTranscodeTimeoutSeconds int
+	VideoFFmpegThreads           int
+	VideoDownloadDeadlineSeconds int
+	VideoWorkDir                 string
 	// Transactional email (base.py EMAIL_URL/EMAIL_SEND_ASYNC +
 	// AUTH_EMAIL_COOLDOWN_SECONDS); D9 for the template rendering.
 	EmailURL                 string
@@ -66,44 +72,49 @@ type Settings struct {
 	DatabaseURL              string
 	// DevProxyURL is `doory dev`'s Vite dev server (M14): every non-API path
 	// is proxied there, mirroring frontend/vite.config.ts's server.proxy.
-	DevProxyURL              string
-	AllowedOrigins           []string          // CORS_ALLOWED_ORIGINS (prod.py env.list, default none)
-	SecureCookies            bool              // SECURE_COOKIES (prod.py env read, default true): session+csrf cookie Secure attr
-	SecretKey                string            // DJANGO_SECRET_KEY (base.py env read, default dev-insecure...)
-	SecretKeyFallbacks       []string          // SECRET_KEY_FALLBACKS (base.py env.list): rotated-away keys
-	MaxAPITokensPerUser      int               // MAX_API_TOKENS_PER_USER (base.py env, default 20)
-	ThrottleRates            map[string]string // REST_FRAMEWORK DEFAULT_THROTTLE_RATES
-	NumProxies               int               // NUM_PROXIES: -1 means do not trust X-Forwarded-For
-	MaxDesignsPerUser        int               // MAX_DESIGNS_PER_USER (base.py env, default 5000)
-	UserStorageQuotaBytes    int64             // USER_STORAGE_QUOTA_BYTES (base.py env, default 2GiB)
-	ServerImageExportEnabled bool              // SERVER_IMAGE_EXPORT_ENABLED (base.py env, default FALSE)
-	ExportRenderPageURL      string            // EXPORT_RENDER_PAGE_URL (default: SITE_URL origin + /render.html)
-	ExportImageMaxPixels     int               // EXPORT_IMAGE_MAX_PIXELS (default 40M)
-	ExportImageMaxDocBytes   int               // EXPORT_IMAGE_MAX_DOCUMENT_BYTES (default 5MiB)
-	ExportMaxConcurrency     int               // EXPORT_MAX_CONCURRENCY (default 2)
-	ExportTimeoutSeconds     float64           // EXPORT_TIMEOUT_SECONDS (default 30)
-	ExportChromiumPath       string            // EXPORT_CHROMIUM_PATH (empty: PATH lookup)
-	ExportChromiumNoSandbox  bool              // EXPORT_CHROMIUM_NO_SANDBOX (default false)
-	ExportWorkDir            string            // EXPORT_WORK_DIR (default os temp)
-	ExportAllowedOrigins     []string          // EXPORT_ALLOWED_ORIGINS (default site origin + :8111)
-	ExportStorageRoot        string            // EXPORT_STORAGE_ROOT (default ./exports)
-	ImageOptimizers          []string          // IMAGE_OPTIMIZERS (base.py env.list, default ["builtin"])
-	ImageOptimizerDefault    string            // IMAGE_OPTIMIZER_DEFAULT (default "builtin")
-	TinyPngAPIKey            string            // TINYPNG_API_KEY
-	KrakenAPIKey             string            // KRAKEN_API_KEY
-	KrakenAPISecret          string            // KRAKEN_API_SECRET
-	ImageOptimizerCustomName string            // IMAGE_OPTIMIZER_CUSTOM_NAME (default "Custom")
-	ImageOptimizerCustomURL  string            // IMAGE_OPTIMIZER_CUSTOM_URL (default "")
-	ImageOptimizerCustomKey  string            // IMAGE_OPTIMIZER_CUSTOM_KEY (default "")
-	ImageOptimizerTimeout    int               // IMAGE_OPTIMIZER_TIMEOUT (seconds per file, default 30)
-	ImageOptimizerMaxBytes   int               // IMAGE_OPTIMIZER_MAX_BYTES (default 25 MiB)
-	McpExportURLTTLSeconds   int               // MCP_EXPORT_URL_TTL_SECONDS (default 600)
-	McpCallsPerMinute        int               // MCP_CALLS_PER_MINUTE (default 120; 0 = unlimited)
-	McpMaxRequestBytes       int               // MCP_MAX_REQUEST_BYTES (default 4MB)
-	McpExportInlineMaxBytes  int               // MCP_EXPORT_INLINE_MAX_BYTES (default 1MB)
-	McpExportURLUploads      bool              // URL_IMAGE_UPLOADS (default true; MCP_URL_UPLOADS legacy)
-	BackgroundRemovalDefault string            // AI_TASK_DEFAULTS[background-removal] (base.py env, default "device")
-	AIProviderEnvProvider    []AIEnvProvider
+	DevProxyURL               string
+	AllowedOrigins            []string          // CORS_ALLOWED_ORIGINS (prod.py env.list, default none)
+	SecureCookies             bool              // SECURE_COOKIES (prod.py env read, default true): session+csrf cookie Secure attr
+	SecretKey                 string            // DJANGO_SECRET_KEY (base.py env read, default dev-insecure...)
+	SecretKeyFallbacks        []string          // SECRET_KEY_FALLBACKS (base.py env.list): rotated-away keys
+	MaxAPITokensPerUser       int               // MAX_API_TOKENS_PER_USER (base.py env, default 20)
+	ThrottleRates             map[string]string // REST_FRAMEWORK DEFAULT_THROTTLE_RATES
+	NumProxies                int               // NUM_PROXIES: -1 means do not trust X-Forwarded-For
+	MaxDesignsPerUser         int               // MAX_DESIGNS_PER_USER (base.py env, default 5000)
+	UserStorageQuotaBytes     int64             // USER_STORAGE_QUOTA_BYTES (base.py env, default 2GiB)
+	ServerImageExportEnabled  bool              // SERVER_IMAGE_EXPORT_ENABLED (base.py env, default FALSE)
+	ExportRenderPageURL       string            // EXPORT_RENDER_PAGE_URL (default: SITE_URL origin + /render.html)
+	ExportImageMaxPixels      int               // EXPORT_IMAGE_MAX_PIXELS (default 40M)
+	ExportImageMaxDocBytes    int               // EXPORT_IMAGE_MAX_DOCUMENT_BYTES (default 5MiB)
+	ExportMaxConcurrency      int               // EXPORT_MAX_CONCURRENCY (default 2)
+	ServerVideoExportEnabled  bool              // SERVER_VIDEO_EXPORT_ENABLED (default false)
+	ExportVideoTimeoutSeconds int               // EXPORT_VIDEO_TIMEOUT_SECONDS (default 300)
+	ExportVideoMaxSeconds     int               // EXPORT_VIDEO_MAX_SECONDS (default 120)
+	ExportVideoMaxResolution  int               // EXPORT_VIDEO_MAX_RESOLUTION (shorter side, default 1080)
+	ExportVideoMaxBytes       int               // EXPORT_VIDEO_MAX_BYTES (default 200 MiB)
+	ExportTimeoutSeconds      float64           // EXPORT_TIMEOUT_SECONDS (default 30)
+	ExportChromiumPath        string            // EXPORT_CHROMIUM_PATH (empty: PATH lookup)
+	ExportChromiumNoSandbox   bool              // EXPORT_CHROMIUM_NO_SANDBOX (default false)
+	ExportWorkDir             string            // EXPORT_WORK_DIR (default os temp)
+	ExportAllowedOrigins      []string          // EXPORT_ALLOWED_ORIGINS (default site origin + :8111)
+	ExportStorageRoot         string            // EXPORT_STORAGE_ROOT (default ./exports)
+	ImageOptimizers           []string          // IMAGE_OPTIMIZERS (base.py env.list, default ["builtin"])
+	ImageOptimizerDefault     string            // IMAGE_OPTIMIZER_DEFAULT (default "builtin")
+	TinyPngAPIKey             string            // TINYPNG_API_KEY
+	KrakenAPIKey              string            // KRAKEN_API_KEY
+	KrakenAPISecret           string            // KRAKEN_API_SECRET
+	ImageOptimizerCustomName  string            // IMAGE_OPTIMIZER_CUSTOM_NAME (default "Custom")
+	ImageOptimizerCustomURL   string            // IMAGE_OPTIMIZER_CUSTOM_URL (default "")
+	ImageOptimizerCustomKey   string            // IMAGE_OPTIMIZER_CUSTOM_KEY (default "")
+	ImageOptimizerTimeout     int               // IMAGE_OPTIMIZER_TIMEOUT (seconds per file, default 30)
+	ImageOptimizerMaxBytes    int               // IMAGE_OPTIMIZER_MAX_BYTES (default 25 MiB)
+	McpExportURLTTLSeconds    int               // MCP_EXPORT_URL_TTL_SECONDS (default 600)
+	McpCallsPerMinute         int               // MCP_CALLS_PER_MINUTE (default 120; 0 = unlimited)
+	McpMaxRequestBytes        int               // MCP_MAX_REQUEST_BYTES (default 4MB)
+	McpExportInlineMaxBytes   int               // MCP_EXPORT_INLINE_MAX_BYTES (default 1MB)
+	McpExportURLUploads       bool              // URL_IMAGE_UPLOADS (default true; MCP_URL_UPLOADS legacy)
+	BackgroundRemovalDefault  string            // AI_TASK_DEFAULTS[background-removal] (base.py env, default "device")
+	AIProviderEnvProvider     []AIEnvProvider
 
 	// AI knobs (base.py env reads, M10).
 	AIUserProvidersAllowHTTP    bool     // AI_USER_PROVIDERS_ALLOW_HTTP
@@ -159,90 +170,101 @@ func (s *Settings) EmailDelivers() bool {
 // names/defaults as base.py. Missing vars take the upstream defaults.
 func FromEnv() *Settings {
 	settings := &Settings{
-		GoogleClientID:              envStr("GOOGLE_CLIENT_ID", ""),
-		Debug:                       envBool("DJANGO_DEBUG", false),
-		OIDCIssuer:                  envStr("OIDC_ISSUER", ""),
-		OIDCClientID:                envStr("OIDC_CLIENT_ID", ""),
-		OIDCClientSecret:            envStr("OIDC_CLIENT_SECRET", ""),
-		OIDCButtonLabel:             envStr("OIDC_BUTTON_LABEL", "Sign in with SSO"),
-		OIDCButtonIcon:              envStr("OIDC_BUTTON_ICON", ""),
-		OIDCScopes:                  envStr("OIDC_SCOPES", "openid email profile"),
-		OIDCTrustEmail:              envBool("OIDC_TRUST_EMAIL", false),
-		UnsplashAccessKey:           envStr("UNSPLASH_ACCESS_KEY", ""),
-		PexelsAccessKey:             envStr("PEXELS_API_KEY", ""),
-		PixabayAccessKey:            envStr("PIXABAY_API_KEY", ""),
-		FreesoundAccessKey:          envStr("FREESOUND_ACCESS_KEY", ""),
-		PexelsVideoAPIKey:           envStr("PEXELS_VIDEO_API_KEY", ""),
-		PixabayVideoAPIKey:          envStr("PIXABAY_VIDEO_API_KEY", ""),
-		StockVideoProviders:         envList("STOCK_VIDEO_PROVIDERS", []string{"pexels_video", "pixabay_video"}),
-		VideoEnabled:                envBool("VIDEO_ENABLED", true),
-		FFmpegPath:                  envStr("FFMPEG_PATH", "ffmpeg"),
-		FFprobePath:                 envStr("FFPROBE_PATH", "ffprobe"),
-		MaxVideoUploadBytes:         envInt("MAX_VIDEO_UPLOAD_BYTES", 200*1024*1024),
-		MaxVideoDurationSeconds:     envInt("MAX_VIDEO_DURATION_SECONDS", 600),
-		EmailURL:                    envStr("EMAIL_URL", "consolemail://"),
-		EmailSendAsync:              envBool("EMAIL_SEND_ASYNC", true),
-		AuthEmailCooldownSeconds:    envInt("AUTH_EMAIL_COOLDOWN_SECONDS", 60),
-		ServerPDFEnabled:            envBool("SERVER_PDF_ENABLED", true),
-		ExportFilenameStyle:         envStr("EXPORT_FILENAME_STYLE", "simple"),
-		ExportFilenameTS:            envBool("EXPORT_FILENAME_TIMESTAMP", false),
-		MediaRoot:                   envStr("MEDIA_ROOT", defaultDataPath("media")),
-		BulkFillMaxRows:             envInt("BULK_FILL_MAX_ROWS", 100),
-		MCPEnabled:                  envBool("MCP_ENABLED", false),
-		McpPath:                     envStr("MCP_PATH", "/mcp"),
-		AIUserProviders:             envStr("AI_USER_PROVIDERS", "off"),
-		AIOffsiteNotice:             strings.TrimSpace(envStr("AI_OFFSITE_NOTICE", "")),
-		AIProvidersEnabled:          envBool("AI_PROVIDERS_ENABLED", true),
-		AIUserProvidersAllowHTTP:    envBool("AI_USER_PROVIDERS_ALLOW_HTTP", false),
-		AIUserProvidersAllowedPorts: envIntList("AI_USER_PROVIDERS_ALLOWED_PORTS"),
-		AIAllowedPrivateHosts:       envList("AI_ALLOWED_PRIVATE_HOSTS", nil),
-		AISecretsKey:                envStr("AI_SECRETS_KEY", ""),
-		AISecretsKeyFallbacks:       envList("AI_SECRETS_KEY_FALLBACKS", nil),
-		AllowedHosts:                envList("DJANGO_ALLOWED_HOSTS", []string{"localhost", "127.0.0.1"}),
-		CSRFTrustedOrigins:          envList("CSRF_TRUSTED_ORIGINS", nil),
-		StockProviders:              envList("STOCK_PROVIDERS", []string{"unsplash", "pexels", "pixabay"}),
-		BackgroundRemovalPin:        envStr("BACKGROUND_REMOVAL_MODEL", ""),
-		RealtimeEnabled:             envBool("REALTIME_ENABLED", true),
-		RealtimeMaxConns:            envInt("REALTIME_MAX_CONNECTIONS_PER_DESIGN", 25),
-		SiteURL:                     envStr("SITE_URL", "http://localhost:5173"),
-		DatabaseURL:                 envStr("DATABASE_URL", defaultDatabaseURL()),
-		DevProxyURL:                 envStr("DOORY_DEV_PROXY", ""),
-		AllowedOrigins:              envList("CORS_ALLOWED_ORIGINS", nil),
-		SecureCookies:               envBool("SECURE_COOKIES", true),
-		SecretKey:                   envStr("DJANGO_SECRET_KEY", "dev-insecure-secret-key-change-me"),
-		SecretKeyFallbacks:          envList("SECRET_KEY_FALLBACKS", nil),
-		MaxAPITokensPerUser:         envInt("MAX_API_TOKENS_PER_USER", 20),
-		ThrottleRates:               defaultThrottleRates(),
-		NumProxies:                  envInt("NUM_PROXIES", 1),
-		ServerImageExportEnabled:    envBool("SERVER_IMAGE_EXPORT_ENABLED", false),
-		ExportImageMaxPixels:        envInt("EXPORT_IMAGE_MAX_PIXELS", 40_000_000),
-		ExportImageMaxDocBytes:      envInt("EXPORT_IMAGE_MAX_DOCUMENT_BYTES", 5*1024*1024),
-		ExportMaxConcurrency:        envInt("EXPORT_MAX_CONCURRENCY", 2),
-		ExportTimeoutSeconds:        float64(envInt("EXPORT_TIMEOUT_SECONDS", 30)),
-		ExportChromiumPath:          envStr("EXPORT_CHROMIUM_PATH", ""),
-		ExportRenderPageURL:         envStr("EXPORT_RENDER_PAGE_URL", ""),
-		ExportAllowedOrigins:        envList("EXPORT_ALLOWED_ORIGINS", nil),
-		ExportChromiumNoSandbox:     envBool("EXPORT_CHROMIUM_NO_SANDBOX", false),
-		ExportWorkDir:               envStr("EXPORT_WORK_DIR", ""),
-		ExportStorageRoot:           envStr("EXPORT_STORAGE_ROOT", defaultDataPath("exports")),
-		ImageOptimizers:             envList("IMAGE_OPTIMIZERS", []string{"builtin"}),
-		ImageOptimizerDefault:       envStr("IMAGE_OPTIMIZER_DEFAULT", "builtin"),
-		TinyPngAPIKey:               envStr("TINYPNG_API_KEY", ""),
-		KrakenAPIKey:                envStr("KRAKEN_API_KEY", ""),
-		KrakenAPISecret:             envStr("KRAKEN_API_SECRET", ""),
-		ImageOptimizerCustomName:    envStr("IMAGE_OPTIMIZER_CUSTOM_NAME", "Custom"),
-		ImageOptimizerCustomURL:     envStr("IMAGE_OPTIMIZER_CUSTOM_URL", ""),
-		ImageOptimizerCustomKey:     envStr("IMAGE_OPTIMIZER_CUSTOM_KEY", ""),
-		ImageOptimizerTimeout:       envInt("IMAGE_OPTIMIZER_TIMEOUT", 30),
-		ImageOptimizerMaxBytes:      envInt("IMAGE_OPTIMIZER_MAX_BYTES", 25*1024*1024),
-		McpExportURLTTLSeconds:      envInt("MCP_EXPORT_URL_TTL_SECONDS", 600),
-		McpCallsPerMinute:           envInt("MCP_CALLS_PER_MINUTE", 120),
-		McpMaxRequestBytes:          envInt("MCP_MAX_REQUEST_BYTES", 4*1024*1024),
-		McpExportInlineMaxBytes:     envInt("MCP_EXPORT_INLINE_MAX_BYTES", 1024*1024),
-		McpExportURLUploads:         envBool("URL_IMAGE_UPLOADS", true),
-		MaxDesignsPerUser:           envInt("MAX_DESIGNS_PER_USER", 5000),
-		UserStorageQuotaBytes:       int64(envInt("USER_STORAGE_QUOTA_BYTES", 2*1024*1024*1024)),
-		BackgroundRemovalDefault:    envStr("BACKGROUND_REMOVAL_DEFAULT", "device"),
+		GoogleClientID:               envStr("GOOGLE_CLIENT_ID", ""),
+		Debug:                        envBool("DJANGO_DEBUG", false),
+		OIDCIssuer:                   envStr("OIDC_ISSUER", ""),
+		OIDCClientID:                 envStr("OIDC_CLIENT_ID", ""),
+		OIDCClientSecret:             envStr("OIDC_CLIENT_SECRET", ""),
+		OIDCButtonLabel:              envStr("OIDC_BUTTON_LABEL", "Sign in with SSO"),
+		OIDCButtonIcon:               envStr("OIDC_BUTTON_ICON", ""),
+		OIDCScopes:                   envStr("OIDC_SCOPES", "openid email profile"),
+		OIDCTrustEmail:               envBool("OIDC_TRUST_EMAIL", false),
+		UnsplashAccessKey:            envStr("UNSPLASH_ACCESS_KEY", ""),
+		PexelsAccessKey:              envStr("PEXELS_API_KEY", ""),
+		PixabayAccessKey:             envStr("PIXABAY_API_KEY", ""),
+		FreesoundAccessKey:           envStr("FREESOUND_ACCESS_KEY", ""),
+		PexelsVideoAPIKey:            envStr("PEXELS_VIDEO_API_KEY", ""),
+		PixabayVideoAPIKey:           envStr("PIXABAY_VIDEO_API_KEY", ""),
+		StockVideoProviders:          envList("STOCK_VIDEO_PROVIDERS", []string{"pexels_video", "pixabay_video"}),
+		VideoEnabled:                 envBool("VIDEO_ENABLED", true),
+		FFmpegPath:                   envStr("FFMPEG_PATH", "ffmpeg"),
+		FFprobePath:                  envStr("FFPROBE_PATH", "ffprobe"),
+		MaxVideoUploadBytes:          envInt("MAX_VIDEO_UPLOAD_BYTES", 200*1024*1024),
+		MaxVideoDurationSeconds:      envInt("MAX_VIDEO_DURATION_SECONDS", 600),
+		VideoMaxConcurrency:          envInt("VIDEO_MAX_CONCURRENCY", 2),
+		VideoMaxProcessingPerUser:    envInt("VIDEO_MAX_PROCESSING_PER_USER", 3),
+		VideoTranscodeTimeoutSeconds: envInt("VIDEO_TRANSCODE_TIMEOUT_SECONDS", 900),
+		VideoFFmpegThreads:           envInt("VIDEO_FFMPEG_THREADS", 2),
+		VideoDownloadDeadlineSeconds: envInt("VIDEO_DOWNLOAD_DEADLINE_SECONDS", 90),
+		VideoWorkDir:                 envStr("VIDEO_WORK_DIR", ""),
+		EmailURL:                     envStr("EMAIL_URL", "consolemail://"),
+		EmailSendAsync:               envBool("EMAIL_SEND_ASYNC", true),
+		AuthEmailCooldownSeconds:     envInt("AUTH_EMAIL_COOLDOWN_SECONDS", 60),
+		ServerPDFEnabled:             envBool("SERVER_PDF_ENABLED", true),
+		ExportFilenameStyle:          envStr("EXPORT_FILENAME_STYLE", "simple"),
+		ExportFilenameTS:             envBool("EXPORT_FILENAME_TIMESTAMP", false),
+		MediaRoot:                    envStr("MEDIA_ROOT", defaultDataPath("media")),
+		BulkFillMaxRows:              envInt("BULK_FILL_MAX_ROWS", 100),
+		MCPEnabled:                   envBool("MCP_ENABLED", false),
+		McpPath:                      envStr("MCP_PATH", "/mcp"),
+		AIUserProviders:              envStr("AI_USER_PROVIDERS", "off"),
+		AIOffsiteNotice:              strings.TrimSpace(envStr("AI_OFFSITE_NOTICE", "")),
+		AIProvidersEnabled:           envBool("AI_PROVIDERS_ENABLED", true),
+		AIUserProvidersAllowHTTP:     envBool("AI_USER_PROVIDERS_ALLOW_HTTP", false),
+		AIUserProvidersAllowedPorts:  envIntList("AI_USER_PROVIDERS_ALLOWED_PORTS"),
+		AIAllowedPrivateHosts:        envList("AI_ALLOWED_PRIVATE_HOSTS", nil),
+		AISecretsKey:                 envStr("AI_SECRETS_KEY", ""),
+		AISecretsKeyFallbacks:        envList("AI_SECRETS_KEY_FALLBACKS", nil),
+		AllowedHosts:                 envList("DJANGO_ALLOWED_HOSTS", []string{"localhost", "127.0.0.1"}),
+		CSRFTrustedOrigins:           envList("CSRF_TRUSTED_ORIGINS", nil),
+		StockProviders:               envList("STOCK_PROVIDERS", []string{"unsplash", "pexels", "pixabay"}),
+		BackgroundRemovalPin:         envStr("BACKGROUND_REMOVAL_MODEL", ""),
+		RealtimeEnabled:              envBool("REALTIME_ENABLED", true),
+		RealtimeMaxConns:             envInt("REALTIME_MAX_CONNECTIONS_PER_DESIGN", 25),
+		SiteURL:                      envStr("SITE_URL", "http://localhost:5173"),
+		DatabaseURL:                  envStr("DATABASE_URL", defaultDatabaseURL()),
+		DevProxyURL:                  envStr("DOORY_DEV_PROXY", ""),
+		AllowedOrigins:               envList("CORS_ALLOWED_ORIGINS", nil),
+		SecureCookies:                envBool("SECURE_COOKIES", true),
+		SecretKey:                    envStr("DJANGO_SECRET_KEY", "dev-insecure-secret-key-change-me"),
+		SecretKeyFallbacks:           envList("SECRET_KEY_FALLBACKS", nil),
+		MaxAPITokensPerUser:          envInt("MAX_API_TOKENS_PER_USER", 20),
+		ThrottleRates:                defaultThrottleRates(),
+		NumProxies:                   envInt("NUM_PROXIES", 1),
+		ServerImageExportEnabled:     envBool("SERVER_IMAGE_EXPORT_ENABLED", false),
+		ExportImageMaxPixels:         envInt("EXPORT_IMAGE_MAX_PIXELS", 40_000_000),
+		ExportImageMaxDocBytes:       envInt("EXPORT_IMAGE_MAX_DOCUMENT_BYTES", 5*1024*1024),
+		ExportMaxConcurrency:         envInt("EXPORT_MAX_CONCURRENCY", 2),
+		ServerVideoExportEnabled:     envBool("SERVER_VIDEO_EXPORT_ENABLED", false),
+		ExportVideoTimeoutSeconds:    envInt("EXPORT_VIDEO_TIMEOUT_SECONDS", 300),
+		ExportVideoMaxSeconds:        envInt("EXPORT_VIDEO_MAX_SECONDS", 120),
+		ExportVideoMaxResolution:     envInt("EXPORT_VIDEO_MAX_RESOLUTION", 1080),
+		ExportVideoMaxBytes:          envInt("EXPORT_VIDEO_MAX_BYTES", 200*1024*1024),
+		ExportTimeoutSeconds:         float64(envInt("EXPORT_TIMEOUT_SECONDS", 30)),
+		ExportChromiumPath:           envStr("EXPORT_CHROMIUM_PATH", ""),
+		ExportRenderPageURL:          envStr("EXPORT_RENDER_PAGE_URL", ""),
+		ExportAllowedOrigins:         envList("EXPORT_ALLOWED_ORIGINS", nil),
+		ExportChromiumNoSandbox:      envBool("EXPORT_CHROMIUM_NO_SANDBOX", false),
+		ExportWorkDir:                envStr("EXPORT_WORK_DIR", ""),
+		ExportStorageRoot:            envStr("EXPORT_STORAGE_ROOT", defaultDataPath("exports")),
+		ImageOptimizers:              envList("IMAGE_OPTIMIZERS", []string{"builtin"}),
+		ImageOptimizerDefault:        envStr("IMAGE_OPTIMIZER_DEFAULT", "builtin"),
+		TinyPngAPIKey:                envStr("TINYPNG_API_KEY", ""),
+		KrakenAPIKey:                 envStr("KRAKEN_API_KEY", ""),
+		KrakenAPISecret:              envStr("KRAKEN_API_SECRET", ""),
+		ImageOptimizerCustomName:     envStr("IMAGE_OPTIMIZER_CUSTOM_NAME", "Custom"),
+		ImageOptimizerCustomURL:      envStr("IMAGE_OPTIMIZER_CUSTOM_URL", ""),
+		ImageOptimizerCustomKey:      envStr("IMAGE_OPTIMIZER_CUSTOM_KEY", ""),
+		ImageOptimizerTimeout:        envInt("IMAGE_OPTIMIZER_TIMEOUT", 30),
+		ImageOptimizerMaxBytes:       envInt("IMAGE_OPTIMIZER_MAX_BYTES", 25*1024*1024),
+		McpExportURLTTLSeconds:       envInt("MCP_EXPORT_URL_TTL_SECONDS", 600),
+		McpCallsPerMinute:            envInt("MCP_CALLS_PER_MINUTE", 120),
+		McpMaxRequestBytes:           envInt("MCP_MAX_REQUEST_BYTES", 4*1024*1024),
+		McpExportInlineMaxBytes:      envInt("MCP_EXPORT_INLINE_MAX_BYTES", 1024*1024),
+		McpExportURLUploads:          envBool("URL_IMAGE_UPLOADS", true),
+		MaxDesignsPerUser:            envInt("MAX_DESIGNS_PER_USER", 5000),
+		UserStorageQuotaBytes:        int64(envInt("USER_STORAGE_QUOTA_BYTES", 2*1024*1024*1024)),
+		BackgroundRemovalDefault:     envStr("BACKGROUND_REMOVAL_DEFAULT", "device"),
 		// base.py hardcodes EMAIL_BACKEND = console (a settings-file
 		// constant, NOT an env read): upstream's deployed default never
 		// delivers mail, so features.email_verification is false on a

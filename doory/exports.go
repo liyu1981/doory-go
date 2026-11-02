@@ -408,14 +408,22 @@ func (a *App) imageExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		Page          *json.Number `json:"page"`
-		Format        string       `json:"format"`
-		Quality       *int         `json:"quality"`
-		Scale         *float64     `json:"scale"`
-		Transparent   bool         `json:"transparent"`
-		Progressive   bool         `json:"progressive"`
-		FilenameStyle string       `json:"filename_style"`
-		FilenameTS    *bool        `json:"filename_timestamp"`
+		Page          *json.Number    `json:"page"`
+		Format        string          `json:"format"`
+		Quality       any             `json:"quality"`
+		Scale         *float64        `json:"scale"`
+		Transparent   bool            `json:"transparent"`
+		Progressive   bool            `json:"progressive"`
+		FilenameStyle string          `json:"filename_style"`
+		FilenameTS    *bool           `json:"filename_timestamp"`
+		Pages         json.RawMessage `json:"pages"`
+		Resolution    any             `json:"resolution"`
+		FPS           *int            `json:"fps"`
+		Fit           string          `json:"fit"`
+		Sound         *bool           `json:"sound"`
+		Loop          *int            `json:"loop"`
+		Dither        *bool           `json:"dither"`
+		PageSeconds   *float64        `json:"page_seconds"`
 	}
 	if err := jsonBody(r, &body); err != nil {
 		writeDRF(w, http.StatusBadRequest, "parse_error", "Malformed request body.")
@@ -430,19 +438,33 @@ func (a *App) imageExport(w http.ResponseWriter, r *http.Request) {
 	if format == "jpeg" {
 		format = "jpg"
 	}
+	if videoExportFormats[format] != "" {
+		a.exportVideo(w, r, d, u, videoExportBody{
+			Format: format, Quality: body.Quality, Pages: body.Pages, Resolution: body.Resolution,
+			FPS: body.FPS, Fit: body.Fit, Sound: body.Sound, Loop: body.Loop, Dither: body.Dither,
+			PageSeconds: body.PageSeconds, FilenameStyle: body.FilenameStyle, FilenameTS: body.FilenameTS,
+		})
+		return
+	}
 	if format != "png" && format != "jpg" && format != "webp" {
 		fields = append(fields, SimpleField("format",
 			fmt.Sprintf("%q is not a valid choice.", body.Format), "invalid_choice"))
 	}
 	quality := 90
 	if body.Quality != nil {
-		quality = *body.Quality
-		if quality > 100 {
+		value, ok := imageQualityValue(body.Quality)
+		if !ok {
 			fields = append(fields, SimpleField("quality",
-				"Ensure this value is less than or equal to 100.", "max_value"))
-		} else if quality < 1 {
-			fields = append(fields, SimpleField("quality",
-				"Ensure this value is greater than or equal to 1.", "min_value"))
+				"Give a whole number from 1 to 100, or one of small, balanced, best, original.", "invalid"))
+		} else {
+			quality = value
+			if quality > 100 {
+				fields = append(fields, SimpleField("quality",
+					"Ensure this value is less than or equal to 100.", "max_value"))
+			} else if quality < 1 {
+				fields = append(fields, SimpleField("quality",
+					"Ensure this value is greater than or equal to 1.", "min_value"))
+			}
 		}
 	}
 	scale := 1.0
@@ -561,6 +583,30 @@ func (a *App) imageExport(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Length", itoa(len(converted)))
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(converted)
+}
+
+func imageQualityValue(value any) (int, bool) {
+	switch v := value.(type) {
+	case float64:
+		if v != float64(int(v)) {
+			return 0, false
+		}
+		return int(v), true
+	case int:
+		return v, true
+	case string:
+		switch strings.ToLower(strings.TrimSpace(v)) {
+		case "small":
+			return 65, true
+		case "balanced":
+			return 82, true
+		case "best":
+			return 95, true
+		case "original":
+			return 100, true
+		}
+	}
+	return 0, false
 }
 
 func imageMIME(format string) string {

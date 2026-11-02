@@ -263,6 +263,9 @@ func (a *App) assetsList(w http.ResponseWriter, r *http.Request) {
 		order = col + " " + dirn + ", id ASC"
 	}
 
+	if q.Get("kind") == "video" {
+		a.failStaleVideoJobs(u.ID)
+	}
 	rows, err := a.DB.Query(
 		"SELECT "+assetCols+" FROM assets_asset WHERE "+strings.Join(where, " AND ")+
 			" ORDER BY "+order, args...)
@@ -319,13 +322,18 @@ func clampWindow(total int, b pageBounds) (int, int) {
 // (file/name/tags), content-driven prepare, quota, storage.
 func (a *App) assetsCreate(w http.ResponseWriter, r *http.Request) {
 	u := currentUser(r)
+	// A server with ffmpeg takes clips up to MAX_VIDEO_UPLOAD_BYTES.
+	limit := maxUploadBytes
+	if a.videoAvailable() && a.Settings.MaxVideoUploadBytes > limit {
+		limit = a.Settings.MaxVideoUploadBytes
+	}
 	// reject_oversize_request: declared size beyond limit+envelope fails
 	// before buffering.
-	if r.ContentLength > maxUploadBytes+uploadEnvelope {
+	if r.ContentLength > int64(limit)+uploadEnvelope {
 		writeDRF(w, http.StatusRequestEntityTooLarge, "file_too_large", "The file is too large.")
 		return
 	}
-	if err := r.ParseMultipartForm(maxUploadBytes); err != nil {
+	if err := r.ParseMultipartForm(int64(limit)); err != nil {
 		writeDRF(w, http.StatusBadRequest, "parse_error", "Malformed request body.")
 		return
 	}
@@ -384,7 +392,7 @@ func (a *App) assetsCreate(w http.ResponseWriter, r *http.Request) {
 		writeDRF(w, http.StatusInternalServerError, "server_error", "Something went wrong on our side.")
 		return
 	}
-	data, err := readBounded(handle, maxUploadBytes)
+	data, err := readBounded(handle, int64(limit))
 	handle.Close()
 	if err != nil {
 		writeDRF(w, http.StatusRequestEntityTooLarge, "file_too_large", "The file is too large.")
@@ -395,6 +403,17 @@ func (a *App) assetsCreate(w http.ResponseWriter, r *http.Request) {
 		sourceName = fh.Filename
 	}
 	name := cleanAssetName(sourceName, "Untitled")
+
+	// Video clips go through ffprobe/ffmpeg before the raster path.
+	if handled, ok := a.tryVideoUpload(w, u, data, name, tags); handled {
+		_ = ok
+		return
+	}
+	if videoLooksLikeMedia(data) && !a.videoAvailable() {
+		writeDRF(w, http.StatusBadRequest, "video_unavailable",
+			"This server can't take videos (ffmpeg is not installed).")
+		return
+	}
 
 	prepared, perr := prepareFile(data)
 	if perr != nil {
@@ -601,6 +620,32 @@ func (a *App) storageUsed(ownerID string) (int64, error) {
 	return total.Int64, nil
 }
 
+// tryVideoUpload ports the AssetViewSet.create video branch; false means the
+// bytes are not a clip (or video is unavailable) and the caller continues.
+func (a *App) tryVideoUpload(w http.ResponseWriter, u *UserRow, data []byte, name string, tags []string) (bool, bool) {
+	if !a.videoAvailable() || !videoLooksLikeMedia(data) {
+		return false, false
+	}
+	if ok, wait := a.allowThrottle("video_upload", u.ID); !ok {
+		writeDRFThrottledDetail(w, wait, throttledDefault)
+		return true, false
+	}
+	asset, handled, derr := a.ingestVideoUpload(u, data, name, tags)
+	if !handled {
+		return false, false
+	}
+	if derr != nil {
+		writeDRF(w, derr.Status, derr.Code, derr.Message)
+		return true, false
+	}
+	status := http.StatusCreated
+	if asset.Status == "processing" {
+		status = http.StatusAccepted
+	}
+	writeJSON(w, status, asset.envelope())
+	return true, true
+}
+
 func (a *App) getAssetByID(id string) (*assetRow, error) {
 	row := a.DB.QueryRow("SELECT "+assetCols+" FROM assets_asset WHERE id = ?", id)
 	asset, err := scanAsset(row)
@@ -625,6 +670,13 @@ func (a *App) getAssetFor(w http.ResponseWriter, r *http.Request) (*assetRow, bo
 	if asset == nil || asset.OwnerID != u.ID {
 		writeDRF(w, http.StatusNotFound, "not_found", "Not found.")
 		return nil, false
+	}
+	if asset.Kind == "video" && asset.Status == "processing" {
+		if a.failStaleVideoJobs(u.ID) > 0 {
+			if fresh, err := a.getAssetByID(asset.ID); err == nil && fresh != nil {
+				asset = fresh
+			}
+		}
 	}
 	return asset, true
 }
@@ -725,9 +777,10 @@ func (a *App) assetsDestroy(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	_ = os.Remove(filepath.Join(a.Settings.MediaRoot, asset.File))
-	if asset.Thumbnail != "" {
-		_ = os.Remove(filepath.Join(a.Settings.MediaRoot, asset.Thumbnail))
+	for _, name := range []string{asset.File, asset.Thumbnail, asset.Poster, asset.Filmstrip, asset.Audio} {
+		if name != "" {
+			_ = os.Remove(filepath.Join(a.Settings.MediaRoot, filepath.FromSlash(name)))
+		}
 	}
 	if _, err := a.DB.Exec(`DELETE FROM assets_asset WHERE id = ? AND owner_id = ?`,
 		asset.ID, u.ID); err != nil {

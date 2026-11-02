@@ -137,7 +137,7 @@ behavioral verification).
 | `backend/apps/assets/credits.py` | (stock credit ledger — pending with provider slice) | ⬜ |
 | `backend/apps/assets/exceptions.py` | doory/stock.go + doory/assets.go (stock/quota/file error codes+messages used in M7 paths) | 🟡 |
 | `backend/apps/assets/freesound.py` | (Freesound client — pending with remote slice) | ⬜ |
-| `backend/apps/assets/management/` | doory/commands_audio.go (sync_audio: bundled library install + index.json catalogue + prune, --list/--dry-run/--force/--from-dir). Third-party packs pending (manifest lists none; archive reader not ported). | 🟡 |
+| `backend/apps/assets/management/` | doory/commands_audio.go (sync_audio) + doory/commands_video.go (sweep_video_jobs). Third-party audio packs pending. | 🟡 |
 | `backend/apps/assets/middleware.py` | doory/middleware.go (mediaSecurityHeaders: nosniff overwrite + CSP + svg attachment, chain #10) | ✅ |
 | `backend/apps/assets/migrations/` |  | ⬜ |
 | `backend/apps/assets/models.py` | doory/assets.go (row + upload_to path semantics; 0.2.0 video columns/status/error mapped, video pipeline pending) | 🟡 |
@@ -151,14 +151,14 @@ behavioral verification).
 | `backend/apps/assets/stock.py` | doory/stock.go (search/import validation + no-config payloads); live provider paths pending (remote/SSRF slice) | 🟡 |
 | `backend/apps/assets/stocklimits.py` | (rate tracking — pending with provider slice) | ⬜ |
 | `backend/apps/assets/storage.py` | (delete-on-commit helpers — pending with file-lifecycle slice) | ⬜ |
-| `backend/apps/assets/tests/` | doory/remote_image_test.go (URL policy, redirects, size/type checks, URL import) + doory/assets_svg_test.go (SVG sanitise/store/unsafe rejection); ledger/test-mapping dispositions remain | 🟡 |
+| `backend/apps/assets/tests/` | doory/remote_image_test.go + doory/assets_svg_test.go + doory/video_test.go (SVG sanitise, video probe/conversion/background/stale/sweep, stock video search); ledger/test-mapping dispositions remain | 🟡 |
 | `backend/apps/assets/throttling.py` | doory/throttle.go + doory/app.go (upload/stock/stock_preview/video_upload route scopes) | ✅ |
 | `backend/apps/assets/uploads.py` | doory/assets.go (oversize reject, clean_name/clean_tags/strip — shared with brand/fonts) | ✅ |
 | `backend/apps/assets/urls.py` |  | ⬜ |
-| `backend/apps/assets/video.py` | doory/stock.go (available(): VIDEO_ENABLED + ffmpeg/ffprobe on PATH); probe/work_dir/conversion pending | 🟡 |
-| `backend/apps/assets/video_jobs.py` |  | ⬜ |
-| `backend/apps/assets/video_providers.py` | doory/stock.go (registry order, per-provider keys with photo-key fallback, tab-order credits for /stock/videos/providers/) | 🟡 |
-| `backend/apps/assets/video_stock.py` | doory/stock.go (search/providers/import no-config paths + serializer bounds); live provider search/resolve/download and import pending | 🟡 |
+| `backend/apps/assets/video.py` | doory/video.go (probe, web-ready remux/transcode, stills, audio, slots, work dirs) | ✅ |
+| `backend/apps/assets/video_jobs.py` | doory/video_jobs.go + doory/commands_video.go (reserve/store/background conversion, stale recovery, sweep command) | ✅ |
+| `backend/apps/assets/video_providers.py` | doory/video_stock.go (Pexels/Pixabay clip search, resolve, host-checked download, filters) | ✅ |
+| `backend/apps/assets/video_stock.py` | doory/video_stock.go + doory/stock.go (provider search/all tab, import to a video asset, no-config payloads) | ✅ |
 | `backend/apps/assets/views.py` | doory/assets.go + doory/app.go (list/create incl. SVG/retrieve/patch/delete/usage; 0.2.0 picture-kind default filter); video 202/processing pending | 🟡 |
 
 ## `backend/apps/assets/audiolib/`
@@ -314,7 +314,7 @@ behavioral verification).
 |---|---|---|
 | `backend/apps/exports/apps.py` |  | ⬜ |
 | `backend/apps/exports/checks.py` | doory/checks.go (IMAGE_OPTIMIZERS W001, W003-W005; W002 is omitted because the built-in codecs are embedded, D22) | ✅ |
-| `backend/apps/exports/chromium_worker.py` | internal/renderworker + internal/chromium (CDP driver over the same system chromium; substitution recorded) | 🟡 |
+| `backend/apps/exports/chromium_worker.py` | internal/renderworker + internal/chromium (CDP driver; pdf/image/video modes and video slice streaming) | ✅ |
 | `backend/apps/exports/delivery.py` | doory/delivery.go (Django-signing port, store/purge/open) | ✅ |
 | `backend/apps/exports/exceptions.py` | doory/exports.go + doory/render.go (all export codes+messages) | ✅ |
 | `backend/apps/exports/filenames.py` | doory/filenames.go (simple + structured, slug, preset parts) | 🟡 |
@@ -324,9 +324,9 @@ behavioral verification).
 | `backend/apps/exports/models.py` |  | ⬜ |
 | `backend/apps/exports/pdfmeta.py` | internal/pdfmeta (exact boxes anchored top-left, Trim/Bleed, /Lang, /Creator — pypdf round-6 number writing) | ✅ |
 | `backend/apps/exports/policy.py` | internal/renderpolicy (origin/prefix decisions, path traversal, fetch rules) | ✅ |
-| `backend/apps/exports/renderer.py` | doory/render.go (slots, worker model, env allowlist, report mapping) | 🟡 |
+| `backend/apps/exports/renderer.py` | doory/render.go (slots, worker model, env allowlist, report mapping incl. video results) | ✅ |
 | `backend/apps/exports/serializers.py` | doory/exports.go (PdfExport/ImageExport) + doory/exports_optimize.go (ImageOptimizeSerializer), D21 for avif | 🟡 |
-| `backend/apps/exports/services.py` | doory/exports.go + doory/render.go + doory/exports_optimize.go (sanitize->layout->render pipeline, optimize_image for png/jpg/webp with libwebp/libjpeg-turbo, max_bytes search, palette, D21 for avif); multi-page/video pending | 🟡 |
+| `backend/apps/exports/services.py` | doory/exports.go + doory/render.go + doory/exports_optimize.go + doory/exports_video.go (sanitize->layout->render, optimize_image png/jpg/webp, max_bytes search, palette, mp4/webm/gif video export, D21 avif); multi-page image ZIP pending | 🟡 |
 | `backend/apps/exports/tests/` | (dispositions: ledger/test-mapping-v*.json) | 🟡 |
 | `backend/apps/exports/throttling.py` | doory/throttle.go + doory/app.go + doory/exports_optimize.go (export/optimize/optimize_offsite scopes) | ✅ |
 | `backend/apps/exports/urls.py` |  | ⬜ |
